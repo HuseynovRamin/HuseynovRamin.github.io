@@ -35,5 +35,6 @@ function changeBackground(weather) {
     } else {
         bg.style.background = "url('sunny-animation.gif')";
     }
-    bg.style.opacity = 0.3;
+    bg.style.opacity = 0.5;
+    bg.style.transition = "background 1s ease-in-out";
 }
