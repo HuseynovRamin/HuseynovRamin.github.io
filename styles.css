@@ -75,6 +75,8 @@ button:hover {
     background: url('rain-animation.gif');
     opacity: 0.3;
     transition: background 1s ease-in-out;
+    z-index: -1; /* Ensure the background stays behind other elements */
+    pointer-events: none; /* Prevent it from blocking user interactions */
 }
 
 /* Floating Clouds */
