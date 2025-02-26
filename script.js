@@ -1,100 +1,77 @@
 async function getWeather() {
-    const apiKey = '84ece90801f8623a75592cd4a875b3e2'; // Your OpenWeather API key
+    const apiKey = '84ece90801f8623a75592cd4a875b3e2';
     const city = document.getElementById('cityInput').value;
     if (!city) return alert("Please enter a city name");
 
-    try {
-        // Fetch current weather from OpenWeather
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
-        console.log("Weather API URL: ", weatherUrl); // Log URL for debugging
-        const weatherRes = await fetch(weatherUrl);
-        
-        if (!weatherRes.ok) throw new Error("City not found");
-        
-        const weatherData = await weatherRes.json();
-        console.log("Weather Data: ", weatherData); // Log weather data
+    const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/onecall?lat={latitude}&lon={longitude}&exclude=hourly,minutely&appid=${apiKey}&units=metric`;
 
-        // Get coordinates for 7-day forecast
-        const lat = weatherData.coord.lat;
-        const lon = weatherData.coord.lon;
-
-        // Fetch 7-day forecast from OpenWeather
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly&appid=${apiKey}&units=metric`;
-        console.log("Forecast API URL: ", forecastUrl); // Log forecast URL for debugging
-        const forecastRes = await fetch(forecastUrl);
-        
-        if (!forecastRes.ok) throw new Error("Error fetching forecast");
-
-        const forecastData = await forecastRes.json();
-        console.log("Forecast Data: ", forecastData); // Log forecast data
-
-        // Update current weather UI
-        document.getElementById('location').textContent = `${weatherData.name}, ${weatherData.sys.country}`;
-        document.getElementById('description').textContent = weatherData.weather[0].description;
-        document.getElementById('temperature').textContent = weatherData.main.temp;
-        document.getElementById('feelsLike').textContent = weatherData.main.feels_like;
-        document.getElementById('humidity').textContent = weatherData.main.humidity;
-        document.getElementById('windSpeed').textContent = (weatherData.wind.speed * 3.6).toFixed(1);
-
-        const sunrise = new Date(weatherData.sys.sunrise * 1000).toLocaleTimeString();
-        const sunset = new Date(weatherData.sys.sunset * 1000).toLocaleTimeString();
-        document.getElementById('sunrise').textContent = sunrise;
-        document.getElementById('sunset').textContent = sunset;
-
-        changeBackground(weatherData.weather[0].main);
-        displayForecast(forecastData);
-    } catch (error) {
-        alert(`Error: ${error.message}`);
-        console.error("Error: ", error); // Log the error for debugging
-    }
-}
-
-// Convert weather conditions to emojis
-function getWeatherEmoji(condition) {
-    const emojis = {
-        Thunderstorm: "⛈",
-        Drizzle: "🌧",
-        Rain: "🌧",
-        Snow: "❄",
-        Clear: "☀",
-        Clouds: "☁",
-        Mist: "🌫",
-        Fog: "🌫",
-        Smoke: "💨",
-        Haze: "🌁",
-        Dust: "🌪",
-        Sand: "🌪",
-        Ash: "🌋",
-        Squall: "🌬",
-        Tornado: "🌪"
-    };
-    return emojis[condition] || "🌍";
-}
-
-// Display 7-day forecast
-function displayForecast(forecastData) {
-    const forecastContainer = document.getElementById('forecast');
-    forecastContainer.innerHTML = ""; // Clear previous data
-
-    // Check if forecast data exists
-    if (!forecastData.daily) {
-        console.error("Forecast data is missing or malformed.");
+    // Get current weather
+    const currentResponse = await fetch(currentUrl);
+    if (currentResponse.status !== 200) {
+        alert("City not found");
         return;
     }
 
-    forecastData.daily.forEach(day => {
-        const forecastElement = document.createElement("div");
-        forecastElement.classList.add("forecast-item");
-        forecastElement.innerHTML = `
-            <p>${new Date(day.dt * 1000).toLocaleDateString()}</p>
-            <p>${getWeatherEmoji(day.weather[0].main)} ${day.weather[0].description}</p>
-            <p>🌡 ${day.temp.day.toFixed(1)}°C</p>
+    const currentData = await currentResponse.json();
+    document.getElementById('location').textContent = `${currentData.name}, ${currentData.sys.country}`;
+    document.getElementById('description').textContent = currentData.weather[0].description;
+    document.getElementById('temperature').textContent = currentData.main.temp;
+    document.getElementById('feelsLike').textContent = currentData.main.feels_like;
+    document.getElementById('humidity').textContent = currentData.main.humidity;
+    document.getElementById('windSpeed').textContent = (currentData.wind.speed * 3.6).toFixed(1);
+
+    const sunrise = new Date(currentData.sys.sunrise * 1000).toLocaleTimeString();
+    const sunset = new Date(currentData.sys.sunset * 1000).toLocaleTimeString();
+    document.getElementById('sunrise').textContent = sunrise;
+    document.getElementById('sunset').textContent = sunset;
+
+    // Get forecast
+    const latitude = currentData.coord.lat;
+    const longitude = currentData.coord.lon;
+    const forecastResponse = await fetch(forecastUrl.replace("{latitude}", latitude).replace("{longitude}", longitude));
+    const forecastData = await forecastResponse.json();
+
+    displayForecast(forecastData.daily);
+    changeBackground(currentData.weather[0].main);
+}
+
+function displayForecast(forecast) {
+    const forecastContainer = document.getElementById('forecast');
+    forecastContainer.innerHTML = ''; // Clear previous forecast
+
+    forecast.slice(0, 7).forEach((day, index) => {
+        const forecastItem = document.createElement('div');
+        forecastItem.classList.add('forecast-item');
+        
+        const date = new Date(day.dt * 1000);
+        const dayOfWeek = date.toLocaleString('en', { weekday: 'long' });
+
+        const weatherEmoji = getWeatherEmoji(day.weather[0].main);
+        
+        forecastItem.innerHTML = `
+            <h3>${dayOfWeek} ${weatherEmoji}</h3>
+            <p>🌡 High: ${day.temp.max}°C | Low: ${day.temp.min}°C</p>
+            <p>💧 Humidity: ${day.humidity}%</p>
         `;
-        forecastContainer.appendChild(forecastElement);
+        
+        forecastContainer.appendChild(forecastItem);
     });
 }
 
-// Change background based on weather condition
+function getWeatherEmoji(weather) {
+    const weatherEmojis = {
+        'Clear': '☀️',
+        'Clouds': '☁️',
+        'Rain': '🌧️',
+        'Snow': '❄️',
+        'Thunderstorm': '⚡',
+        'Drizzle': '🌦️',
+    };
+    
+    return weatherEmojis[weather] || '🌤️';
+}
+
 function changeBackground(weather) {
     let bg = document.querySelector('.background-animation');
     if (weather.includes("Rain")) {
