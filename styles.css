@@ -78,6 +78,27 @@ button:hover {
     z-index: -1; /* Ensure the background stays behind other elements */
     pointer-events: none; /* Prevent it from blocking user interactions */
 }
+.forecast-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.forecast-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    margin: 10px;
+    border-radius: 10px;
+    text-align: center;
+    min-width: 120px;
+    font-weight: bold;
+    transition: transform 0.3s ease-in-out;
+}
+
+.forecast-item:hover {
+    transform: scale(1.1);
+}
 
 /* Floating Clouds */
 .clouds {
