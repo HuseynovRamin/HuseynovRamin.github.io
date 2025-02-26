@@ -65,19 +65,7 @@ button:hover {
     transform: scale(1.05);
 }
 
-/* Background Animation */
-.background-animation {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: url('rain-animation.gif');
-    opacity: 0.3;
-    transition: background 1s ease-in-out;
-    z-index: -1; /* Ensure the background stays behind other elements */
-    pointer-events: none; /* Prevent it from blocking user interactions */
-}
+/* Forecast Styles */
 .forecast-container {
     display: flex;
     justify-content: center;
@@ -100,7 +88,6 @@ button:hover {
     transform: scale(1.1);
 }
 
-/* Add cool weather animation */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -116,8 +103,20 @@ button:hover {
     animation: fadeIn 0.8s ease-in-out;
 }
 
+/* Background Animation */
+.background-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('rain-animation.gif');
+    opacity: 0.3;
+    transition: background 1s ease-in-out;
+    z-index: -1;
+    pointer-events: none;
+}
 
-/* Floating Clouds */
 .clouds {
     position: fixed;
     top: 0;
@@ -153,14 +152,4 @@ button:hover {
 .cloud3 {
     top: 50%;
     left: -20%;
-    animation-duration: 35s;
-}
-
-@keyframes floatClouds {
-    from {
-        transform: translateX(-200px);
-    }
-    to {
-        transform: translateX(100vw);
-    }
-}
+    animation-duration: 35s
