@@ -24,6 +24,11 @@ async function getWeather() {
         const forecastData = await forecastRes.json();
         console.log("Forecast Data: ", forecastData); // Log forecast data
 
+        // Check if forecast data exists
+        if (!forecastData.forecast || !forecastData.forecast.forecastday) {
+            throw new Error("Forecast data is missing.");
+        }
+
         // Update current weather UI
         document.getElementById('location').textContent = `${weatherData.location.name}, ${weatherData.location.country}`;
         document.getElementById('description').textContent = weatherData.current.condition.text;
@@ -68,6 +73,12 @@ function getWeatherEmoji(condition) {
 function displayForecast(forecastData) {
     const forecastContainer = document.getElementById('forecast');
     forecastContainer.innerHTML = ""; // Clear previous data
+
+    // Check if forecast data exists
+    if (!forecastData || !forecastData.forecast || !forecastData.forecast.forecastday) {
+        console.error("Forecast data is missing or malformed.");
+        return;
+    }
 
     forecastData.forecast.forecastday.forEach(day => {
         const forecastElement = document.createElement("div");
