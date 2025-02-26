@@ -10,14 +10,15 @@ async function getWeather() {
         if (!weatherRes.ok) throw new Error("City not found");
         const weatherData = await weatherRes.json();
 
-        // Fetch 7-day forecast
+        // Fetch 7-day forecast (Now using the "forecast" endpoint correctly)
         const lat = weatherData.coord.lat;
         const lon = weatherData.coord.lon;
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&cnt=7&appid=${apiKey}&units=metric`;
         const forecastRes = await fetch(forecastUrl);
+        if (!forecastRes.ok) throw new Error("Error fetching forecast");
         const forecastData = await forecastRes.json();
 
-        // Update current weather
+        // Update current weather UI
         document.getElementById('location').textContent = `${weatherData.name}, ${weatherData.sys.country}`;
         document.getElementById('description').textContent = weatherData.weather[0].description;
         document.getElementById('temperature').textContent = weatherData.main.temp;
@@ -61,12 +62,12 @@ function displayForecast(forecastData) {
     const forecastContainer = document.getElementById('forecast');
     forecastContainer.innerHTML = ""; // Clear previous data
 
-    const dailyData = {};
+    let dailyTemps = {};
 
     forecastData.list.forEach(entry => {
         const date = entry.dt_txt.split(" ")[0];
-        if (!dailyData[date]) {
-            dailyData[date] = {
+        if (!dailyTemps[date]) {
+            dailyTemps[date] = {
                 temp: entry.main.temp,
                 description: entry.weather[0].main,
                 icon: getWeatherEmoji(entry.weather[0].main)
@@ -74,8 +75,8 @@ function displayForecast(forecastData) {
         }
     });
 
-    Object.keys(dailyData).slice(0, 7).forEach(date => {
-        const dayForecast = dailyData[date];
+    Object.keys(dailyTemps).slice(0, 7).forEach(date => {
+        const dayForecast = dailyTemps[date];
         const forecastElement = document.createElement("div");
         forecastElement.classList.add("forecast-item");
         forecastElement.innerHTML = `
