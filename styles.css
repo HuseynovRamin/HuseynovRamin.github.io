@@ -1,3 +1,4 @@
+/* General Styles */
 body {
     font-family: 'Arial', sans-serif;
     text-align: center;
@@ -52,6 +53,7 @@ button:hover {
     transform: scale(1.1);
 }
 
+/* Weather Card */
 .weather-card {
     background: rgba(255, 255, 255, 0.1);
     padding: 20px;
@@ -59,48 +61,46 @@ button:hover {
     display: inline-block;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease-in-out;
+    margin-bottom: 30px;
 }
 
 .weather-card:hover {
     transform: scale(1.05);
 }
 
-/* Forecast Styles */
+.weather-card p {
+    font-size: 1.2rem;
+}
+
+/* 7-Day Forecast */
 .forecast-container {
     display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 20px;
+    justify-content: space-between;
+    margin-top: 30px;
+    padding: 0 10px;
 }
 
 .forecast-item {
     background: rgba(255, 255, 255, 0.2);
     padding: 15px;
-    margin: 10px;
     border-radius: 10px;
+    width: 120px;
     text-align: center;
-    min-width: 120px;
-    font-weight: bold;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease-in-out;
 }
 
 .forecast-item:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.forecast-item h3 {
+    font-size: 1.2rem;
 }
 
-.forecast-item {
-    animation: fadeIn 0.8s ease-in-out;
+.forecast-item p {
+    font-size: 1rem;
+    margin: 5px 0;
 }
 
 /* Background Animation */
@@ -113,10 +113,11 @@ button:hover {
     background: url('rain-animation.gif');
     opacity: 0.3;
     transition: background 1s ease-in-out;
-    z-index: -1;
-    pointer-events: none;
+    z-index: -1; /* Ensure the background stays behind other elements */
+    pointer-events: none; /* Prevent it from blocking user interactions */
 }
 
+/* Floating Clouds */
 .clouds {
     position: fixed;
     top: 0;
@@ -152,4 +153,14 @@ button:hover {
 .cloud3 {
     top: 50%;
     left: -20%;
-    animation-duration: 35s
+    animation-duration: 35s;
+}
+
+@keyframes floatClouds {
+    from {
+        transform: translateX(-200px);
+    }
+    to {
+        transform: translateX(100vw);
+    }
+}
