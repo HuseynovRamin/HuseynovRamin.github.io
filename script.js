@@ -32,7 +32,7 @@ async function getWeather() {
     const forecastResponse = await fetch(forecastUrl.replace("{latitude}", latitude).replace("{longitude}", longitude));
     const forecastData = await forecastResponse.json();
 
-    displayForecast(forecastData.daily);
+    displayForecast(forecastData.daily); // Call function to display the forecast
     changeBackground(currentData.weather[0].main);
 }
 
@@ -40,7 +40,7 @@ function displayForecast(forecast) {
     const forecastContainer = document.getElementById('forecast');
     forecastContainer.innerHTML = ''; // Clear previous forecast
 
-    forecast.slice(0, 7).forEach((day, index) => {
+    forecast.slice(0, 7).forEach((day) => {
         const forecastItem = document.createElement('div');
         forecastItem.classList.add('forecast-item');
         
