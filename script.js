@@ -1,86 +1,79 @@
-async function getWeather() {
-    const apiKey = '84ece90801f8623a75592cd4a875b3e2';
-    const city = document.getElementById('cityInput').value;
-    if (!city) return alert("Please enter a city name");
+// Function to calculate academic score
+function calculateScore() {
+    document.getElementById("loading").style.display = "block";
+    setTimeout(() => {
+        let ksqInput = document.getElementById("ksq").value;
+        let bsqInput = document.getElementById("bsq").value;
 
-    const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
-    const forecastUrl = `https://api.openweathermap.org/data/2.5/onecall?lat={latitude}&lon={longitude}&exclude=hourly,minutely&appid=${apiKey}&units=metric`;
+        // Validate KQS input
+        let ksqValues = ksqInput.split(",").map(num => parseFloat(num.trim())).filter(num => !isNaN(num));
+        if (ksqValues.length === 0) {
+            alert("Zəhmət olmasa düzgün KQS qiymətləri daxil edin.");
+            document.getElementById("loading").style.display = "none";
+            return;
+        }
 
-    // Get current weather
-    const currentResponse = await fetch(currentUrl);
-    if (currentResponse.status !== 200) {
-        alert("City not found");
-        return;
-    }
+        // Validate BSQ input
+        let bsqScore = parseFloat(bsqInput);
+        if (isNaN(bsqScore)) bsqScore = 0;
 
-    const currentData = await currentResponse.json();
-    document.getElementById('location').textContent = `${currentData.name}, ${currentData.sys.country}`;
-    document.getElementById('description').textContent = currentData.weather[0].description;
-    document.getElementById('temperature').textContent = currentData.main.temp;
-    document.getElementById('feelsLike').textContent = currentData.main.feels_like;
-    document.getElementById('humidity').textContent = currentData.main.humidity;
-    document.getElementById('windSpeed').textContent = (currentData.wind.speed * 3.6).toFixed(1);
+        // Calculate KQS average
+        let ksqAverage = ksqValues.reduce((sum, num) => sum + num, 0) / ksqValues.length;
 
-    const sunrise = new Date(currentData.sys.sunrise * 1000).toLocaleTimeString();
-    const sunset = new Date(currentData.sys.sunset * 1000).toLocaleTimeString();
-    document.getElementById('sunrise').textContent = sunrise;
-    document.getElementById('sunset').textContent = sunset;
+        // Calculate final score
+        let finalScore = (ksqAverage * 0.4) + (bsqScore * 0.6);
+        finalScore = parseFloat(finalScore.toFixed(3));
 
-    // Get forecast
-    const latitude = currentData.coord.lat;
-    const longitude = currentData.coord.lon;
-    const forecastResponse = await fetch(forecastUrl.replace("{latitude}", latitude).replace("{longitude}", longitude));
-    const forecastData = await forecastResponse.json();
-
-    displayForecast(forecastData.daily); // Call function to display the forecast
-    changeBackground(currentData.weather[0].main);
+        // Display result
+        document.getElementById("result").innerText = finalScore;
+        document.getElementById("loading").style.display = "none";
+    }, 500); // Simulate a slight delay
 }
 
-function displayForecast(forecast) {
-    const forecastContainer = document.getElementById('forecast');
-    forecastContainer.innerHTML = ''; // Clear previous forecast
+// Function to calculate GPA
+function calculateGPA() {
+    document.getElementById("loading-gpa").style.display = "block";
+    setTimeout(() => {
+        let creditsInput = document.getElementById("credits").value;
+        let gradesInput = document.getElementById("grades").value;
 
-    forecast.slice(0, 7).forEach((day) => {
-        const forecastItem = document.createElement('div');
-        forecastItem.classList.add('forecast-item');
-        
-        const date = new Date(day.dt * 1000);
-        const dayOfWeek = date.toLocaleString('en', { weekday: 'long' });
+        // Convert credits into an array of numbers
+        let credits = creditsInput.split(",").map(num => parseFloat(num.trim())).filter(num => !isNaN(num));
 
-        const weatherEmoji = getWeatherEmoji(day.weather[0].main);
-        
-        forecastItem.innerHTML = `
-            <h3>${dayOfWeek} ${weatherEmoji}</h3>
-            <p>🌡 High: ${day.temp.max}°C | Low: ${day.temp.min}°C</p>
-            <p>💧 Humidity: ${day.humidity}%</p>
-        `;
-        
-        forecastContainer.appendChild(forecastItem);
-    });
+        // Map grades to GPA scale
+        let gradeMap = {
+            "A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0,
+            "B-": 2.7, "C+": 2.3, "C": 2.0, "C-": 1.7,
+            "D+": 1.3, "D": 1.0, "F": 0.0
+        };
+
+        let grades = gradesInput.split(",").map(grade => grade.trim().toUpperCase()).map(grade => gradeMap[grade] || 0);
+
+        // Ensure both arrays are the same length
+        if (credits.length !== grades.length) {
+            alert("Kreditlərin və qiymətlərin sayı uyğun gəlmir!");
+            document.getElementById("loading-gpa").style.display = "none";
+            return;
+        }
+
+        // Calculate GPA
+        let totalPoints = 0;
+        let totalCredits = 0;
+        for (let i = 0; i < credits.length; i++) {
+            totalPoints += credits[i] * grades[i];
+            totalCredits += credits[i];
+        }
+
+        let gpa = totalPoints / totalCredits;
+        gpa = parseFloat(gpa.toFixed(2)); // Round to 2 decimal places
+
+        // Display result
+        document.getElementById("gpaResult").innerText = gpa;
+        document.getElementById("loading-gpa").style.display = "none";
+    }, 500); // Simulate a slight delay
 }
 
-function getWeatherEmoji(weather) {
-    const weatherEmojis = {
-        'Clear': '☀️',
-        'Clouds': '☁️',
-        'Rain': '🌧️',
-        'Snow': '❄️',
-        'Thunderstorm': '⚡',
-        'Drizzle': '🌦️',
-    };
-    
-    return weatherEmojis[weather] || '🌤️';
-}
-
-function changeBackground(weather) {
-    let bg = document.querySelector('.background-animation');
-    if (weather.includes("Rain")) {
-        bg.style.background = "url('rain-animation.gif')";
-    } else if (weather.includes("Cloud")) {
-        bg.style.background = "url('cloudy-animation.gif')";
-    } else {
-        bg.style.background = "url('sunny-animation.gif')";
-    }
-    bg.style.opacity = 0.5;
-    bg.style.transition = "background 1s ease-in-out";
+// Function to toggle dark mode
+function toggleDarkMode() {
+    document.body.classList.toggle("dark-mode");
 }
