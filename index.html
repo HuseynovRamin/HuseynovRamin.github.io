@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Akademik qiymət və GPA hesablama vasitəsi. Tələbələr üçün asan və sürətli hesablama imkanı.">
-    <meta name="keywords" content="akademik qiymət hesablama, GPA hesablama, təhsil aləti">
-    <meta name="author" content="Your Name">
     <title>Akademik Qiymət Hesablama</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
@@ -15,35 +12,15 @@
         <h1 class="fade-in">📚 Akademik Qiymət Hesablama</h1>
 
         <label for="ksq"><strong>📊 KQS Qiymətlərini daxil edin (vergüllə ayırın):</strong></label>
-        <input type="text" id="ksq" placeholder="Məs: 85, 90, 78" class="input-field" aria-label="KQS qiymətləri">
+        <input type="text" id="ksq" placeholder="Məs: 85, 90, 78" class="input-field">
 
         <label for="bsq"><strong>📝 BSQ Qiyməti (əgər varsa):</strong></label>
-        <input type="number" id="bsq" placeholder="Məs: 92" class="input-field" aria-label="BSQ qiyməti">
+        <input type="number" id="bsq" placeholder="Məs: 92" class="input-field">
 
-        <button onclick="calculateScore()" class="calculate-btn pulse" aria-label="Qiyməti hesabla">🚀 Hesabla</button>
-
-        <div id="loading" style="display: none;">⏳ Yüklenir...</div>
+        <button onclick="calculateScore()" class="calculate-btn pulse">🚀 Hesabla</button>
 
         <h2 class="result-box">✅ Nəticə: <span id="result">-</span></h2>
     </div>
-
-    <div class="container">
-        <h1 class="fade-in">📊 GPA Hesablama</h1>
-
-        <label for="credits"><strong>📋 Kreditləri daxil edin (vergüllə ayırın):</strong></label>
-        <input type="text" id="credits" placeholder="Məs: 3, 4, 2" class="input-field" aria-label="Kreditlər">
-
-        <label for="grades"><strong>📝 Qiymətləri daxil edin (vergüllə ayırın):</strong></label>
-        <input type="text" id="grades" placeholder="Məs: A, B+, C" class="input-field" aria-label="Qiymətlər">
-
-        <button onclick="calculateGPA()" class="calculate-btn pulse" aria-label="GPA hesabla">🚀 GPA Hesabla</button>
-
-        <div id="loading-gpa" style="display: none;">⏳ Yüklenir...</div>
-
-        <h2 class="result-box">✅ GPA Nəticəsi: <span id="gpaResult">-</span></h2>
-    </div>
-
-    <button onclick="toggleDarkMode()" class="dark-mode-btn" aria-label="Dark mode toggle">🌙 Dark Mode</button>
 
     <script src="script.js"></script>
 </body>
