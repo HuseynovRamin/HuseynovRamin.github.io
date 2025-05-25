@@ -1,3 +1,4 @@
+// Main Calculation Function (Original)
 function calculateScore() {
     // Get input values
     let ksqInput = document.getElementById("ksq").value;
@@ -6,7 +7,7 @@ function calculateScore() {
     // Convert KSQ values into an array of numbers
     let ksqValues = ksqInput.split(",").map(num => parseFloat(num.trim())).filter(num => !isNaN(num));
 
-    // Ensure there are valid KQS values
+    // Calculate KSQ average
     let ksqAverage = 0;
     if (ksqValues.length > 0) {
         let ksqSum = ksqValues.reduce((sum, num) => sum + num, 0);
@@ -14,60 +15,77 @@ function calculateScore() {
     }
 
     // Convert BSQ to number (default to 0 if empty)
-    let bsqScore = parseFloat(bsqInput);
-    if (isNaN(bsqScore)) bsqScore = 0;
+    let bsqScore = parseFloat(bsqInput) || 0;
 
-    // Calculate the final score
+    // Calculate final score
     let finalScore = (ksqAverage * 0.4) + (bsqScore * 0.6);
-
-    // Limit to max 3 decimal places without unnecessary zeros
     finalScore = parseFloat(finalScore.toFixed(3));
 
-    // Display the result
-    document.getElementById("result").innerText = finalScore;
+    // Display result with animation
+    let resultElement = document.getElementById("result");
+    resultElement.innerText = finalScore;
+    resultElement.style.animation = "none";
+    void resultElement.offsetWidth; // Trigger reflow
+    resultElement.style.animation = "pulse 0.5s";
 }
 
-/* NEW ADDITIONS (Illik Bal) */
+// Illik Bal Calculator Functions
 function openAnnualCalculator() {
-    let modal = document.getElementById("annualModal");
-    if (!modal) {
-        createAnnualCalculatorModal();
+    // Auto-fill first grade with previous result if exists
+    const prevResult = parseFloat(document.getElementById("result").innerText);
+    if (!isNaN(prevResult)) {
+        document.getElementById("grade1").value = prevResult;
+    } else {
+        document.getElementById("grade1").value = "";
     }
+    
+    // Show modal
     document.getElementById("annualModal").style.display = "block";
-}
-
-function createAnnualCalculatorModal() {
-    let modal = document.createElement("div");
-    modal.id = "annualModal";
-    modal.className = "modal";
     
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="closeAnnualCalculator()">&times;</span>
-            <h3>Illik Bal Hesablama</h3>
-            <input type="number" id="grade1" placeholder="1-ci qiymət" class="input-field">
-            <input type="number" id="grade2" placeholder="2-ci qiymət" class="input-field">
-            <button onclick="calculateAnnualGrade()" class="calculate-btn pulse">Hesabla</button>
-            <p><strong>Nəticə: <span id="annualResult">-</span></strong></p>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
+    // Close when clicking outside modal
+    window.onclick = function(event) {
+        if (event.target === document.getElementById("annualModal")) {
+            closeAnnualCalculator();
+        }
+    };
 }
 
 function closeAnnualCalculator() {
-    document.getElementById("annualModal").style.display = "none";
+    document.getElementById("annualModal").style.animation = "fadeOut 0.3s forwards";
+    setTimeout(() => {
+        document.getElementById("annualModal").style.display = "none";
+        document.getElementById("annualModal").style.animation = "";
+    }, 300);
 }
 
 function calculateAnnualGrade() {
-    let grade1 = parseFloat(document.getElementById("grade1").value);
-    let grade2 = parseFloat(document.getElementById("grade2").value);
+    const grade1 = parseFloat(document.getElementById("grade1").value) || 0;
+    const grade2 = parseFloat(document.getElementById("grade2").value);
+    const resultElement = document.getElementById("annualResult");
     
-    if (isNaN(grade1) || isNaN(grade2)) {
-        document.getElementById("annualResult").innerText = "Xahiş edirəm düzgün qiymətlər daxil edin!";
+    if (isNaN(grade2)) {
+        resultElement.innerText = "Xahiş edirəm 2-ci qiyməti daxil edin!";
+        resultElement.style.color = "#ff4757";
         return;
     }
     
-    let average = (grade1 + grade2) / 2;
-    document.getElementById("annualResult").innerText = average.toFixed(2);
+    const average = (grade1 + grade2) / 2;
+    resultElement.innerText = average.toFixed(2);
+    resultElement.style.color = "#2ed573";
+    
+    // Celebration effect
+    resultElement.style.transform = "scale(1.1)";
+    setTimeout(() => {
+        resultElement.style.transform = "scale(1)";
+    }, 300);
 }
+
+// Add fadeOut animation
+document.head.insertAdjacentHTML("beforeend", `
+    <style>
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+`);
