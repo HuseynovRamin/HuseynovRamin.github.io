@@ -26,6 +26,26 @@
         <h2 class="result-box">✅ Nəticə: <span id="result">-</span></h2>
     </div>
 
+    <!-- Illik Bal Modal -->
+    <div id="annualModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAnnualCalculator()">✕</span>
+            <h2 class="modal-title">Illik Bal Hesablama</h2>
+            
+            <div class="input-group">
+                <input type="number" id="grade1" placeholder="1-ci qiymət (avtomatik)" class="input-field" readonly>
+                <input type="number" id="grade2" placeholder="2-ci qiymət" class="input-field">
+            </div>
+            
+            <button onclick="calculateAnnualGrade()" class="modal-calculate-btn">Hesabla</button>
+            
+            <div class="modal-result-container">
+                <h3>Nəticə:</h3>
+                <div id="annualResult" class="modal-result-display">-</div>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
