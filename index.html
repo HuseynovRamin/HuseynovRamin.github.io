@@ -1,50 +1,96 @@
 <!DOCTYPE html>
-<html lang="az">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akademik Qiymət Hesablama</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Commerce Pro</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+    body { margin:0; font-family:'Poppins', sans-serif; color:#333; }
+    .hero {
+      height:100vh; background:linear-gradient(135deg, #004E92, #000428);
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      color:#fff; text-align:center; animation: fadein 1s ease-out;
+    }
+    .hero h1 { font-size:3rem; margin:0.5rem; animation: zoomin 1s ease-out; }
+    .hero p { font-size:1.25rem; max-width:600px; animation: fadein 2s ease-out; }
+    .cta-btn {
+      margin-top:1.5rem;
+      padding:1rem 2rem;
+      font-size:1.1rem;
+      background:#FF6A00;
+      color:#fff;
+      border:none;
+      border-radius:4px;
+      cursor:pointer;
+      transition: transform 0.3s, background 0.3s;
+    }
+    .cta-btn:hover {
+      transform: scale(1.05);
+      background: #ff8600;
+    }
+    @keyframes fadein {
+      from { opacity:0; } to { opacity:1; }
+    }
+    @keyframes zoomin {
+      from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); }
+    }
+    .services {
+      display:grid;
+      grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+      gap:2rem;
+      padding:4rem 2rem;
+      background:#f9f9f9;
+    }
+    .card {
+      background:#fff;
+      border-radius:8px;
+      box-shadow:0 2px 12px rgba(0,0,0,0.1);
+      padding:2rem;
+      text-align:left;
+      transition: transform 0.3s, box-shadow 0.3s;
+      animation: fadein 1s ease-out;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow:0 4px 24px rgba(0,0,0,0.15);
+    }
+    .card h3 { margin-top:0; }
+    .footer {
+      background:#222; color:#ddd;
+      text-align:center;
+      padding:2rem;
+    }
+    .footer a { color:#FF6A00; text-decoration:none; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="fade-in">📚 Akademik Qiymət Hesablama</h1>
 
-        <label for="ksq"><strong>📊 KQS Qiymətlərini daxil edin (vergüllə ayırın):</strong></label>
-        <input type="text" id="ksq" placeholder="Məs: 85, 90, 78" class="input-field">
+  <section class="hero">
+    <h1>Global Commerce Enhanced</h1>
+    <p>Accelerate your global trade business with polished UI, animations, responsive design, and international readiness.</p>
+    <button class="cta-btn">Get Started</button>
+  </section>
 
-        <label for="bsq"><strong>📝 BSQ Qiyməti (əgər varsa):</strong></label>
-        <input type="number" id="bsq" placeholder="Məs: 92" class="input-field">
-
-        <div class="annual-grade-box" onclick="openAnnualCalculator()">
-            <strong>İllik Bal Hesabla</strong>
-        </div>
-
-        <button onclick="calculateScore()" class="calculate-btn pulse">🚀 Hesabla</button>
-
-        <h2 class="result-box">✅ Nəticə: <span id="result">-</span></h2>
+  <section class="services">
+    <div class="card">
+      <h3>Worldwide Sourcing</h3>
+      <p>Find trusted suppliers across borders with transparency and efficiency.</p>
     </div>
-
-    <!-- Illik Bal Modal -->
-    <div id="annualModal" class="modal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeAnnualCalculator()">✕</button>
-            <h2 class="modal-title">İllik Bal Hesablama</h2>
-            
-            <div class="input-group">
-                <input type="number" id="grade1" placeholder="1-ci qiymət" class="input-field">
-                <input type="number" id="grade2" placeholder="2-ci qiymət" class="input-field">
-            </div>
-            
-            <button onclick="calculateAnnualGrade()" class="modal-calculate-btn">Hesabla</button>
-            
-            <div class="modal-result-container">
-                <h3>Nəticə:</h3>
-                <div id="annualResult" class="modal-result-display">-</div>
-            </div>
-        </div>
+    <div class="card">
+      <h3>Logistics Management</h3>
+      <p>Fulfill orders with real-time tracking and seamless shipping solutions.</p>
     </div>
+    <div class="card">
+      <h3>Compliance Assurance</h3>
+      <p>Navigate international regulations with our expert support team.</p>
+    </div>
+  </section>
 
-    <script src="script.js"></script>
+  <footer class="footer">
+    📞 +1 (800) 123‑4567 • 📧 contact@globalcommerce.com
+    <p>© 2025 Global Commerce • Built with care and modern design.</p>
+  </footer>
+
 </body>
 </html>
