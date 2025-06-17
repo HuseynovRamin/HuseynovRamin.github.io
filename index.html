@@ -36,11 +36,15 @@
       from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); }
     }
     .services {
-      display:grid;
-      grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
-      gap:2rem;
-      padding:4rem 2rem;
-      background:#f9f9f9;
+
+      display: grid;
+      grid-template-columns: 1fr 1fr;       /* Two equal columns */
+      grid-auto-flow: row;                  /* Fill columns vertically */
+      gap: 2rem;
+      padding: 4rem 2rem;
+      background: #f9f9f9;
+      justify-items: end;
+      align-items: stretch;
     }
     .card {
       background:#fff;
@@ -94,14 +98,22 @@ Hazırda adı çəkilən şirkət Ukrayna, Rusiya, Belarus, Qazaxıstan, Moldova
   <div class="card">
     <h3>Şirkətin məhsulları aşağıdakı ərazilərdə quraşdırılmışdır:
 </h3>
-    <p>-         ARDNŞ-in yanacaq doldurma stansiyaları, Ukrayna;
+    <p>-  ARDNŞ-in yanacaq doldurma stansiyaları, Ukrayna;
+      
 -         “Kreml” və “Qırmızı” meydança, Rusiya;
+      
 -         “Şeremetov” və “Vnukovo” hava limanları, Rusiya;
+      
 -         “Alma-Ata” hava limanı, Qazaxıstan;
+      
 -         Paşa İnşaat tikinti obyektləri, Azərbaycan;
+      
 -         Dənizkənarı parklar, Rusiya və Ukrayna;
+      
 -         “Dinamo” stadionu, Ukrayna;
+      
 -         “Arena Lvov” stadionu, Ukrayna;
+      
 Tikinti ərazisini və ətrafını çöl-yağış sularından təmizlənməsi sistemi ilə əlaqədar “GLOBAL COMMERCE” sizə sərfəli əməkdaşlıq təklif edir. </p>
   </div>
   </section>
