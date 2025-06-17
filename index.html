@@ -8,20 +8,20 @@
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
     body { margin:0; font-family:'Poppins', sans-serif; color:#333; }
     .hero {
-      height:60vh; background:linear-gradient(135deg, #8ead7f, #000428);
+      height:100vh; background:linear-gradient(135deg, #8ead7f, #000428);
       display:flex; flex-direction:column; justify-content:center; align-items:center;
       color:#fff; text-align:center; animation: fadein 1s ease-out;
     }
     .hero h1 { font-size:3rem; margin:0.5rem; animation: zoomin 1s ease-out; }
     .hero p { font-size:1.25rem; max-width:600px; animation: fadein 2s ease-out; }
     .cta-btn {
-      margin-top:1.5rem;
-      padding:1rem 2rem;
-      font-size:1.1rem;
-      background:#FF6A00;
+      margin-top:3rem;
+      padding:1rem 1rem;
+      font-size:3rem;
+      background:#3e5b57;
       color:#fff;
       border:none;
-      border-radius:4px;
+      border-radius:2px;
       cursor:pointer;
       transition: transform 0.3s, background 0.3s;
     }
@@ -105,10 +105,6 @@
       text-decoration: underline;
     }
 
-    /* Fotoqalereya styles */
-
-
-    /* Override: Equal size gallery images */
     .gallery-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
