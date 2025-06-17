@@ -235,6 +235,49 @@
       border: none !important;
     }
   </style>
+  <style media="screen and (max-width: 768px)">
+  /* Mobile-specific styles */
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .hero p {
+    font-size: 1rem;
+    padding: 0 1rem;
+  }
+  
+  .cta-btn {
+    font-size: 1.5rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  .services {
+    grid-template-columns: 1fr;
+    padding: 2rem 1rem;
+  }
+  
+  .tabs {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .product-subcategories {
+    grid-template-columns: 1fr;
+  }
+  
+  .gallery-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .gallery-grid img {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .card {
+    padding: 1rem;
+  }
+</style>
 </head>
 <body>
 
@@ -502,5 +545,19 @@ Hazırda adı çəkilən şirkət Ukrayna, Rusiya, Belarus, Qazaxıstan, Moldova
     }
   </script>
   <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <script>
+  // Mobile detection and class addition
+  function checkMobile() {
+    if (window.innerWidth <= 768) {
+      document.body.classList.add('mobile');
+    } else {
+      document.body.classList.remove('mobile');
+    }
+  }
+  
+  // Run on load and resize
+  window.addEventListener('load', checkMobile);
+  window.addEventListener('resize', checkMobile);
+</script>
 </body>
 </html>
