@@ -131,62 +131,49 @@
 
     /* Google Translate styles */
     #google_translate_element {
-  margin-top: 1rem;
-  display: inline-block;
-}
+      margin-top: 1rem;
+    }
+    
     .goog-te-gadget {
       font-family: 'Poppins', sans-serif !important;
-      color: transparent !important;
+      color: white !important; /* Changed to white text */
     }
+    
     .goog-te-combo {
       padding: 8px;
       font-size: 14px !important;
       border-radius: 4px;
       border: 1px solid #ccc;
-      margin-bottom: 10px;
+      background-color: white; /* Dropdown background */
+      color: #333; /* Dropdown text color */
     }
     
-    /* Language dropdown styles */
+    /* Language dropdown styles - Vertical layout */
     .goog-te-menu2 {
-      max-width: 800px !important;
-      width: auto !important;
       background: white !important;
+      width: 200px !important; /* Fixed width for vertical list */
       padding: 10px !important;
-      display: flex !important;
-      flex-wrap: wrap !important;
+      display: block !important; /* Changed from flex to block */
     }
     
     .goog-te-menu2-item {
-      display: inline-block !important;
+      display: block !important; /* Changed from inline-block to block */
       padding: 5px 10px !important;
-      margin: 2px !important;
+      margin: 2px 0 !important; /* Vertical spacing */
       white-space: nowrap !important;
-      width: auto !important;
     }
     
     .goog-te-menu2-item div, 
     .goog-te-menu2-item span {
       font-size: 14px !important;
       font-family: 'Poppins', sans-serif !important;
-      color: #333 !important;
+      color: #333 !important; /* Language text color */
     }
     
-    .goog-te-menu2-colmenu {
-      display: flex !important;
-      flex-wrap: wrap !important;
-    }
-    
-    .goog-te-menu2-col {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      width: auto !important;
-    }
-    
-    /* Hide the Google Translate branding */
+    /* Hide Google branding */
     .goog-logo-link, .goog-te-gadget-icon {
       display: none !important;
     }
-    
     .goog-te-gadget-simple {
       background-color: transparent !important;
       border: none !important;
