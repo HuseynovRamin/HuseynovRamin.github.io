@@ -36,7 +36,6 @@
       from { opacity:0; transform:scale(0.9); } to { opacity:1; transform:scale(1); }
     }
     .services {
-
       display: grid;
       grid-template-columns: 2fr 2fr;      
       grid-auto-flow: row;                  
@@ -136,20 +135,18 @@
     <button class="tab-button active" data-target="services">Services</button>
     <button class="tab-button" data-target="katalog">Kataloq</button>
   </div>
-<div id="services" class="tab-content active"> 
-  <section class="services">
+
+  <div id="services" class="tab-content active"> 
+    <section class="services">
       <div class="card">
         <h3>GLOBAL COMMERCE” MMC “STANDARTPARK” şirkətinin  Azərbaycan ərazisində fəaliyyət göstərən eksklüziv distribütorudur. Biz sözügedən beynəlxalq  istehsalçının yeni standartlarla irəliləyən müasir məhsullarını təqdim edirik.    </h3>
         <p></p>
       </div>
       <div class="card">
         <h3>“STANDARTPARK” 12 illik fəaliyyəti ərzində Azərbaycan, Ukrayna, Gürcüstan, Belarus, Qazaxıstan, Moldova və digər ölkələrdə alıcıların inam və rəğbətini qazanmışdır. Müəssisə göstərilən müddət ərzində dünya standartlarına uyğun yüksək təcrübəsini nümayiş etdirmişdir.</h3>
-        
       </div>
       <div class="card">
-        <h3>“STANDARTPARK” şirkətinin zavodları yüksək səviyyəli idarəetmə və Avropa standartlarına cavab verən məhsulları ilə fərqlənir. Eyni zamanda, “İSO-9001:2009” sertifikatı ilə sertifikatlaşdırılmışdır. <p>Bizim çeşidlərimiz çöl-yağış sularının axını sistemləri üçün istifadə olunan “Class A 15”-dən “Class F 900”-dək ağırlığa davamlı fibrobeton, polimerbeton və plastikdən ibarətdir. Bununla yanaşı, şirkətimiz dekorativ yaşıl otlar üçün nəzərdə tutulan  setka-barmaqlılar təklif edir (Газонная решётка).</p>
-  </h3>
-        
+        <h3>“STANDARTPARK” şirkətinin zavodları yüksək səviyyəli idarəetmə və Avropa standartlarına cavab verən məhsulları ilə fərqlənir. Eyni zamanda, “İSO-9001:2009” sertifikatı ilə sertifikatlaşdırılmışdır. <p>Bizim çeşidlərimiz çöl-yağış sularının axını sistemləri üçün istifadə olunan “Class A 15”-dən “Class F 900”-dək ağırlığa davamlı fibrobeton, polimerbeton və plastikdən ibarətdir. Bununla yanaşı, şirkətimiz dekorativ yaşıl otlar üçün nəzərdə tutulan  setka-barmaqlılar təklif edir (Газонная решётка).</p></h3>
       </div>
       <div class="card">
           <h3>“STANDARTPARK” Azərbaycanda  tikinti ərazilərində istifadə olunan bütün məhsullarının davamlılığına görə tam cavabdehlik daşıyır.
@@ -177,15 +174,17 @@
         
   Tikinti ərazisini və ətrafını çöl-yağış sularından təmizlənməsi sistemi ilə əlaqədar “GLOBAL COMMERCE” sizə sərfəli əməkdaşlıq təklif edir. </p>
     </div>
-    <div class="card">
-      <h3>Kataloq</h3>
-      <ul>
-        <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" target="_blank" rel="noopener noreferrer">Online</a></li>
-        <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" download>Download</a></li>
-      </ul>
-    </div>
     </section>
-</div>
+  </div>
+
+  <div id="katalog" class="tab-content" style="padding: 4rem 12rem; background: #f9f9f9;">
+    <h2>Kataloq</h2>
+    <ul>
+      <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" target="_blank" rel="noopener noreferrer">Online</a></li>
+      <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" download>Download</a></li>
+    </ul>
+  </div>
+
   <footer class="footer">
     📞 +99412 436-41-16 
     📞 +99455 402-31-21
@@ -196,16 +195,16 @@
   <script>
     const tabs = document.querySelectorAll('.tab-button');
     const contents = document.querySelectorAll('.tab-content');
-  
+
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
         tabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-  
+
         contents.forEach(c => c.classList.remove('active'));
         document.getElementById(tab.dataset.target).classList.add('active');
       });
-   });
+    });
   </script>
 </body>
 </html>
