@@ -66,6 +66,62 @@
       padding:2rem;
     }
     .footer a { color:#FF6A00; text-decoration:none; }
+    .tabs {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      padding: 1rem 2rem;
+      background: #f9f9f9;
+      border-bottom: 2px solid #ddd;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .tab-button {
+      background: none;
+      border: none;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.5rem 1rem;
+      color: #333;
+      border-bottom: 3px solid transparent;
+      transition: border-color 0.3s;
+    }
+
+    .tab-button:hover {
+      color: #FF6A00;
+    }
+
+    .tab-button.active {
+      border-color: #FF6A00;
+      color: #FF6A00;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Optional styling for katalog links */
+    #katalog ul {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 1rem;
+    }
+    #katalog ul li {
+      margin-bottom: 0.5rem;
+    }
+    #katalog ul li a {
+      color: #FF6A00;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    #katalog ul li a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -76,55 +132,60 @@
     <button class="cta-btn">Get Started</button>
   </section>
 
-<section class="services">
-    <div class="card">
-      <h3>GLOBAL COMMERCE” MMC “STANDARTPARK” şirkətinin  Azərbaycan ərazisində fəaliyyət göstərən eksklüziv distribütorudur. Biz sözügedən beynəlxalq  istehsalçının yeni standartlarla irəliləyən müasir məhsullarını təqdim edirik.    </h3>
-      <p></p>
+  <div class="tabs">
+    <button class="tab-button active" data-target="services">Services</button>
+    <button class="tab-button" data-target="katalog">Kataloq</button>
+  </div>
+<div id="services" class="tab-content active"> 
+  <section class="services">
+      <div class="card">
+        <h3>GLOBAL COMMERCE” MMC “STANDARTPARK” şirkətinin  Azərbaycan ərazisində fəaliyyət göstərən eksklüziv distribütorudur. Biz sözügedən beynəlxalq  istehsalçının yeni standartlarla irəliləyən müasir məhsullarını təqdim edirik.    </h3>
+        <p></p>
+      </div>
+      <div class="card">
+        <h3>“STANDARTPARK” 12 illik fəaliyyəti ərzində Azərbaycan, Ukrayna, Gürcüstan, Belarus, Qazaxıstan, Moldova və digər ölkələrdə alıcıların inam və rəğbətini qazanmışdır. Müəssisə göstərilən müddət ərzində dünya standartlarına uyğun yüksək təcrübəsini nümayiş etdirmişdir.</h3>
+        
+      </div>
+      <div class="card">
+        <h3>“STANDARTPARK” şirkətinin zavodları yüksək səviyyəli idarəetmə və Avropa standartlarına cavab verən məhsulları ilə fərqlənir. Eyni zamanda, “İSO-9001:2009” sertifikatı ilə sertifikatlaşdırılmışdır. <p>Bizim çeşidlərimiz çöl-yağış sularının axını sistemləri üçün istifadə olunan “Class A 15”-dən “Class F 900”-dək ağırlığa davamlı fibrobeton, polimerbeton və plastikdən ibarətdir. Bununla yanaşı, şirkətimiz dekorativ yaşıl otlar üçün nəzərdə tutulan  setka-barmaqlılar təklif edir (Газонная решётка).</p>
+  </h3>
+        
+      </div>
+      <div class="card">
+          <h3>“STANDARTPARK” Azərbaycanda  tikinti ərazilərində istifadə olunan bütün məhsullarının davamlılığına görə tam cavabdehlik daşıyır.
+  Hazırda adı çəkilən şirkət Ukrayna, Rusiya, Belarus, Qazaxıstan, Moldova və ABŞ-da öz məhsulları ilə parklar, nəqliyyat magistralları, körpülər, yükdaşıma terminalları, hava limanları, stadionlar, sənaye-tikinti əraziləri, yaşayış evləri və binalarını su təhlükəsindən qoruyur.</h3>
+          <p><br></p>
     </div>
     <div class="card">
-      <h3>“STANDARTPARK” 12 illik fəaliyyəti ərzində Azərbaycan, Ukrayna, Gürcüstan, Belarus, Qazaxıstan, Moldova və digər ölkələrdə alıcıların inam və rəğbətini qazanmışdır. Müəssisə göstərilən müddət ərzində dünya standartlarına uyğun yüksək təcrübəsini nümayiş etdirmişdir.</h3>
-      
+      <h3>Şirkətin məhsulları aşağıdakı ərazilərdə quraşdırılmışdır:
+  </h3>
+      <p>-  ARDNŞ-in yanacaq doldurma stansiyaları, Ukrayna;
+        
+  -         “Kreml” və “Qırmızı” meydança, Rusiya;
+        
+  -         “Şeremetov” və “Vnukovo” hava limanları, Rusiya;
+        
+  -         “Alma-Ata” hava limanı, Qazaxıstan;
+        
+  -         Paşa İnşaat tikinti obyektləri, Azərbaycan;
+        
+  -         Dənizkənarı parklar, Rusiya və Ukrayna;
+        
+  -         “Dinamo” stadionu, Ukrayna;
+        
+  -         “Arena Lvov” stadionu, Ukrayna;
+        
+  Tikinti ərazisini və ətrafını çöl-yağış sularından təmizlənməsi sistemi ilə əlaqədar “GLOBAL COMMERCE” sizə sərfəli əməkdaşlıq təklif edir. </p>
     </div>
     <div class="card">
-      <h3>“STANDARTPARK” şirkətinin zavodları yüksək səviyyəli idarəetmə və Avropa standartlarına cavab verən məhsulları ilə fərqlənir. Eyni zamanda, “İSO-9001:2009” sertifikatı ilə sertifikatlaşdırılmışdır. <p>Bizim çeşidlərimiz çöl-yağış sularının axını sistemləri üçün istifadə olunan “Class A 15”-dən “Class F 900”-dək ağırlığa davamlı fibrobeton, polimerbeton və plastikdən ibarətdir. Bununla yanaşı, şirkətimiz dekorativ yaşıl otlar üçün nəzərdə tutulan  setka-barmaqlılar təklif edir (Газонная решётка).</p>
-</h3>
-      
+      <h3>Kataloq</h3>
+      <ul>
+        <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" target="_blank" rel="noopener noreferrer">Online</a></li>
+        <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" download>Download</a></li>
+      </ul>
     </div>
-    <div class="card">
-        <h3>“STANDARTPARK” Azərbaycanda  tikinti ərazilərində istifadə olunan bütün məhsullarının davamlılığına görə tam cavabdehlik daşıyır.
-Hazırda adı çəkilən şirkət Ukrayna, Rusiya, Belarus, Qazaxıstan, Moldova və ABŞ-da öz məhsulları ilə parklar, nəqliyyat magistralları, körpülər, yükdaşıma terminalları, hava limanları, stadionlar, sənaye-tikinti əraziləri, yaşayış evləri və binalarını su təhlükəsindən qoruyur.</h3>
-        <p><br></p>
-  </div>
-  <div class="card">
-    <h3>Şirkətin məhsulları aşağıdakı ərazilərdə quraşdırılmışdır:
-</h3>
-    <p>-  ARDNŞ-in yanacaq doldurma stansiyaları, Ukrayna;
-      
--         “Kreml” və “Qırmızı” meydança, Rusiya;
-      
--         “Şeremetov” və “Vnukovo” hava limanları, Rusiya;
-      
--         “Alma-Ata” hava limanı, Qazaxıstan;
-      
--         Paşa İnşaat tikinti obyektləri, Azərbaycan;
-      
--         Dənizkənarı parklar, Rusiya və Ukrayna;
-      
--         “Dinamo” stadionu, Ukrayna;
-      
--         “Arena Lvov” stadionu, Ukrayna;
-      
-Tikinti ərazisini və ətrafını çöl-yağış sularından təmizlənməsi sistemi ilə əlaqədar “GLOBAL COMMERCE” sizə sərfəli əməkdaşlıq təklif edir. </p>
-  </div>
-  <div class="card">
-    <h3>Kataloq</h3>
-    <ul>
-      <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" target="_blank" rel="noopener noreferrer">Online</a></li>
-      <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" download>Download</a></li>
-    </ul>
-  </div>
-  </section>
-
+    </section>
+</div>
   <footer class="footer">
     📞 +99412 436-41-16 
     📞 +99455 402-31-21
@@ -132,5 +193,19 @@ Tikinti ərazisini və ətrafını çöl-yağış sularından təmizlənməsi si
     <p>© 2013-2025 Global Commerce • Built with care and modern design.</p>
   </footer>
 
+  <script>
+    const tabs = document.querySelectorAll('.tab-button');
+    const contents = document.querySelectorAll('.tab-content');
+  
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+  
+        contents.forEach(c => c.classList.remove('active'));
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+   });
+  </script>
 </body>
 </html>
