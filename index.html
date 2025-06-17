@@ -114,33 +114,29 @@
     #katalog ul li a:hover {
       text-decoration: underline;
     }
-    /* Google Translate Customization */
+    #fotoqalereya {
+      padding: 4rem 2rem;
+      background: #fff;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .gallery-grid img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
+    .gallery-grid img:hover {
+      transform: scale(1.05);
+    }
     #google_translate_element {
-      display: none;
-    }
-    .goog-te-combo {
-      width: 200px !important;
-      height: 40px !important;
-      font-size: 16px !important;
-      border-radius: 4px;
-    }
-    .goog-te-menu-frame {
-      top: 0px !important;
-      left: 0px !important;
-      border: none !important;
-      box-shadow: none !important;
-      background-color: #fff !important;
-    }
-    .goog-te-menu2 {
-      border: none !important;
-      box-shadow: none !important;
-    }
-    .goog-te-menu2-item {
-      padding: 10px !important;
-      font-size: 16px !important;
-    }
-    .goog-te-menu-value {
-      font-size: 16px !important;
+      display: block;
+      margin-top: 1rem;
     }
   </style>
 </head>
@@ -155,21 +151,22 @@
   <div class="tabs">
     <button class="tab-button active" data-target="services">Services</button>
     <button class="tab-button" data-target="katalog">Kataloq</button>
+    <button class="tab-button" data-target="fotoqalereya">Fotoqalereya</button>
   </div>
 
   <div id="services" class="tab-content active">
     <section class="services">
       <div class="card">
-        <h3>GLOBAL COMMERCE” MMC “STANDARTPARK” şirkətinin Azərbaycan ərazisində fəaliyyət göstərən eksklüziv distribütorudur. Biz sözügedən beynəlxalq istehsalçının yeni standartlarla irəliləyən müasir məhsullarını təqdim edirik.</h3>
+        <h3>GLOBAL COMMERCE” MMC “STANDARTPARK” şirkətinin Azərbaycan ərazisində fəaliyyət göstərən eksklüziv distribütorudur...</h3>
       </div>
       <div class="card">
-        <h3>“STANDARTPARK” 12 illik fəaliyyəti ərzində Azərbaycan, Ukrayna, Gürcüstan, Belarus, Qazaxıstan, Moldova və digər ölkələrdə alıcıların inam və rəğbətini qazanmışdır. Müəssisə göstərilən müddət ərzində dünya standartlarına uyğun yüksək təcrübəsini nümayiş etdirmişdir.</h3>
+        <h3>“STANDARTPARK” 12 illik fəaliyyəti ərzində Azərbaycan, Ukrayna, Gürcüstan...</h3>
       </div>
       <div class="card">
-        <h3>“STANDARTPARK” şirkətinin zavodları yüksək səviyyəli idarəetmə və Avropa standartlarına cavab verən məhsulları ilə fərqlənir. Eyni zamanda, “İSO-9001:2009” sertifikatı ilə sertifikatlaşdırılmışdır. Bizim çeşidlərimiz çöl-yağış sularının axını sistemləri üçün istifadə olunan “Class A 15”-dən “Class F 900”-dək ağırlığa davamlı fibrobeton, polimerbeton və plastikdən ibarətdir. Bununla yanaşı, şirkətimiz dekorativ yaşıl otlar üçün nəzərdə tutulan setka-barmaqlılar təklif edir (Газонная решётка).</h3>
+        <h3>“STANDARTPARK” şirkətinin zavodları yüksək səviyyəli idarəetmə...</h3>
       </div>
       <div class="card">
-        <h3>“STANDARTPARK” Azərbaycanda tikinti ərazilərində istifadə olunan bütün məhsullarının davamlılığına görə tam cavabdehlik daşıyır. Hazırda adı çəkilən şirkət Ukrayna, Rusiya, Belarus, Qazaxıstan, Moldova və ABŞ-da öz məhsulları ilə parklar, nəqliyyat magistralları, körpülər, yükdaşıma terminalları, hava limanları, stadionlar, sənaye-tikinti əraziləri, yaşayış evləri və binalarını su təhlükəsindən qoruyur.</h3>
+        <h3>“STANDARTPARK” Azərbaycanda tikinti ərazilərində istifadə olunan...</h3>
       </div>
       <div class="card">
         <h3>Şirkətin məhsulları aşağıdakı ərazilərdə quraşdırılmışdır:</h3>
@@ -192,8 +189,31 @@
     <div class="card">
       <h3>Kataloq</h3>
       <ul>
-         <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" download>Download</a></li>
+        <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" download>Download</a></li>
       </ul>
+    </div>
+  </div>
+
+  <div id="fotoqalereya" class="tab-content">
+    <div class="card">
+      <h3>Fotoqalereya</h3>
+      <div class="gallery-grid">
+        <img src="https://www.globcom-llc.com/resources/2012-08-30%2014.38.55.jpg" alt="">
+        <img src="https://www.globcom-llc.com/resources/Морпорт%20Питер%20Контейнерный%20терминал%202.jpg" alt="">
+        <img src="https://www.globcom-llc.com/resources/Пункт%20оплаты_М4%20Дон.JPG" alt="">
+        <img src="https://www.globcom-llc.com/resources/Socar%201.jpg" alt="">
+        <img src="https://www.globcom-llc.com/resources/Socar%202.JPG" alt="">
+        <img src="https://www.globcom-llc.com/resources/Lukoil.jpg" alt="">
+        <img src="https://www.globcom-llc.com/resources/IMG_0052.JPG" alt="">
+        <img src="https://www.globcom-llc.com/resources/IMG_0187.JPG" alt="">
+        <img src="https://www.globcom-llc.com/resources/IMG_20002.JPG" alt="">
+        <img src="https://www.globcom-llc.com/resources/5.JPG" alt="">
+        <img src="https://www.globcom-llc.com/resources/Умань_Софиевский%20парк.JPG" alt="">
+        <img src="https://www.globcom-llc.com/resources/IMG_0095.JPG" alt="">
+        <img src="https://www.globcom-llc.com/resources/Наши%20объекты%20002.jpg" alt="">
+        <img src="https://www.globcom-llc.com/resources/Гост.Экспресс%20001%20Киев.jpg" alt="">
+        <img src="https://www.globcom-llc.com/resources/Стадіон%20Дніпро.JPG" alt="">
+      </div>
     </div>
   </div>
 
@@ -207,12 +227,10 @@
 
   <!-- Smooth scroll + tab + translate -->
   <script>
-    // Smooth scroll to tab section
     document.querySelector('.cta-btn').addEventListener('click', () => {
       document.querySelector('.tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
-    // Tab switching
     const tabs = document.querySelectorAll('.tab-button');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => {
@@ -224,7 +242,6 @@
       });
     });
 
-    // Google Translate
     function googleTranslateElementInit() {
       new google.translate.TranslateElement({
         pageLanguage: 'az',
