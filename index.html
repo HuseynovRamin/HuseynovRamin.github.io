@@ -148,14 +148,17 @@
     /* Override: Vertical dropdown layout */
     .goog-te-menu2 {
       display: flex !important;
-      flex-direction: column !important;
-      max-height: 300px !important;
-      overflow-y: auto !important;
+      flex-wrap: wrap !important;
+      justify-content: flex-start !important;
+      max-width: 100% !important;
+      max-height: none !important;
+      overflow-y: visible !important;
     }
-
+    
     .goog-te-menu2-item div {
-      display: block !important;
-      padding: 10px !important;
+      display: inline-block !important;
+      min-width: max-content !important;
+      margin: 5px 10px !important;
       font-size: 14px !important;
       white-space: nowrap !important;
     }
@@ -204,6 +207,14 @@ Hazırda adı çəkilən şirkət Ukrayna, Rusiya, Belarus, Qazaxıstan, Moldova
           <li>“Arena Lvov” stadionu, Ukrayna;</li>
         </ul>
         <p>Tikinti ərazisini və ətrafını çöl-yağış sularından təmizlənməsi sistemi ilə əlaqədar “GLOBAL COMMERCE” sizə sərfəli əməkdaşlıq təklif edir.</p>
+      </div>
+      <div class="card">
+        <h3>Layihələrimizdən nümunələr:</h3>
+        <div class="gallery-grid">
+          <img src="https://www.globcom-llc.com/resources/0e3f5a755c045c719097efb32730bc3e.jpg?timestamp=1394008214521" alt="Project 1">
+          <img src="https://www.globcom-llc.com/resources/5019be10dc64d1bb50781ecac8ebc5d4.jpg?timestamp=1394008288420" alt="Project 2">
+          <img src="https://www.globcom-llc.com/resources/4599bf6e832bf5420235e4d2375045c0.jpg?timestamp=1394008362868" alt="Project 3">
+        </div>
       </div>
     </section>
   </div>
