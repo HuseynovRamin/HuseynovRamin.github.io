@@ -147,20 +147,26 @@
 
     /* Override: Vertical dropdown layout */
     .goog-te-menu2 {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      justify-content: flex-start !important;
-      max-width: 100% !important;
-      max-height: none !important;
-      overflow-y: visible !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    max-height: none !important;
+    width: auto !important;
+    min-width: 600px !important;
+    padding: 10px !important;
+    background: white !important;
+    z-index: 9999 !important;
+  }
+  
+    .goog-te-menu2-item {
+      display: inline-block !important;
+      margin: 5px 10px !important;
+      white-space: nowrap !important;
     }
     
-    .goog-te-menu2-item div {
-      display: inline-block !important;
-      min-width: max-content !important;
-      margin: 5px 10px !important;
+    .goog-te-menu2-item div, .goog-te-menu2-item span {
       font-size: 14px !important;
-      white-space: nowrap !important;
+      font-family: 'Poppins', sans-serif !important;
+      color: #333 !important;
     }
   </style>
 </head>
