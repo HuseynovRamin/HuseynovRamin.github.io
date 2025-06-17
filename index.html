@@ -192,7 +192,46 @@
     <div class="card">
       <h3>Kataloq</h3>
       <ul>
-        <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" target="_blank" rel="noopener noreferrer">Online</a></li>
-        <
-::contentReference[oaicite:12]{index=12}
- 
+         <li><a href="https://www.globcom-llc.com/resources/Kataloq%20Standartpark%20AZE%202014.pdf" download>Download</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <footer class="footer">
+    📞 +99412 436-41-16 
+    📞 +99455 402-31-21
+    📧 contact@globalcommerce.com
+    <p>© 2013-2025 Global Commerce • Built with care and modern design.</p>
+    <div id="google_translate_element"></div>
+  </footer>
+
+  <!-- Smooth scroll + tab + translate -->
+  <script>
+    // Smooth scroll to tab section
+    document.querySelector('.cta-btn').addEventListener('click', () => {
+      document.querySelector('.tabs').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab-button');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        contents.forEach(c => c.classList.remove('active'));
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+
+    // Google Translate
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'az',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+      }, 'google_translate_element');
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</body>
+</html>
