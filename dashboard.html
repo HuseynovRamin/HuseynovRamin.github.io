@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EduClubs — Мои клубы</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex bg-gray-100 min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white shadow-md h-screen p-5 space-y-6">
+    <h2 class="text-xl font-bold text-blue-600">EduClubs</h2>
+    <nav class="flex flex-col space-y-2">
+      <a href="dashboard.html" class="text-blue-600">Мои клубы</a>
+      <a href="club.html">Создать клуб</a>
+      <a href="#">Расписание</a>
+      <a href="#">Уведомления</a>
+      <a href="#">Профиль</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-8">
+    <h1 class="text-2xl font-bold mb-4">Ваши клубы</h1>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h3 class="font-semibold text-lg">Клуб английского</h3>
+        <p class="text-gray-500 text-sm">Подготовка к IELTS</p>
+        <span class="text-xs text-gray-400">24 участника</span>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h3 class="font-semibold text-lg">Клуб рисования</h3>
+        <p class="text-gray-500 text-sm">Учим акварель и диджитал</p>
+        <span class="text-xs text-gray-400">12 участников</span>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>
