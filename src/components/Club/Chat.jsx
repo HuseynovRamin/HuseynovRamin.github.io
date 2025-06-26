@@ -1,42 +1,17 @@
-import React, { useEffect, useState, useRef } from "react";
-import { db, auth } from "../../firebase";
-import {
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp,
-} from "firebase/firestore";
+import React, { useState } from "react";
+
+const mockMessages = [
+  { id: 1, displayName: "Анна", text: "Привет всем!" },
+  { id: 2, displayName: "Иван", text: "Готов к занятию." },
+];
 
 export default function Chat() {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(mockMessages);
   const [newMsg, setNewMsg] = useState("");
-  const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    const q = query(
-      collection(db, "clubs", "clubID", "messages"),
-      orderBy("createdAt")
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMessages(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const sendMessage = async () => {
+  const sendMessage = () => {
     if (newMsg.trim() === "") return;
-    await addDoc(collection(db, "clubs", "clubID", "messages"), {
-      text: newMsg,
-      uid: auth.currentUser.uid,
-      displayName: auth.currentUser.displayName,
-      createdAt: serverTimestamp(),
-    });
+    setMessages([...messages, { id: Date.now(), displayName: "Вы", text: newMsg }]);
     setNewMsg("");
   };
 
@@ -48,7 +23,6 @@ export default function Chat() {
             <b>{msg.displayName}: </b> {msg.text}
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
       <div className="flex gap-2">
         <input
