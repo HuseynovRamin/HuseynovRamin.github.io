@@ -1,99 +1,449 @@
-<script>
-  // ... all your current code before this is unchanged ...
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multiplayer Head Volleyball</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
 
-  // Ball class modifications
-  class Ball {
-    constructor() {
-      this.radius = 22;
-      this.reset();
-      this.spin = 0;
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(to top, #87CEEB 0%, #d9f7e9 60%, #6AC1A0 100%);
+      font-family: 'Orbitron', monospace;
+      user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    reset() {
-      this.x = canvas.width / 2;
-      this.y = 150;
-      this.dx = 0;
-      this.dy = 0;
-      this.spin = 0;
+    #scoreboard {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 40px;
+      color: #164C3F;
+      text-shadow: 0 0 10px #00FFB3;
+      background: rgba(255 255 255 / 0.2);
+      padding: 12px 0;
+      backdrop-filter: blur(8px);
+      border-radius: 10px;
+      pointer-events: none;
+      user-select: none;
+      font-weight: 700;
+      letter-spacing: 2px;
+      z-index: 10;
     }
 
-    launch() {
-      this.dx = 4.5 * (Math.random() > 0.5 ? 1 : -1); // slower
-      this.dy = -18; // jump higher
+    #gameCanvas {
+      border-radius: 20px;
+      box-shadow:
+        0 0 20px 5px rgba(30, 150, 100, 0.8),
+        inset 0 0 40px 5px rgba(255 255 255 / 0.15);
+      background: linear-gradient(135deg, #1E5A4B 0%, #3E8E7E 100%);
+      touch-action: none;
+      user-select: none;
+      display: block;
     }
 
-    update() {
-      this.x += this.dx;
-      this.y += this.dy;
-      this.dy += gravity;
+    #countdownOverlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(10, 10, 10, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 120px;
+      font-weight: 900;
+      color: #00FFB3;
+      text-shadow: 0 0 20px #00FFB3, 0 0 40px #00FFB3;
+      user-select: none;
+      z-index: 100;
+      font-family: 'Orbitron', monospace;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="scoreboard">Player 1: 0 | Player 2: 0</div>
+  <canvas id="gameCanvas" width="900" height="500"></canvas>
+  <div id="countdownOverlay">3</div>
 
-      this.spin *= 0.9;
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const countdownOverlay = document.getElementById('countdownOverlay');
 
-      if (this.y + this.radius > floorY) {
-        this.y = floorY - this.radius;
-        this.dy = -this.dy * 0.7;
-        this.spin *= 0.6;
-        if (Math.abs(this.dy) < 2) this.dy = 0;
+    // CONSTANTS
+    const gravity = 0.7;
+    const floorY = canvas.height - 50;
+    const netX = canvas.width / 2 - 5;
+    const netHeight = 120;
+    const netWidth = 10;
+
+    // Images - replace URLs if needed
+    const player1Head = new Image();
+    player1Head.src = 'https://i.ibb.co/G7xZs1W/player-head.png'; // Player 1 head
+    const player1Body = new Image();
+    player1Body.src = 'https://i.ibb.co/f0XHZ4G/player-body.png'; // Player 1 body
+
+    const player2Head = new Image();
+    player2Head.src = 'https://i.ibb.co/J2zLVPJ/ai-head.png'; // Player 2 head
+    const player2Body = new Image();
+    player2Body.src = 'https://i.ibb.co/m4v9d2m/ai-body.png'; // Player 2 body
+
+    const ballImg = new Image();
+    ballImg.src = 'https://i.ibb.co/VQ7djRF/volleyball.png'; // volleyball image
+
+    // PLAYER CLASS with your updated properties
+    class Player {
+      constructor(x, headImg, bodyImg, leftBound, rightBound) {
+        this.x = x;
+        this.y = floorY - 110; // top of feet
+        this.radius = 40; // for head collision
+        this.headImg = headImg;
+        this.bodyImg = bodyImg;
+        this.dy = 0;
+        this.jumping = false;
+
+        this.speedX = 0;
+        this.acceleration = 0.6;
+        this.maxSpeed = 10; // faster
+        this.friction = 0.85;
+
+        this.leftBound = leftBound;
+        this.rightBound = rightBound;
+
+        this.headBounce = 0;
       }
 
-      if (this.x - this.radius < 0) {
-        this.x = this.radius;
-        this.dx = -this.dx;
-        this.spin = -this.spin;
+      moveLeft() {
+        this.speedX -= this.acceleration;
+        if (this.speedX < -this.maxSpeed) this.speedX = -this.maxSpeed;
       }
-      if (this.x + this.radius > canvas.width) {
-        this.x = canvas.width - this.radius;
-        this.dx = -this.dx;
-        this.spin = -this.spin;
+      moveRight() {
+        this.speedX += this.acceleration;
+        if (this.speedX > this.maxSpeed) this.speedX = this.maxSpeed;
+      }
+      jump() {
+        if (!this.jumping) {
+          this.dy = -15;
+          this.jumping = true;
+        }
       }
 
-      if (
-        this.x + this.radius > netX &&
-        this.x - this.radius < netX + netWidth &&
-        this.y + this.radius > floorY - netHeight
-      ) {
-        if (this.x < netX + netWidth / 2) this.x = netX - this.radius;
-        else this.x = netX + netWidth + this.radius;
-        this.dx = -this.dx;
-        this.spin = -this.spin;
+      update() {
+        this.speedX *= this.friction;
+        if (Math.abs(this.speedX) < 0.1) this.speedX = 0;
+
+        this.x += this.speedX;
+        if (this.x - this.radius < this.leftBound) {
+          this.x = this.leftBound + this.radius;
+          this.speedX = 0;
+        }
+        if (this.x + this.radius > this.rightBound) {
+          this.x = this.rightBound - this.radius;
+          this.speedX = 0;
+        }
+
+        this.dy += gravity;
+        this.y += this.dy;
+
+        if (this.y > floorY - this.radius) {
+          this.y = floorY - this.radius;
+          this.dy = 0;
+          this.jumping = false;
+        }
+
+        this.headBounce *= 0.8;
+        if (this.headBounce < 0.01) this.headBounce = 0;
+      }
+
+      draw() {
+        const bounceY = this.y - this.headBounce;
+
+        // Draw body shadow
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,0.3)";
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 8;
+        ctx.drawImage(this.bodyImg, this.x - 40, bounceY, 80, 80);
+        ctx.restore();
+
+        // Draw head
+        ctx.drawImage(this.headImg, this.x - this.radius, bounceY - this.radius*1.3, this.radius*2, this.radius*2);
+      }
+
+      hit() {
+        this.headBounce = 15;
       }
     }
 
-    draw() {
-      ctx.save();
-      ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
-      ctx.shadowBlur = 18;
-      ctx.translate(this.x, this.y);
-      ctx.rotate(this.spin + performance.now() / 400);
-      ctx.drawImage(ballImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
-      ctx.restore();
+    // BALL CLASS with your updated properties
+    class Ball {
+      constructor() {
+        this.radius = 22;
+        this.reset();
+        this.spin = 0;
+      }
+
+      reset() {
+        this.x = canvas.width / 2;
+        this.y = 150;
+        this.dx = 0;
+        this.dy = 0;
+        this.spin = 0;
+      }
+
+      launch() {
+        this.dx = 4.5 * (Math.random() > 0.5 ? 1 : -1); // slower
+        this.dy = -18; // jump higher
+      }
+
+      update() {
+        this.x += this.dx;
+        this.y += this.dy;
+        this.dy += gravity;
+
+        this.spin *= 0.9;
+
+        if (this.y + this.radius > floorY) {
+          this.y = floorY - this.radius;
+          this.dy = -this.dy * 0.7;
+          this.spin *= 0.6;
+          if (Math.abs(this.dy) < 2) this.dy = 0;
+        }
+
+        if (this.x - this.radius < 0) {
+          this.x = this.radius;
+          this.dx = -this.dx;
+          this.spin = -this.spin;
+        }
+        if (this.x + this.radius > canvas.width) {
+          this.x = canvas.width - this.radius;
+          this.dx = -this.dx;
+          this.spin = -this.spin;
+        }
+
+        if (
+          this.x + this.radius > netX &&
+          this.x - this.radius < netX + netWidth &&
+          this.y + this.radius > floorY - netHeight
+        ) {
+          if (this.x < netX + netWidth / 2) this.x = netX - this.radius;
+          else this.x = netX + netWidth + this.radius;
+          this.dx = -this.dx;
+          this.spin = -this.spin;
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
+        ctx.shadowBlur = 18;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.spin + performance.now() / 400);
+        ctx.drawImage(ballImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+        ctx.restore();
+      }
     }
-  }
 
-  // Player class modifications
-  class Player {
-    constructor(x, headImg, bodyImg, leftBound, rightBound) {
-      this.x = x;
-      this.y = floorY - 110;
-      this.radius = 40;
-      this.headImg = headImg;
-      this.bodyImg = bodyImg;
-      this.dy = 0;
-      this.jumping = false;
+    // DRAW NET with sway effect
+    function drawNet(frame) {
+      const sway = Math.sin(frame / 20) * 2;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.fillRect(netX + sway, floorY - netHeight, netWidth, netHeight);
 
-      this.speedX = 0;
-      this.acceleration = 0.6;
-      this.maxSpeed = 10; // faster
-      this.friction = 0.85;
-
-      this.leftBound = leftBound;
-      this.rightBound = rightBound;
-
-      this.headBounce = 0;
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+      ctx.lineWidth = 1;
+      for (let y = floorY - netHeight; y <= floorY; y += 15) {
+        ctx.beginPath();
+        ctx.moveTo(netX + sway, y);
+        ctx.lineTo(netX + netWidth + sway, y);
+        ctx.stroke();
+      }
     }
 
-    // rest of Player class remains unchanged...
-  }
+    // Draw simple grass ground with waving blades
+    function drawGround() {
+      const grassHeight = 20;
+      ctx.fillStyle = '#3A5D32';
+      ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
 
-  // everything else stays exactly the same...
-</script>
+      ctx.strokeStyle = '#4A7A3D';
+      ctx.lineWidth = 2;
+      for (let x = 0; x < canvas.width; x += 12) {
+        ctx.beginPath();
+        const bladeHeight = 15 + Math.sin(x / 7 + performance.now() / 300) * 5;
+        ctx.moveTo(x, floorY + grassHeight);
+        ctx.lineTo(x, floorY + grassHeight - bladeHeight);
+        ctx.stroke();
+      }
+    }
+
+    // Collision check (circle to circle)
+    function checkCollision(player, ball) {
+      const dx = ball.x - player.x;
+      const dy = ball.y - player.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist < ball.radius + player.radius * 0.95) {
+        const dir = dx < 0 ? -1 : 1;
+        ball.dx = dir * 7 + player.speedX * 0.4;
+        ball.dy = -14;
+        ball.spin = dir * 0.3;
+        player.hit();
+      }
+    }
+
+    // INITIALIZE players and ball
+    const player1 = new Player(150, player1Head, player1Body, 0, netX - 5);
+    const player2 = new Player(canvas.width - 150, player2Head, player2Body, netX + netWidth + 5, canvas.width);
+    const ball = new Ball();
+
+    let player1Score = 0;
+    let player2Score = 0;
+
+    // Keyboard input
+    const keys = {};
+    window.addEventListener('keydown', e => {
+      keys[e.code] = true;
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') e.preventDefault();
+    });
+    window.addEventListener('keyup', e => {
+      keys[e.code] = false;
+    });
+
+    // Update scoreboard UI
+    function updateScore() {
+      const scoreboard = document.getElementById('scoreboard');
+      scoreboard.textContent = `Player 1: ${player1Score} | Player 2: ${player2Score}`;
+      scoreboard.style.animation = 'pulse 0.8s ease forwards';
+      setTimeout(() => {
+        scoreboard.style.animation = '';
+      }, 800);
+    }
+
+    // COUNTDOWN logic
+    let countdownNumber = 3;
+    let countdownActive = true;
+    countdownOverlay.textContent = countdownNumber;
+
+    function countdown() {
+      if(countdownNumber > 1){
+        countdownNumber--;
+        countdownOverlay.textContent = countdownNumber;
+        setTimeout(countdown, 1000);
+      } else {
+        countdownOverlay.textContent = 'Go!';
+        setTimeout(() => {
+          countdownOverlay.style.display = 'none';
+          countdownActive = false;
+          ball.launch();
+        }, 1000);
+      }
+    }
+    countdown();
+
+    // GAME LOOP
+    function gameLoop(time=0) {
+      if(!countdownActive) {
+        // Player 1 controls: arrows
+        if(keys['ArrowLeft']) player1.moveLeft();
+        if(keys['ArrowRight']) player1.moveRight();
+        if(keys['ArrowUp']) player1.jump();
+
+        // Player 2 controls: WASD
+        if(keys['KeyA']) player2.moveLeft();
+        if(keys['KeyD']) player2.moveRight();
+        if(keys['KeyW']) player2.jump();
+
+        player1.update();
+        player2.update();
+        ball.update();
+
+        checkCollision(player1, ball);
+        checkCollision(player2, ball);
+
+        // Scoring:
+        if(ball.y + ball.radius >= floorY){
+          // Determine which side ball landed on
+          if(ball.x < netX){
+            // Ball landed on Player 1 side => Player 2 scores
+            player2Score++;
+            updateScore();
+            resetRound();
+          } else if(ball.x > netX + netWidth){
+            // Ball landed on Player 2 side => Player 1 scores
+            player1Score++;
+            updateScore();
+            resetRound();
+          }
+        }
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawGround();
+      drawNet(time);
+
+      player1.draw();
+      player2.draw();
+      ball.draw();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Reset round after score
+    function resetRound(){
+      countdownActive = true;
+      countdownNumber = 3;
+      countdownOverlay.style.display = 'flex';
+      countdownOverlay.textContent = countdownNumber;
+      ball.reset();
+      player1.x = 150;
+      player1.y = floorY - player1.radius;
+      player1.speedX = 0;
+      player1.dy = 0;
+      player1.jumping = false;
+
+      player2.x = canvas.width - 150;
+      player2.y = floorY - player2.radius;
+      player2.speedX = 0;
+      player2.dy = 0;
+      player2.jumping = false;
+
+      countdown();
+    }
+
+    // Scoreboard animation keyframes
+    const styleSheet = document.createElement('style');
+    styleSheet.type = 'text/css';
+    styleSheet.innerText = `
+      @keyframes pulse {
+        0%, 100% { text-shadow: 0 0 10px #00FFB3; }
+        50% { text-shadow: 0 0 25px #00FFD6; }
+      }
+    `;
+    document.head.appendChild(styleSheet);
+
+    // Wait for all images loaded before start
+    let loadedImages = 0;
+    [player1Head, player1Body, player2Head, player2Body, ballImg].forEach(img => {
+      img.onload = () => {
+        loadedImages++;
+        if(loadedImages === 5) {
+          updateScore();
+          requestAnimationFrame(gameLoop);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
