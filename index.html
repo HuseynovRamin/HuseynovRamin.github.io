@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Real Head Volleyball Game</title>
+  <title>Multiplayer Head Volleyball</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
 
-    /* PAGE AND BACKGROUND */
     body {
       margin: 0;
       overflow: hidden;
@@ -18,8 +17,8 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      -webkit-tap-highlight-color: transparent;
       position: relative;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #scoreboard {
@@ -52,7 +51,6 @@
       display: block;
     }
 
-    /* Countdown overlay */
     #countdownOverlay {
       position: absolute;
       top: 0; left: 0;
@@ -73,7 +71,7 @@
   </style>
 </head>
 <body>
-  <div id="scoreboard">Player: 0 | AI: 0</div>
+  <div id="scoreboard">Player 1: 0 | Player 2: 0</div>
   <canvas id="gameCanvas" width="900" height="500"></canvas>
   <div id="countdownOverlay">3</div>
 
@@ -83,30 +81,34 @@
     const countdownOverlay = document.getElementById('countdownOverlay');
 
     // CONSTANTS
-    const gravity = 0.65;
+    const gravity = 0.7;
     const floorY = canvas.height - 50;
     const netX = canvas.width / 2 - 5;
     const netHeight = 120;
     const netWidth = 10;
 
-    // Load images for heads (replace URLs with your own!)
-    const playerHeadImg = new Image();
-    playerHeadImg.src = 'https://i.ibb.co/G7xZs1W/player-head.png'; // example image, replace
+    // Images - replace with your own URLs if needed
+    const player1Head = new Image();
+    player1Head.src = 'https://i.ibb.co/G7xZs1W/player-head.png'; // Player 1 head
+    const player1Body = new Image();
+    player1Body.src = 'https://i.ibb.co/f0XHZ4G/player-body.png'; // Player 1 body
 
-    const aiHeadImg = new Image();
-    aiHeadImg.src = 'https://i.ibb.co/J2zLVPJ/ai-head.png'; // example image, replace
+    const player2Head = new Image();
+    player2Head.src = 'https://i.ibb.co/J2zLVPJ/ai-head.png'; // Player 2 head
+    const player2Body = new Image();
+    player2Body.src = 'https://i.ibb.co/m4v9d2m/ai-body.png'; // Player 2 body
 
-    // BALL IMAGE (optional, else draw circle)
     const ballImg = new Image();
-    ballImg.src = 'https://i.ibb.co/VQ7djRF/volleyball.png'; // example volleyball image, replace
+    ballImg.src = 'https://i.ibb.co/VQ7djRF/volleyball.png'; // volleyball image
 
-    // Player and AI class with images
+    // PLAYER CLASS
     class Player {
-      constructor(x, img, leftBound, rightBound) {
+      constructor(x, headImg, bodyImg, leftBound, rightBound) {
         this.x = x;
-        this.y = floorY - 80;
-        this.radius = 40; // head image size radius for hitbox
-        this.img = img;
+        this.y = floorY - 110; // top of feet
+        this.radius = 40; // for head collision
+        this.headImg = headImg;
+        this.bodyImg = bodyImg;
         this.dy = 0;
         this.jumping = false;
 
@@ -118,7 +120,6 @@
         this.leftBound = leftBound;
         this.rightBound = rightBound;
 
-        // Bounce animation on hit
         this.headBounce = 0;
       }
 
@@ -132,7 +133,7 @@
       }
       jump() {
         if (!this.jumping) {
-          this.dy = -14;
+          this.dy = -15;
           this.jumping = true;
         }
       }
@@ -160,7 +161,6 @@
           this.jumping = false;
         }
 
-        // Bounce decay
         this.headBounce *= 0.8;
         if (this.headBounce < 0.01) this.headBounce = 0;
       }
@@ -168,20 +168,18 @@
       draw() {
         const bounceY = this.y - this.headBounce;
 
-        // Draw shadow
+        // Draw body shadow
         ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.4)";
+        ctx.shadowColor = "rgba(0,0,0,0.3)";
         ctx.shadowBlur = 15;
         ctx.shadowOffsetX = 5;
         ctx.shadowOffsetY = 8;
-
-        // Draw head image centered at x, bounceY
-        ctx.drawImage(this.img, this.x - this.radius, bounceY - this.radius, this.radius*2, this.radius*2);
-
+        // Draw body
+        ctx.drawImage(this.bodyImg, this.x - 40, bounceY, 80, 80);
         ctx.restore();
 
-        // Simple mouth bounce overlay (optional)
-        // You can add more facial animation if you want here
+        // Draw head
+        ctx.drawImage(this.headImg, this.x - this.radius, bounceY - this.radius*1.3, this.radius*2, this.radius*2);
       }
 
       hit() {
@@ -189,6 +187,7 @@
       }
     }
 
+    // BALL CLASS
     class Ball {
       constructor() {
         this.radius = 22;
@@ -199,15 +198,14 @@
       reset() {
         this.x = canvas.width / 2;
         this.y = 150;
-        this.dx = 0; // start stationary during countdown
+        this.dx = 0;
         this.dy = 0;
         this.spin = 0;
       }
 
       launch() {
-        // Random launch direction
         this.dx = 6 * (Math.random() > 0.5 ? 1 : -1);
-        this.dy = -10;
+        this.dy = -12;
       }
 
       update() {
@@ -225,7 +223,7 @@
           if (Math.abs(this.dy) < 2) this.dy = 0;
         }
 
-        // Walls bounce with spin effect
+        // Walls bounce
         if (this.x - this.radius < 0) {
           this.x = this.radius;
           this.dx = -this.dx;
@@ -251,15 +249,12 @@
       }
 
       draw() {
-        // Draw volleyball image with shadow & spin rotation
         ctx.save();
-
         ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
         ctx.shadowBlur = 18;
         ctx.translate(this.x, this.y);
         ctx.rotate(this.spin + performance.now() / 400);
         ctx.drawImage(ballImg, -this.radius, -this.radius, this.radius*2, this.radius*2);
-
         ctx.restore();
       }
     }
@@ -270,7 +265,6 @@
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       ctx.fillRect(netX + sway, floorY - netHeight, netWidth, netHeight);
 
-      // Net stripes
       ctx.strokeStyle = 'rgba(0,0,0,0.1)';
       ctx.lineWidth = 1;
       for (let y = floorY - netHeight; y <= floorY; y += 15) {
@@ -298,56 +292,46 @@
       }
     }
 
-    // Collision check (circle to circle approx)
+    // Collision check (circle to circle)
     function checkCollision(player, ball) {
       const dx = ball.x - player.x;
       const dy = ball.y - player.y;
       const dist = Math.sqrt(dx*dx + dy*dy);
       if(dist < ball.radius + player.radius * 0.95) {
         const dir = dx < 0 ? -1 : 1;
-        ball.dx = dir * 7 + player.speedX * 0.3;
-        ball.dy = -12;
+        ball.dx = dir * 7 + player.speedX * 0.4;
+        ball.dy = -14;
         ball.spin = dir * 0.3;
         player.hit();
       }
     }
 
-    // INIT players and ball
-    const player = new Player(150, playerHeadImg, 0, netX - 5);
-    const ai = new Player(canvas.width - 150, aiHeadImg, netX + netWidth + 5, canvas.width);
+    // INITIALIZE players and ball
+    const player1 = new Player(150, player1Head, player1Body, 0, netX - 5);
+    const player2 = new Player(canvas.width - 150, player2Head, player2Body, netX + netWidth + 5, canvas.width);
     const ball = new Ball();
 
-    let playerScore = 0;
-    let aiScore = 0;
+    let player1Score = 0;
+    let player2Score = 0;
 
-    // Input handling
+    // Keyboard input
     const keys = {};
     window.addEventListener('keydown', e => {
       keys[e.code] = true;
-      if(e.code === 'ArrowUp') e.preventDefault();
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') e.preventDefault();
     });
     window.addEventListener('keyup', e => {
       keys[e.code] = false;
     });
 
+    // Update scoreboard UI
     function updateScore() {
       const scoreboard = document.getElementById('scoreboard');
-      scoreboard.textContent = `Player: ${playerScore} | AI: ${aiScore}`;
+      scoreboard.textContent = `Player 1: ${player1Score} | Player 2: ${player2Score}`;
       scoreboard.style.animation = 'pulse 0.8s ease forwards';
       setTimeout(() => {
         scoreboard.style.animation = '';
       }, 800);
-    }
-
-    // AI Logic: smooth tracking & jump
-    function aiLogic() {
-      if(ball.x > ai.x) ai.moveRight();
-      else ai.moveLeft();
-
-      const distToBall = Math.abs(ai.x - ball.x);
-      if(distToBall < 120 && !ai.jumping && ball.dy > 0 && ball.y > ai.y - 60){
-        ai.jump();
-      }
     }
 
     // COUNTDOWN logic
@@ -365,7 +349,7 @@
         setTimeout(() => {
           countdownOverlay.style.display = 'none';
           countdownActive = false;
-          ball.launch(); // launch ball after countdown
+          ball.launch();
         }, 1000);
       }
     }
@@ -374,36 +358,37 @@
     // GAME LOOP
     function gameLoop(time=0) {
       if(!countdownActive) {
-        if(keys['ArrowLeft']) player.moveLeft();
-        if(keys['ArrowRight']) player.moveRight();
-        if(keys['ArrowUp']) player.jump();
+        // Player 1 controls: arrows
+        if(keys['ArrowLeft']) player1.moveLeft();
+        if(keys['ArrowRight']) player1.moveRight();
+        if(keys['ArrowUp']) player1.jump();
 
-        player.update();
-        aiLogic();
-        ai.update();
+        // Player 2 controls: WASD
+        if(keys['KeyA']) player2.moveLeft();
+        if(keys['KeyD']) player2.moveRight();
+        if(keys['KeyW']) player2.jump();
+
+        player1.update();
+        player2.update();
         ball.update();
 
-        checkCollision(player, ball);
-        checkCollision(ai, ball);
+        checkCollision(player1, ball);
+        checkCollision(player2, ball);
 
-        if(ball.x - ball.radius <= 0){
-          aiScore++;
-          updateScore();
-          ball.reset();
-          countdownActive = true;
-          countdownNumber = 3;
-          countdownOverlay.style.display = 'flex';
-          countdownOverlay.textContent = countdownNumber;
-          countdown();
-        } else if(ball.x + ball.radius >= canvas.width){
-          playerScore++;
-          updateScore();
-          ball.reset();
-          countdownActive = true;
-          countdownNumber = 3;
-          countdownOverlay.style.display = 'flex';
-          countdownOverlay.textContent = countdownNumber;
-          countdown();
+        // Scoring:
+        if(ball.y + ball.radius >= floorY){
+          // Determine which side ball landed on
+          if(ball.x < netX){
+            // Ball landed on Player 1 side => Player 2 scores
+            player2Score++;
+            updateScore();
+            resetRound();
+          } else if(ball.x > netX + netWidth){
+            // Ball landed on Player 2 side => Player 1 scores
+            player1Score++;
+            updateScore();
+            resetRound();
+          }
         }
       }
 
@@ -412,29 +397,52 @@
       drawGround();
       drawNet(time);
 
-      player.draw();
-      ai.draw();
+      player1.draw();
+      player2.draw();
       ball.draw();
 
       requestAnimationFrame(gameLoop);
     }
 
-    // Score animation keyframes
+    // Reset round after score
+    function resetRound(){
+      countdownActive = true;
+      countdownNumber = 3;
+      countdownOverlay.style.display = 'flex';
+      countdownOverlay.textContent = countdownNumber;
+      ball.reset();
+      player1.x = 150;
+      player1.y = floorY - player1.radius;
+      player1.speedX = 0;
+      player1.dy = 0;
+      player1.jumping = false;
+
+      player2.x = canvas.width - 150;
+      player2.y = floorY - player2.radius;
+      player2.speedX = 0;
+      player2.dy = 0;
+      player2.jumping = false;
+
+      countdown();
+    }
+
+    // Scoreboard animation keyframes
     const styleSheet = document.createElement('style');
     styleSheet.type = 'text/css';
     styleSheet.innerText = `
-    @keyframes pulse {
-      0%, 100% { text-shadow: 0 0 10px #00FFB3; }
-      50% { text-shadow: 0 0 25px #00FFD6; }
-    }`;
+      @keyframes pulse {
+        0%, 100% { text-shadow: 0 0 10px #00FFB3; }
+        50% { text-shadow: 0 0 25px #00FFD6; }
+      }
+    `;
     document.head.appendChild(styleSheet);
 
-    // Wait for images to load before starting game loop
+    // Wait for all images loaded before start
     let loadedImages = 0;
-    [playerHeadImg, aiHeadImg, ballImg].forEach(img => {
+    [player1Head, player1Body, player2Head, player2Body, ballImg].forEach(img => {
       img.onload = () => {
         loadedImages++;
-        if(loadedImages === 3) {
+        if(loadedImages === 5) {
           updateScore();
           requestAnimationFrame(gameLoop);
         }
