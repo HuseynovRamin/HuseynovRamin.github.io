@@ -1,62 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Head Soccer Game</title>
-  <style>
-    body {
-      margin: 0;
-      background: linear-gradient(to bottom, #87CEEB, #4B8B3B);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: white;
-      user-select: none;
-    }
-    #gameCanvas {
-      background: #005500;
-      border-radius: 20px;
-      box-shadow: 0 0 30px 5px #32CD32;
-    }
-    #scoreboard {
-      position: absolute;
-      top: 20px;
-      font-size: 24px;
-      font-weight: bold;
-      width: 100%;
-      text-align: center;
-      text-shadow: 2px 2px 4px black;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Head Volleyball Game</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+  body {
+    margin: 0;
+    background: linear-gradient(to top, #87CEEB 0%, #d9f7e9 60%, #6AC1A0 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Bangers', cursive;
+    user-select: none;
+    color: #204E4A;
+  }
+
+  #gameCanvas {
+    background: linear-gradient(135deg, #3E8E7E, #1E5A4B);
+    border-radius: 20px;
+    box-shadow:
+      0 0 15px 5px rgba(62, 142, 126, 0.8),
+      inset 0 0 40px 5px rgba(255, 255, 255, 0.2);
+    transition: box-shadow 0.3s ease;
+  }
+
+  #gameCanvas:hover {
+    box-shadow:
+      0 0 30px 8px rgba(62, 142, 126, 1),
+      inset 0 0 50px 8px rgba(255, 255, 255, 0.3);
+  }
+
+  #scoreboard {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 36px;
+    font-weight: normal;
+    text-shadow:
+      2px 2px 4px rgba(255, 255, 255, 0.6),
+      0 0 8px #3E8E7E;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  /* Score pulse animation */
+  @keyframes pulse {
+    0%, 100% { text-shadow: 2px 2px 4px #3E8E7E; }
+    50% { text-shadow: 2px 2px 12px #72c3b9; }
+  }
+
+  .score-update {
+    animation: pulse 0.8s ease forwards;
+  }
+</style>
 </head>
 <body>
   <div id="scoreboard">Player: 0 | AI: 0</div>
-  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <canvas id="gameCanvas" width="800" height="450"></canvas>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Game state
-    const player = { x: 100, y: 300, width: 50, height: 50, dy: 0, jumping: false };
-    const ai = { x: 650, y: 300, width: 50, height: 50, dy: 0, jumping: false };
-    const ball = { x: 400, y: 200, radius: 20, dx: 5, dy: 3 };
+    // Constants
+    const gravity = 0.6;
+    const floorY = canvas.height - 50;
+    const netX = canvas.width / 2 - 5;
 
+    // Players
+    const player = { x: 150, y: floorY - 80, width: 60, height: 80, dy: 0, jumping: false, color: '#FF6347' };
+    const ai = { x: 600, y: floorY - 80, width: 60, height: 80, dy: 0, jumping: false, color: '#4682B4' };
+
+    // Ball
+    const ball = {
+      x: canvas.width / 2,
+      y: 200,
+      radius: 20,
+      dx: 6 * (Math.random() > 0.5 ? 1 : -1),
+      dy: -8
+    };
+
+    // Scores
     let playerScore = 0;
     let aiScore = 0;
-
-    // Gravity
-    const gravity = 0.5;
 
     // Controls
     const keys = {};
     window.addEventListener('keydown', e => keys[e.code] = true);
     window.addEventListener('keyup', e => keys[e.code] = false);
 
+    // Drawing Helpers
     function drawRect(x, y, w, h, color) {
       ctx.fillStyle = color;
       ctx.fillRect(x, y, w, h);
@@ -69,14 +108,166 @@
       ctx.fill();
     }
 
-    function resetBall() {
-      ball.x = canvas.width / 2;
-      ball.y = canvas.height / 2;
-      ball.dx = (Math.random() > 0.5 ? 5 : -5);
-      ball.dy = 3;
+    function drawNet() {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(netX, floorY - 120, 10, 120);
     }
 
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = 200;
+      ball.dx = 6 * (Math.random() > 0.5 ? 1 : -1);
+      ball.dy = -8;
+    }
+
+    // Game update logic
     function update() {
-      // Player movement
+      // Player controls
       if (keys['ArrowLeft']) player.x -= 5;
       if (keys['ArrowRight']) player.x += 5;
+      if (keys['ArrowUp'] && !player.jumping) {
+        player.dy = -12;
+        player.jumping = true;
+      }
+
+      // Gravity & floor collision for player
+      player.dy += gravity;
+      player.y += player.dy;
+      if (player.y + player.height > floorY) {
+        player.y = floorY - player.height;
+        player.dy = 0;
+        player.jumping = false;
+      }
+      // Keep player inside left half
+      player.x = Math.min(player.x, netX - player.width - 5);
+      player.x = Math.max(player.x, 0);
+
+      // AI basic movement: move toward ball
+      if (ball.x > ai.x + ai.width / 2) ai.x += 3;
+      else ai.x -= 3;
+
+      // Gravity & floor collision for AI
+      ai.dy += gravity;
+      ai.y += ai.dy;
+      if (ai.y + ai.height > floorY) {
+        ai.y = floorY - ai.height;
+        ai.dy = 0;
+        ai.jumping = false;
+      }
+      // Keep AI inside right half
+      ai.x = Math.max(ai.x, netX + 10);
+      ai.x = Math.min(ai.x, canvas.width - ai.width);
+
+      // AI jump to hit ball if close
+      const distToBall = Math.abs(ai.x + ai.width / 2 - ball.x);
+      if (distToBall < 100 && !ai.jumping && ball.dy > 0 && ball.y > ai.y - 50) {
+        ai.dy = -10;
+        ai.jumping = true;
+      }
+
+      // Ball physics
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+      ball.dy += gravity;
+
+      // Ball floor collision
+      if (ball.y + ball.radius > floorY) {
+        ball.y = floorY - ball.radius;
+        ball.dy = -ball.dy * 0.7;
+        if (Math.abs(ball.dy) < 2) ball.dy = 0;
+      }
+
+      // Ball left/right walls bounce
+      if (ball.x - ball.radius < 0) {
+        ball.x = ball.radius;
+        ball.dx = -ball.dx;
+      }
+      if (ball.x + ball.radius > canvas.width) {
+        ball.x = canvas.width - ball.radius;
+        ball.dx = -ball.dx;
+      }
+
+      // Ball hits net
+      if (
+        ball.x + ball.radius > netX &&
+        ball.x - ball.radius < netX + 10 &&
+        ball.y + ball.radius > floorY - 120
+      ) {
+        if (ball.x < netX + 5) ball.x = netX - ball.radius;
+        else ball.x = netX + 10 + ball.radius;
+        ball.dx = -ball.dx;
+      }
+
+      // Collision with players
+      checkCollision(player);
+      checkCollision(ai);
+
+      // Score points if ball hits left or right floor edges
+      if (ball.x - ball.radius <= 0) {
+        aiScore++;
+        updateScore();
+        resetBall();
+      } else if (ball.x + ball.radius >= canvas.width) {
+        playerScore++;
+        updateScore();
+        resetBall();
+      }
+    }
+
+    function checkCollision(playerObj) {
+      // Closest point on player rectangle to ball center
+      const closestX = Math.max(playerObj.x, Math.min(ball.x, playerObj.x + playerObj.width));
+      const closestY = Math.max(playerObj.y, Math.min(ball.y, playerObj.y + playerObj.height));
+
+      const distX = ball.x - closestX;
+      const distY = ball.y - closestY;
+
+      if ((distX * distX + distY * distY) < ball.radius * ball.radius) {
+        // Bounce ball away from player
+        ball.dx = (ball.x < playerObj.x + playerObj.width / 2) ? -6 : 6;
+        ball.dy = -10;
+      }
+    }
+
+    function updateScore() {
+      const scoreboard = document.getElementById('scoreboard');
+      scoreboard.textContent = `Player: ${playerScore} | AI: ${aiScore}`;
+
+      // Animate scoreboard on score change
+      scoreboard.classList.add('score-update');
+      setTimeout(() => {
+        scoreboard.classList.remove('score-update');
+      }, 800);
+    }
+
+    // Draw everything
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Floor
+      drawRect(0, floorY, canvas.width, canvas.height - floorY, '#3A5D32');
+
+      // Net
+      drawNet();
+
+      // Players
+      drawRect(player.x, player.y, player.width, player.height, player.color);
+      drawRect(ai.x, ai.y, ai.width, ai.height, ai.color);
+
+      // Ball
+      drawCircle(ball.x, ball.y, ball.radius, '#FFD700');
+    }
+
+    // Game loop
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start the game
+    updateScore();
+    gameLoop();
+  </script>
+</body>
+</html>
