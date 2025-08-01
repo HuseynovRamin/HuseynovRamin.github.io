@@ -87,36 +87,32 @@
     const netHeight = 120;
     const netWidth = 10;
 
-    // Images - new provided images
+    // Images (heads only)
     const player1Head = new Image();
+    player1Head.crossOrigin = "anonymous";
     player1Head.src = 'https://static.wikia.nocookie.net/headsoccer/images/c/c7/Character01.png/revision/latest/smart/width/250/height/250?cb=20150720195707';
 
-    const player1Body = new Image();
-    player1Body.src = 'https://static.wikia.nocookie.net/headsoccer/images/c/c7/Character01.png/revision/latest/smart/width/250/height/250?cb=20150720195707';
-
     const player2Head = new Image();
+    player2Head.crossOrigin = "anonymous";
     player2Head.src = 'https://static.wikia.nocookie.net/headsoccer/images/5/59/Character08.png/revision/latest/smart/width/250/height/250?cb=20150720195709';
 
-    const player2Body = new Image();
-    player2Body.src = 'https://static.wikia.nocookie.net/headsoccer/images/5/59/Character08.png/revision/latest/smart/width/250/height/250?cb=20150720195709';
-
     const ballImg = new Image();
+    ballImg.crossOrigin = "anonymous";
     ballImg.src = 'https://i5.walmartimages.com/seo/CROSSNET-Wilson-X-OPTX-Replica-Beach-Volleyball-Outdoor-Training-Game-Ball_75e08c0c-0589-431e-85e1-5de409257e80.a44434eed8d25de973216c9b8c533ffa.jpeg';
 
-    // PLAYER CLASS
+    // PLAYER CLASS (draw head and simple body shape)
     class Player {
-      constructor(x, headImg, bodyImg, leftBound, rightBound) {
+      constructor(x, headImg, leftBound, rightBound) {
         this.x = x;
         this.y = floorY - 110; // top of feet
         this.radius = 40; // for head collision
         this.headImg = headImg;
-        this.bodyImg = bodyImg;
         this.dy = 0;
         this.jumping = false;
 
         this.speedX = 0;
-        this.acceleration = 0.6;
-        this.maxSpeed = 10; // faster
+        this.acceleration = 0.8;  // faster acceleration
+        this.maxSpeed = 14;       // faster max speed
         this.friction = 0.85;
 
         this.leftBound = leftBound;
@@ -170,14 +166,12 @@
       draw() {
         const bounceY = this.y - this.headBounce;
 
-        // Draw body shadow
+        // Draw simple body as ellipse
         ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.3)";
-        ctx.shadowBlur = 15;
-        ctx.shadowOffsetX = 5;
-        ctx.shadowOffsetY = 8;
-        // Draw body (scaled down and centered)
-        ctx.drawImage(this.bodyImg, this.x - 40, bounceY, 80, 80);
+        ctx.fillStyle = '#2a7a44';
+        ctx.beginPath();
+        ctx.ellipse(this.x, bounceY + 35, 30, 50, 0, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
 
         // Draw head
@@ -189,7 +183,7 @@
       }
     }
 
-    // BALL CLASS with higher jump on hit + round ball drawing
+    // BALL CLASS with slower speed
     class Ball {
       constructor() {
         this.radius = 22;
@@ -206,7 +200,7 @@
       }
 
       launch() {
-        this.dx = 4.5 * (Math.random() > 0.5 ? 1 : -1); // slower
+        this.dx = 3.5 * (Math.random() > 0.5 ? 1 : -1); // slower ball speed
         this.dy = -18; // jump higher initial launch
       }
 
@@ -254,7 +248,6 @@
         ctx.translate(this.x, this.y);
         ctx.rotate(this.spin + performance.now() / 400);
 
-        // Draw circle behind volleyball image to ensure round shape
         ctx.beginPath();
         ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
         ctx.clip();
@@ -263,13 +256,12 @@
         ctx.restore();
       }
 
-      // Called when ball is hit by a player, increases jump height a bit
       boostJump() {
-        this.dy = Math.min(this.dy, -20); // stronger jump on hit (only if less than current dy)
+        this.dy = Math.min(this.dy, -20);
       }
     }
 
-    // DRAW NET with sway effect
+    // DRAW NET
     function drawNet(frame) {
       const sway = Math.sin(frame / 20) * 2;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
@@ -285,7 +277,7 @@
       }
     }
 
-    // Draw simple grass ground with waving blades
+    // Draw ground with waving grass
     function drawGround() {
       const grassHeight = 20;
       ctx.fillStyle = '#3A5D32';
@@ -302,31 +294,30 @@
       }
     }
 
-    // Collision check (circle to circle) with ball jump boost on hit
+    // Collision check (circle to circle)
     function checkCollision(player, ball) {
       const dx = ball.x - player.x;
       const dy = ball.y - player.y;
       const dist = Math.sqrt(dx*dx + dy*dy);
       if(dist < ball.radius + player.radius * 0.95) {
         const dir = dx < 0 ? -1 : 1;
-        ball.dx = dir * 7 + player.speedX * 0.4;
+        ball.dx = dir * 5 + player.speedX * 0.4;  // slower ball speed on hit
         ball.dy = -14;
         ball.spin = dir * 0.3;
-        ball.boostJump(); // boost jump on hit
+        ball.boostJump();
         player.hit();
       }
     }
 
-    // INITIALIZE players and ball
-    // Switched controls: Player1 on left (WASD), Player2 on right (Arrows)
-    const player1 = new Player(150, player1Head, player1Body, 0, netX - 5);
-    const player2 = new Player(canvas.width - 150, player2Head, player2Body, netX + netWidth + 5, canvas.width);
+    // Initialize players and ball
+    const player1 = new Player(150, player1Head, 0, netX - 5);
+    const player2 = new Player(canvas.width - 150, player2Head, netX + netWidth + 5, canvas.width);
     const ball = new Ball();
 
     let player1Score = 0;
     let player2Score = 0;
 
-    // Keyboard input
+    // Keyboard input (WASD Player 1, Arrows Player 2)
     const keys = {};
     window.addEventListener('keydown', e => {
       keys[e.code] = true;
@@ -336,7 +327,7 @@
       keys[e.code] = false;
     });
 
-    // Update scoreboard UI
+    // Update scoreboard
     function updateScore() {
       const scoreboard = document.getElementById('scoreboard');
       scoreboard.textContent = `Player 1: ${player1Score} | Player 2: ${player2Score}`;
@@ -346,7 +337,7 @@
       }, 800);
     }
 
-    // COUNTDOWN logic
+    // Countdown logic
     let countdownNumber = 3;
     let countdownActive = true;
     countdownOverlay.textContent = countdownNumber;
@@ -367,15 +358,15 @@
     }
     countdown();
 
-    // GAME LOOP
+    // Game loop
     function gameLoop(time=0) {
       if(!countdownActive) {
-        // Player 1 controls: WASD (left side)
+        // Player 1 controls: WASD
         if(keys['KeyA']) player1.moveLeft();
         if(keys['KeyD']) player1.moveRight();
         if(keys['KeyW']) player1.jump();
 
-        // Player 2 controls: Arrows (right side)
+        // Player 2 controls: Arrows
         if(keys['ArrowLeft']) player2.moveLeft();
         if(keys['ArrowRight']) player2.moveRight();
         if(keys['ArrowUp']) player2.jump();
@@ -387,7 +378,7 @@
         checkCollision(player1, ball);
         checkCollision(player2, ball);
 
-        // Scoring:
+        // Scoring
         if(ball.y + ball.radius >= floorY){
           if(ball.x < netX){
             player2Score++;
@@ -446,12 +437,12 @@
     `;
     document.head.appendChild(styleSheet);
 
-    // Wait for all images loaded before start
+    // Wait for images to load
     let loadedImages = 0;
-    [player1Head, player1Body, player2Head, player2Body, ballImg].forEach(img => {
+    [player1Head, player2Head, ballImg].forEach(img => {
       img.onload = () => {
         loadedImages++;
-        if(loadedImages === 5) {
+        if(loadedImages === 3) {
           updateScore();
           requestAnimationFrame(gameLoop);
         }
