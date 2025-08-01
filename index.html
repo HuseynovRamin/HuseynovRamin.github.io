@@ -3,177 +3,80 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gender Detection</title>
-  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2"></script>
+  <title>Head Soccer Game</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f9f9f9;
-      text-align: center;
-      padding: 40px;
-    }
-    h1 {
-      color: #333;
-    }
-    #upload-label {
-      padding: 10px 20px;
-      background-color: #007bff;
+      margin: 0;
+      background: linear-gradient(to bottom, #87CEEB, #4B8B3B);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: white;
-      border-radius: 5px;
-      cursor: pointer;
+      user-select: none;
     }
-    #upload {
-      display: none;
+    #gameCanvas {
+      background: #005500;
+      border-radius: 20px;
+      box-shadow: 0 0 30px 5px #32CD32;
     }
-    #send-button {
-      display: none;
-      margin-top: 10px;
-      padding: 10px 20px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #progress-bar {
-      display: none;
-      width: 100%;
-      max-width: 300px;
-      height: 8px;
-      background: #ccc;
-      margin: 20px auto;
-      border-radius: 4px;
-    }
-    #progress {
-      height: 100%;
-      width: 0%;
-      background-color: #28a745;
-      transition: width 0.5s;
-    }
-    canvas {
-      margin-top: 20px;
-      border-radius: 10px;
-      max-width: 100%;
-    }
-    #result {
-      margin-top: 20px;
-      font-size: 18px;
-      color: #333;
+    #scoreboard {
+      position: absolute;
+      top: 20px;
+      font-size: 24px;
       font-weight: bold;
+      width: 100%;
+      text-align: center;
+      text-shadow: 2px 2px 4px black;
     }
   </style>
 </head>
 <body>
-  <h1>👤 Gender Detection</h1>
-  <p>Upload a face image (JPG or PNG)</p>
-
-  <label for="upload" id="upload-label">Choose Image</label>
-  <input type="file" id="upload" accept="image/png, image/jpeg" />
-  <br />
-  <button id="send-button">Send</button>
-
-  <div id="progress-bar"><div id="progress"></div></div>
-
-  <canvas id="canvas"></canvas>
-  <p id="result">Loading models...</p>
+  <div id="scoreboard">Player: 0 | AI: 0</div>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
 
   <script>
-    const upload = document.getElementById('upload');
-    const sendBtn = document.getElementById('send-button');
-    const canvas = document.getElementById('canvas');
-    const result = document.getElementById('result');
-    const progressBar = document.getElementById('progress-bar');
-    const progress = document.getElementById('progress');
-    let selectedImage = null;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-    // IMPORTANT: Change this to your repo folder where models are hosted
-    const MODEL_URL = './models';
+    // Game state
+    const player = { x: 100, y: 300, width: 50, height: 50, dy: 0, jumping: false };
+    const ai = { x: 650, y: 300, width: 50, height: 50, dy: 0, jumping: false };
+    const ball = { x: 400, y: 200, radius: 20, dx: 5, dy: 3 };
 
-    async function loadModels() {
-      try {
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
-        ]);
-        result.innerText = '✅ Models loaded. Upload an image.';
-      } catch (err) {
-        result.innerText = '❌ Failed to load models. Check your models folder.';
-        console.error(err);
-      }
+    let playerScore = 0;
+    let aiScore = 0;
+
+    // Gravity
+    const gravity = 0.5;
+
+    // Controls
+    const keys = {};
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
     }
 
-    loadModels();
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-    upload.addEventListener('change', async () => {
-      const file = upload.files[0];
-      if (!file || !file.type.startsWith('image/')) {
-        result.innerText = '❌ Invalid file. Please upload JPG or PNG.';
-        return;
-      }
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.dx = (Math.random() > 0.5 ? 5 : -5);
+      ball.dy = 3;
+    }
 
-      try {
-        selectedImage = await faceapi.bufferToImage(file);
-        const ctx = canvas.getContext('2d');
-        canvas.width = selectedImage.width;
-        canvas.height = selectedImage.height;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(selectedImage, 0, 0);
-
-        sendBtn.style.display = 'inline-block';
-        result.innerText = '✅ Image loaded. Click Send.';
-      } catch (e) {
-        result.innerText = '❌ Failed to load image.';
-        console.error(e);
-      }
-    });
-
-    sendBtn.addEventListener('click', async () => {
-      if (!selectedImage) {
-        result.innerText = '⚠️ No image loaded.';
-        return;
-      }
-
-      progressBar.style.display = 'block';
-      progress.style.width = '10%';
-      result.innerText = '🔍 Detecting...';
-
-      try {
-        const detection = await faceapi
-          .detectSingleFace(selectedImage, new faceapi.TinyFaceDetectorOptions())
-          .withAgeAndGender();
-
-        progress.style.width = '80%';
-
-        if (detection) {
-          const { gender, genderProbability, box } = detection;
-          const ctx = canvas.getContext('2d');
-          ctx.strokeStyle = '#00ff00';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(box.x, box.y, box.width, box.height);
-          ctx.fillStyle = '#00ff00';
-          ctx.font = '16px Arial';
-          ctx.fillText(
-            `${gender.toUpperCase()} (${(genderProbability * 100).toFixed(1)}%)`,
-            box.x,
-            box.y - 10
-          );
-
-          result.innerText = `🧠 Gender: ${gender.toUpperCase()} (${(genderProbability * 100).toFixed(1)}%)`;
-        } else {
-          result.innerText = '⚠️ No face detected. Try another image.';
-        }
-
-        progress.style.width = '100%';
-        setTimeout(() => {
-          progressBar.style.display = 'none';
-          progress.style.width = '0%';
-        }, 1500);
-      } catch (error) {
-        result.innerText = '❌ Error during detection.';
-        console.error(error);
-      }
-    });
-  </script>
-</body>
-</html>
+    function update() {
+      // Player movement
+      if (keys['ArrowLeft']) player.x -= 5;
+      if (keys['ArrowRight']) player.x += 5;
