@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gender Detection</title>
-  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -85,84 +85,105 @@
   <p id="result">Loading models...</p>
 
   <script>
-    const upload = document.getElementById('upload');
-    const sendBtn = document.getElementById('send-button');
-    const canvas = document.getElementById('canvas');
-    const result = document.getElementById('result');
-    const progressBar = document.getElementById('progress-bar');
-    const progress = document.getElementById('progress');
-    let selectedImage = null;
+    // Wait for the page to fully load
+    document.addEventListener('DOMContentLoaded', async () => {
+      const upload = document.getElementById('upload');
+      const sendBtn = document.getElementById('send-button');
+      const canvas = document.getElementById('canvas');
+      const result = document.getElementById('result');
+      const progressBar = document.getElementById('progress-bar');
+      const progress = document.getElementById('progress');
+      let selectedImage = null;
 
-    // Load models
-    Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models'),
-      faceapi.nets.ageGenderNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models')
-    ]).then(() => {
-      result.innerText = "✅ Models loaded. Please upload an image.";
-    });
-
-    upload.addEventListener('change', async () => {
-      const file = upload.files[0];
-      if (!file) {
-        result.innerText = "⚠️ No image selected.";
+      // Load models
+      try {
+        result.innerText = "⏳ Loading models...";
+        
+        // Load the models from correct paths
+        await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+        await faceapi.nets.ageGenderNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+        
+        result.innerText = "✅ Models loaded. Please upload an image.";
+      } catch (error) {
+        console.error('Error loading models:', error);
+        result.innerText = "❌ Failed to load models. Please check console.";
         return;
       }
 
-      if (!file.type.startsWith("image/")) {
-        result.innerText = "❌ Invalid image format.";
-        return;
-      }
+      upload.addEventListener('change', async () => {
+        const file = upload.files[0];
+        if (!file) {
+          result.innerText = "⚠️ No image selected.";
+          return;
+        }
 
-      selectedImage = await faceapi.bufferToImage(file);
-      const ctx = canvas.getContext("2d");
-      canvas.width = selectedImage.width;
-      canvas.height = selectedImage.height;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(selectedImage, 0, 0);
+        if (!file.type.startsWith("image/")) {
+          result.innerText = "❌ Invalid image format.";
+          return;
+        }
 
-      sendBtn.style.display = "inline-block";
-      result.innerText = "✅ Image loaded. Press Send.";
-    });
+        try {
+          selectedImage = await faceapi.bufferToImage(file);
+          const ctx = canvas.getContext("2d");
+          canvas.width = selectedImage.width;
+          canvas.height = selectedImage.height;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(selectedImage, 0, 0);
 
-    sendBtn.addEventListener('click', async () => {
-      if (!selectedImage) return;
+          sendBtn.style.display = "inline-block";
+          result.innerText = "✅ Image loaded. Press Send.";
+        } catch (error) {
+          console.error('Error loading image:', error);
+          result.innerText = "❌ Error loading image.";
+        }
+      });
 
-      // Show progress
-      progressBar.style.display = "block";
-      progress.style.width = "10%";
-      result.innerText = "🔍 Detecting...";
+      sendBtn.addEventListener('click', async () => {
+        if (!selectedImage) return;
 
-      const detections = await faceapi
-        .detectSingleFace(selectedImage, new faceapi.TinyFaceDetectorOptions())
-        .withAgeAndGender();
+        // Show progress
+        progressBar.style.display = "block";
+        progress.style.width = "10%";
+        result.innerText = "🔍 Detecting...";
 
-      progress.style.width = "70%";
+        try {
+          const detections = await faceapi
+            .detectSingleFace(selectedImage, new faceapi.TinyFaceDetectorOptions())
+            .withAgeAndGender();
 
-      if (detections) {
-        const { gender, genderProbability, box } = detections;
-        const label = `${gender.toUpperCase()} (${(genderProbability * 100).toFixed(1)}%)`;
+          progress.style.width = "70%";
 
-        // Draw box and label
-        const ctx = canvas.getContext("2d");
-        ctx.strokeStyle = "#00FF00";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(box.x, box.y, box.width, box.height);
-        ctx.fillStyle = "#00FF00";
-        ctx.font = "16px Arial";
-        ctx.fillText(label, box.x, box.y - 10);
+          if (detections) {
+            const { gender, genderProbability, box } = detections;
+            const label = `${gender.toUpperCase()} (${(genderProbability * 100).toFixed(1)}%)`;
 
-        result.innerText = `🧠 Detected: ${label}`;
-        progress.style.width = "100%";
-      } else {
-        result.innerText = "⚠️ No face detected. Try another image.";
-        progress.style.width = "100%";
-      }
+            // Draw box and label
+            const ctx = canvas.getContext("2d");
+            ctx.strokeStyle = "#00FF00";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(box.x, box.y, box.width, box.height);
+            ctx.fillStyle = "#00FF00";
+            ctx.font = "16px Arial";
+            ctx.fillText(label, box.x, box.y - 10);
 
-      // Hide progress after short delay
-      setTimeout(() => {
-        progressBar.style.display = "none";
-        progress.style.width = "0%";
-      }, 1500);
+            result.innerText = `🧠 Detected: ${label}`;
+            progress.style.width = "100%";
+          } else {
+            result.innerText = "⚠️ No face detected. Try another image.";
+            progress.style.width = "100%";
+          }
+        } catch (error) {
+          console.error('Error during detection:', error);
+          result.innerText = "❌ Error during detection. Check console.";
+          progress.style.width = "100%";
+        }
+
+        // Hide progress after short delay
+        setTimeout(() => {
+          progressBar.style.display = "none";
+          progress.style.width = "0%";
+        }, 1500);
+      });
     });
   </script>
 </body>
