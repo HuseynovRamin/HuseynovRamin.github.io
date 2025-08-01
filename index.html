@@ -1,53 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gender Detection</title>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 30px; }
-    canvas, img { max-width: 100%; }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #f4f4f4;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      color: #333;
+    }
+    #upload-label {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-block;
+      margin-top: 20px;
+    }
+    #upload {
+      display: none;
+    }
+    canvas {
+      margin-top: 20px;
+      border-radius: 10px;
+      max-width: 100%;
+    }
+    #result {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #444;
+    }
   </style>
 </head>
 <body>
-  <h2>Gender Detection (Male or Female)</h2>
+  <h1>👤 Gender Detection</h1>
+  <p>Upload a face image to detect gender (Male/Female)</p>
+  
+  <label for="upload" id="upload-label">Upload Image</label>
   <input type="file" accept="image/*" id="upload" />
-  <br><br>
+
   <div>
     <canvas id="canvas"></canvas>
   </div>
-  <p id="result"></p>
+  
+  <p id="result">Loading model...</p>
 
   <script>
-    const upload = document.getElementById('upload');
-    const canvas = document.getElementById('canvas');
-    const result = document.getElementById('result');
+    const upload = document.getElementById("upload");
+    const canvas = document.getElementById("canvas");
+    const result = document.getElementById("result");
 
+    // Load models from public GitHub repo
     Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models'),
-      faceapi.nets.ageGenderNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models')
+      faceapi.nets.tinyFaceDetector.loadFromUri("https://justadudewhohacks.github.io/face-api.js/models"),
+      faceapi.nets.ageGenderNet.loadFromUri("https://justadudewhohacks.github.io/face-api.js/models")
     ]).then(() => {
-      result.innerText = 'Model loaded. Upload an image.';
+      result.innerText = "✅ Model loaded. Upload an image.";
+    }).catch(() => {
+      result.innerText = "❌ Failed to load models.";
     });
 
-    upload.addEventListener('change', async () => {
+    upload.addEventListener("change", async () => {
       const file = upload.files[0];
-      const img = await faceapi.bufferToImage(file);
+      if (!file) return;
 
-      const ctx = canvas.getContext('2d');
+      const img = await faceapi.bufferToImage(file);
       canvas.width = img.width;
       canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
 
-      const detections = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withAgeAndGender();
-      if (detections) {
-        const gender = detections.gender;
-        const probability = (detections.genderProbability * 100).toFixed(2);
-        result.innerText = `Detected: ${gender} (${probability}%)`;
+      result.innerText = "🔍 Detecting...";
+
+      const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withAgeAndGender();
+
+      if (detection) {
+        const { gender, genderProbability, box } = detection;
+        const label = `${gender.toUpperCase()} (${(genderProbability * 100).toFixed(1)}%)`;
+        
+        // Draw box and label
+        ctx.strokeStyle = "#00FF00";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
+        ctx.fillStyle = "#00FF00";
+        ctx.font = "16px Arial";
+        ctx.fillText(label, box.x, box.y - 10);
+
+        result.innerText = `🧠 Detected: ${label}`;
       } else {
-        result.innerText = 'No face detected.';
+        result.innerText = "⚠️ No face detected. Try another image.";
       }
     });
   </script>
