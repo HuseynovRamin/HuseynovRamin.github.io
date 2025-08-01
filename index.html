@@ -2,57 +2,52 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gender Detection</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background-color: #f0f0f0;
+      background-color: #f9f9f9;
       text-align: center;
       padding: 40px;
     }
     h1 {
-      margin-bottom: 10px;
       color: #333;
     }
     #upload-label {
-      display: inline-block;
       padding: 10px 20px;
-      background-color: #007BFF;
+      background-color: #007bff;
       color: white;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
-      margin-bottom: 10px;
     }
     #upload {
       display: none;
     }
     #send-button {
-      padding: 10px 20px;
+      display: none;
       margin-top: 10px;
-      font-weight: bold;
-      border: none;
+      padding: 10px 20px;
       background-color: #28a745;
       color: white;
-      border-radius: 6px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
-      display: none;
     }
     #progress-bar {
+      display: none;
       width: 100%;
       max-width: 300px;
       height: 8px;
-      background-color: #ccc;
+      background: #ccc;
       margin: 20px auto;
       border-radius: 4px;
-      overflow: hidden;
-      display: none;
     }
     #progress {
-      width: 0%;
       height: 100%;
+      width: 0%;
       background-color: #28a745;
       transition: width 0.5s;
     }
@@ -62,10 +57,10 @@
       max-width: 100%;
     }
     #result {
-      font-size: 18px;
-      font-weight: bold;
-      color: #222;
       margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -75,7 +70,6 @@
 
   <label for="upload" id="upload-label">Choose Image</label>
   <input type="file" id="upload" accept="image/png, image/jpeg" />
-
   <br />
   <button id="send-button">Send</button>
 
@@ -85,105 +79,100 @@
   <p id="result">Loading models...</p>
 
   <script>
-    // Wait for the page to fully load
-    document.addEventListener('DOMContentLoaded', async () => {
-      const upload = document.getElementById('upload');
-      const sendBtn = document.getElementById('send-button');
-      const canvas = document.getElementById('canvas');
-      const result = document.getElementById('result');
-      const progressBar = document.getElementById('progress-bar');
-      const progress = document.getElementById('progress');
-      let selectedImage = null;
+    const upload = document.getElementById('upload');
+    const sendBtn = document.getElementById('send-button');
+    const canvas = document.getElementById('canvas');
+    const result = document.getElementById('result');
+    const progressBar = document.getElementById('progress-bar');
+    const progress = document.getElementById('progress');
+    let selectedImage = null;
 
-      // Load models
+    // IMPORTANT: Change this to your repo folder where models are hosted
+    const MODEL_URL = './models';
+
+    async function loadModels() {
       try {
-        result.innerText = "⏳ Loading models...";
-        
-        // Load the models from correct paths
-        await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
-        await faceapi.nets.ageGenderNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
-        
-        result.innerText = "✅ Models loaded. Please upload an image.";
-      } catch (error) {
-        console.error('Error loading models:', error);
-        result.innerText = "❌ Failed to load models. Please check console.";
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
+        ]);
+        result.innerText = '✅ Models loaded. Upload an image.';
+      } catch (err) {
+        result.innerText = '❌ Failed to load models. Check your models folder.';
+        console.error(err);
+      }
+    }
+
+    loadModels();
+
+    upload.addEventListener('change', async () => {
+      const file = upload.files[0];
+      if (!file || !file.type.startsWith('image/')) {
+        result.innerText = '❌ Invalid file. Please upload JPG or PNG.';
         return;
       }
 
-      upload.addEventListener('change', async () => {
-        const file = upload.files[0];
-        if (!file) {
-          result.innerText = "⚠️ No image selected.";
-          return;
+      try {
+        selectedImage = await faceapi.bufferToImage(file);
+        const ctx = canvas.getContext('2d');
+        canvas.width = selectedImage.width;
+        canvas.height = selectedImage.height;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(selectedImage, 0, 0);
+
+        sendBtn.style.display = 'inline-block';
+        result.innerText = '✅ Image loaded. Click Send.';
+      } catch (e) {
+        result.innerText = '❌ Failed to load image.';
+        console.error(e);
+      }
+    });
+
+    sendBtn.addEventListener('click', async () => {
+      if (!selectedImage) {
+        result.innerText = '⚠️ No image loaded.';
+        return;
+      }
+
+      progressBar.style.display = 'block';
+      progress.style.width = '10%';
+      result.innerText = '🔍 Detecting...';
+
+      try {
+        const detection = await faceapi
+          .detectSingleFace(selectedImage, new faceapi.TinyFaceDetectorOptions())
+          .withAgeAndGender();
+
+        progress.style.width = '80%';
+
+        if (detection) {
+          const { gender, genderProbability, box } = detection;
+          const ctx = canvas.getContext('2d');
+          ctx.strokeStyle = '#00ff00';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(box.x, box.y, box.width, box.height);
+          ctx.fillStyle = '#00ff00';
+          ctx.font = '16px Arial';
+          ctx.fillText(
+            `${gender.toUpperCase()} (${(genderProbability * 100).toFixed(1)}%)`,
+            box.x,
+            box.y - 10
+          );
+
+          result.innerText = `🧠 Gender: ${gender.toUpperCase()} (${(genderProbability * 100).toFixed(1)}%)`;
+        } else {
+          result.innerText = '⚠️ No face detected. Try another image.';
         }
 
-        if (!file.type.startsWith("image/")) {
-          result.innerText = "❌ Invalid image format.";
-          return;
-        }
-
-        try {
-          selectedImage = await faceapi.bufferToImage(file);
-          const ctx = canvas.getContext("2d");
-          canvas.width = selectedImage.width;
-          canvas.height = selectedImage.height;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(selectedImage, 0, 0);
-
-          sendBtn.style.display = "inline-block";
-          result.innerText = "✅ Image loaded. Press Send.";
-        } catch (error) {
-          console.error('Error loading image:', error);
-          result.innerText = "❌ Error loading image.";
-        }
-      });
-
-      sendBtn.addEventListener('click', async () => {
-        if (!selectedImage) return;
-
-        // Show progress
-        progressBar.style.display = "block";
-        progress.style.width = "10%";
-        result.innerText = "🔍 Detecting...";
-
-        try {
-          const detections = await faceapi
-            .detectSingleFace(selectedImage, new faceapi.TinyFaceDetectorOptions())
-            .withAgeAndGender();
-
-          progress.style.width = "70%";
-
-          if (detections) {
-            const { gender, genderProbability, box } = detections;
-            const label = `${gender.toUpperCase()} (${(genderProbability * 100).toFixed(1)}%)`;
-
-            // Draw box and label
-            const ctx = canvas.getContext("2d");
-            ctx.strokeStyle = "#00FF00";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(box.x, box.y, box.width, box.height);
-            ctx.fillStyle = "#00FF00";
-            ctx.font = "16px Arial";
-            ctx.fillText(label, box.x, box.y - 10);
-
-            result.innerText = `🧠 Detected: ${label}`;
-            progress.style.width = "100%";
-          } else {
-            result.innerText = "⚠️ No face detected. Try another image.";
-            progress.style.width = "100%";
-          }
-        } catch (error) {
-          console.error('Error during detection:', error);
-          result.innerText = "❌ Error during detection. Check console.";
-          progress.style.width = "100%";
-        }
-
-        // Hide progress after short delay
+        progress.style.width = '100%';
         setTimeout(() => {
-          progressBar.style.display = "none";
-          progress.style.width = "0%";
+          progressBar.style.display = 'none';
+          progress.style.width = '0%';
         }, 1500);
-      });
+      } catch (error) {
+        result.innerText = '❌ Error during detection.';
+        console.error(error);
+      }
     });
   </script>
 </body>
