@@ -87,21 +87,23 @@
     const netHeight = 120;
     const netWidth = 10;
 
-    // Images - replace URLs if needed
+    // Images - new provided images
     const player1Head = new Image();
-    player1Head.src = 'https://i.ibb.co/G7xZs1W/player-head.png'; // Player 1 head
+    player1Head.src = 'https://static.wikia.nocookie.net/headsoccer/images/c/c7/Character01.png/revision/latest/smart/width/250/height/250?cb=20150720195707';
+
     const player1Body = new Image();
-    player1Body.src = 'https://i.ibb.co/f0XHZ4G/player-body.png'; // Player 1 body
+    player1Body.src = 'https://static.wikia.nocookie.net/headsoccer/images/c/c7/Character01.png/revision/latest/smart/width/250/height/250?cb=20150720195707';
 
     const player2Head = new Image();
-    player2Head.src = 'https://i.ibb.co/J2zLVPJ/ai-head.png'; // Player 2 head
+    player2Head.src = 'https://static.wikia.nocookie.net/headsoccer/images/5/59/Character08.png/revision/latest/smart/width/250/height/250?cb=20150720195709';
+
     const player2Body = new Image();
-    player2Body.src = 'https://i.ibb.co/m4v9d2m/ai-body.png'; // Player 2 body
+    player2Body.src = 'https://static.wikia.nocookie.net/headsoccer/images/5/59/Character08.png/revision/latest/smart/width/250/height/250?cb=20150720195709';
 
     const ballImg = new Image();
-    ballImg.src = 'https://i.ibb.co/VQ7djRF/volleyball.png'; // volleyball image
+    ballImg.src = 'https://i5.walmartimages.com/seo/CROSSNET-Wilson-X-OPTX-Replica-Beach-Volleyball-Outdoor-Training-Game-Ball_75e08c0c-0589-431e-85e1-5de409257e80.a44434eed8d25de973216c9b8c533ffa.jpeg';
 
-    // PLAYER CLASS with your updated properties
+    // PLAYER CLASS
     class Player {
       constructor(x, headImg, bodyImg, leftBound, rightBound) {
         this.x = x;
@@ -174,6 +176,7 @@
         ctx.shadowBlur = 15;
         ctx.shadowOffsetX = 5;
         ctx.shadowOffsetY = 8;
+        // Draw body (scaled down and centered)
         ctx.drawImage(this.bodyImg, this.x - 40, bounceY, 80, 80);
         ctx.restore();
 
@@ -186,7 +189,7 @@
       }
     }
 
-    // BALL CLASS with your updated properties
+    // BALL CLASS with higher jump on hit + round ball drawing
     class Ball {
       constructor() {
         this.radius = 22;
@@ -204,7 +207,7 @@
 
       launch() {
         this.dx = 4.5 * (Math.random() > 0.5 ? 1 : -1); // slower
-        this.dy = -18; // jump higher
+        this.dy = -18; // jump higher initial launch
       }
 
       update() {
@@ -250,8 +253,19 @@
         ctx.shadowBlur = 18;
         ctx.translate(this.x, this.y);
         ctx.rotate(this.spin + performance.now() / 400);
+
+        // Draw circle behind volleyball image to ensure round shape
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.clip();
+
         ctx.drawImage(ballImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
         ctx.restore();
+      }
+
+      // Called when ball is hit by a player, increases jump height a bit
+      boostJump() {
+        this.dy = Math.min(this.dy, -20); // stronger jump on hit (only if less than current dy)
       }
     }
 
@@ -288,7 +302,7 @@
       }
     }
 
-    // Collision check (circle to circle)
+    // Collision check (circle to circle) with ball jump boost on hit
     function checkCollision(player, ball) {
       const dx = ball.x - player.x;
       const dy = ball.y - player.y;
@@ -298,11 +312,13 @@
         ball.dx = dir * 7 + player.speedX * 0.4;
         ball.dy = -14;
         ball.spin = dir * 0.3;
+        ball.boostJump(); // boost jump on hit
         player.hit();
       }
     }
 
     // INITIALIZE players and ball
+    // Switched controls: Player1 on left (WASD), Player2 on right (Arrows)
     const player1 = new Player(150, player1Head, player1Body, 0, netX - 5);
     const player2 = new Player(canvas.width - 150, player2Head, player2Body, netX + netWidth + 5, canvas.width);
     const ball = new Ball();
@@ -354,15 +370,15 @@
     // GAME LOOP
     function gameLoop(time=0) {
       if(!countdownActive) {
-        // Player 1 controls: arrows
-        if(keys['ArrowLeft']) player1.moveLeft();
-        if(keys['ArrowRight']) player1.moveRight();
-        if(keys['ArrowUp']) player1.jump();
+        // Player 1 controls: WASD (left side)
+        if(keys['KeyA']) player1.moveLeft();
+        if(keys['KeyD']) player1.moveRight();
+        if(keys['KeyW']) player1.jump();
 
-        // Player 2 controls: WASD
-        if(keys['KeyA']) player2.moveLeft();
-        if(keys['KeyD']) player2.moveRight();
-        if(keys['KeyW']) player2.jump();
+        // Player 2 controls: Arrows (right side)
+        if(keys['ArrowLeft']) player2.moveLeft();
+        if(keys['ArrowRight']) player2.moveRight();
+        if(keys['ArrowUp']) player2.jump();
 
         player1.update();
         player2.update();
@@ -373,14 +389,11 @@
 
         // Scoring:
         if(ball.y + ball.radius >= floorY){
-          // Determine which side ball landed on
           if(ball.x < netX){
-            // Ball landed on Player 1 side => Player 2 scores
             player2Score++;
             updateScore();
             resetRound();
           } else if(ball.x > netX + netWidth){
-            // Ball landed on Player 2 side => Player 1 scores
             player1Score++;
             updateScore();
             resetRound();
