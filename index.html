@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,36 +7,37 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
 
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
       background: linear-gradient(to top, #87CEEB 0%, #d9f7e9 60%, #6AC1A0 100%);
       font-family: 'Orbitron', monospace;
       user-select: none;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      position: relative;
       -webkit-tap-highlight-color: transparent;
     }
 
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+    }
+
     #scoreboard {
-      position: absolute;
-      top: 10px;
-      width: 100%;
-      text-align: center;
-      font-size: 40px;
+      font-size: 32px;
       color: #164C3F;
       text-shadow: 0 0 10px #00FFB3;
       background: rgba(255 255 255 / 0.2);
-      padding: 12px 0;
+      padding: 10px 0;
       backdrop-filter: blur(8px);
       border-radius: 10px;
-      pointer-events: none;
-      user-select: none;
+      margin-top: 10px;
       font-weight: 700;
       letter-spacing: 2px;
+      width: 100%;
+      text-align: center;
       z-index: 10;
     }
 
@@ -49,6 +50,8 @@
       touch-action: none;
       user-select: none;
       display: block;
+      max-width: 100%;
+      height: auto;
     }
 
     #countdownOverlay {
@@ -68,6 +71,43 @@
       font-family: 'Orbitron', monospace;
       pointer-events: none;
     }
+
+    #controls {
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 10px;
+      z-index: 1000;
+    }
+
+    #controls .left, #controls .right {
+      display: flex;
+      gap: 10px;
+    }
+
+    #controls button {
+      background: #164C3F;
+      color: white;
+      font-size: 22px;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-weight: bold;
+      box-shadow: 0 0 8px #00FFB3;
+      touch-action: manipulation;
+    }
+
+    #controls button:active {
+      background: #0a2c25;
+      box-shadow: 0 0 12px #00FFD6;
+    }
+
+    @keyframes pulse {
+      0%, 100% { text-shadow: 0 0 10px #00FFB3; }
+      50% { text-shadow: 0 0 25px #00FFD6; }
+    }
   </style>
 </head>
 <body>
@@ -75,19 +115,32 @@
   <canvas id="gameCanvas" width="900" height="500"></canvas>
   <div id="countdownOverlay">3</div>
 
+  <!-- Touch Controls for Phones -->
+  <div id="controls">
+    <div class="left">
+      <button id="p1-left">◀</button>
+      <button id="p1-jump">⭡</button>
+      <button id="p1-right">▶</button>
+    </div>
+    <div class="right">
+      <button id="p2-left">◀</button>
+      <button id="p2-jump">⭡</button>
+      <button id="p2-right">▶</button>
+    </div>
+  </div>
+
+  <!-- Your original JS below -->
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const countdownOverlay = document.getElementById('countdownOverlay');
 
-    // CONSTANTS
     const gravity = 0.7;
     const floorY = canvas.height - 50;
     const netX = canvas.width / 2 - 5;
     const netHeight = 120;
     const netWidth = 10;
 
-    // Images
     const player1Img = new Image();
     player1Img.crossOrigin = "anonymous";
     player1Img.src = 'https://static.vecteezy.com/system/resources/previews/049/460/623/non_2x/soccer-player-kicking-football-ball-character-girl-flat-cartoon-illustration-isolated-on-white-background-soccer-or-football-game-players-collection-vector.jpg';
@@ -100,35 +153,25 @@
     ballImg.crossOrigin = "anonymous";
     ballImg.src = 'https://i5.walmartimages.com/seo/CROSSNET-Wilson-X-OPTX-Replica-Beach-Volleyball-Outdoor-Training-Game-Ball_75e08c0c-0589-431e-85e1-5de409257e80.a44434eed8d25de973216c9b8c533ffa.jpeg';
 
-    // PLAYER CLASS
     class Player {
       constructor(x, img, leftBound, rightBound) {
         this.x = x;
-        this.y = floorY - 70; // slightly higher for better fit
+        this.y = floorY - 70;
         this.radius = 40;
         this.img = img;
         this.dy = 0;
         this.jumping = false;
-
         this.speedX = 0;
         this.acceleration = 1.2;
         this.maxSpeed = 12;
         this.friction = 0.85;
-
         this.leftBound = leftBound;
         this.rightBound = rightBound;
-
         this.headBounce = 0;
       }
 
-      moveLeft() {
-        this.speedX -= this.acceleration;
-        if (this.speedX < -this.maxSpeed) this.speedX = -this.maxSpeed;
-      }
-      moveRight() {
-        this.speedX += this.acceleration;
-        if (this.speedX > this.maxSpeed) this.speedX = this.maxSpeed;
-      }
+      moveLeft() { this.speedX = Math.max(this.speedX - this.acceleration, -this.maxSpeed); }
+      moveRight() { this.speedX = Math.min(this.speedX + this.acceleration, this.maxSpeed); }
       jump() {
         if (!this.jumping) {
           this.dy = -15;
@@ -139,7 +182,6 @@
       update() {
         this.speedX *= this.friction;
         if (Math.abs(this.speedX) < 0.1) this.speedX = 0;
-
         this.x += this.speedX;
         if (this.x - this.radius < this.leftBound) {
           this.x = this.leftBound + this.radius;
@@ -152,7 +194,6 @@
 
         this.dy += gravity;
         this.y += this.dy;
-
         if (this.y > floorY - this.radius) {
           this.y = floorY - this.radius;
           this.dy = 0;
@@ -164,9 +205,7 @@
       }
 
       draw() {
-        const bounceY = this.y - this.headBounce;
-        // Draw scaled player image, smaller so they don't overlap
-        ctx.drawImage(this.img, this.x - 35, bounceY - 90, 70, 90);
+        ctx.drawImage(this.img, this.x - 35, this.y - 90 - this.headBounce, 70, 90);
       }
 
       hit() {
@@ -174,7 +213,6 @@
       }
     }
 
-    // BALL CLASS
     class Ball {
       constructor() {
         this.radius = 22;
@@ -199,7 +237,6 @@
         this.x += this.dx;
         this.y += this.dy;
         this.dy += gravity;
-
         this.spin *= 0.9;
 
         if (this.y + this.radius > floorY) {
@@ -220,13 +257,7 @@
           this.spin = -this.spin;
         }
 
-        if (
-          this.x + this.radius > netX &&
-          this.x - this.radius < netX + netWidth &&
-          this.y + this.radius > floorY - netHeight
-        ) {
-          if (this.x < netX + netWidth / 2) this.x = netX - this.radius;
-          else this.x = netX + netWidth + this.radius;
+        if (this.x + this.radius > netX && this.x - this.radius < netX + netWidth && this.y + this.radius > floorY - netHeight) {
           this.dx = -this.dx;
           this.spin = -this.spin;
         }
@@ -234,15 +265,11 @@
 
       draw() {
         ctx.save();
-        ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
-        ctx.shadowBlur = 18;
         ctx.translate(this.x, this.y);
         ctx.rotate(this.spin + performance.now() / 400);
-
         ctx.beginPath();
         ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
         ctx.clip();
-
         ctx.drawImage(ballImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
         ctx.restore();
       }
@@ -252,45 +279,22 @@
       }
     }
 
-    // DRAW NET
     function drawNet(frame) {
       const sway = Math.sin(frame / 20) * 2;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       ctx.fillRect(netX + sway, floorY - netHeight, netWidth, netHeight);
-
-      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-      ctx.lineWidth = 1;
-      for (let y = floorY - netHeight; y <= floorY; y += 15) {
-        ctx.beginPath();
-        ctx.moveTo(netX + sway, y);
-        ctx.lineTo(netX + netWidth + sway, y);
-        ctx.stroke();
-      }
     }
 
-    // Draw ground
     function drawGround() {
-      const grassHeight = 20;
       ctx.fillStyle = '#3A5D32';
       ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
-
-      ctx.strokeStyle = '#4A7A3D';
-      ctx.lineWidth = 2;
-      for (let x = 0; x < canvas.width; x += 12) {
-        ctx.beginPath();
-        const bladeHeight = 15 + Math.sin(x / 7 + performance.now() / 300) * 5;
-        ctx.moveTo(x, floorY + grassHeight);
-        ctx.lineTo(x, floorY + grassHeight - bladeHeight);
-        ctx.stroke();
-      }
     }
 
-    // Collision check
     function checkCollision(player, ball) {
       const dx = ball.x - player.x;
       const dy = ball.y - player.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if(dist < ball.radius + player.radius * 0.95) {
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < ball.radius + player.radius * 0.95) {
         const dir = dx < 0 ? -1 : 1;
         ball.dx = dir * 5 + player.speedX * 0.4;
         ball.dy = -14;
@@ -300,41 +304,32 @@
       }
     }
 
-    // Initialize players and ball
     const player1 = new Player(150, player1Img, 0, netX - 5);
     const player2 = new Player(canvas.width - 150, player2Img, netX + netWidth + 5, canvas.width);
     const ball = new Ball();
-
     let player1Score = 0;
     let player2Score = 0;
 
-    // Keyboard input (WASD Player 1, Arrows Player 2)
     const keys = {};
     window.addEventListener('keydown', e => {
       keys[e.code] = true;
-      if (e.code === 'ArrowUp' || e.code === 'KeyW') e.preventDefault();
+      if (['ArrowUp', 'KeyW'].includes(e.code)) e.preventDefault();
     });
-    window.addEventListener('keyup', e => {
-      keys[e.code] = false;
-    });
+    window.addEventListener('keyup', e => keys[e.code] = false);
 
-    // Update scoreboard
     function updateScore() {
       const scoreboard = document.getElementById('scoreboard');
       scoreboard.textContent = `Player 1: ${player1Score} | Player 2: ${player2Score}`;
       scoreboard.style.animation = 'pulse 0.8s ease forwards';
-      setTimeout(() => {
-        scoreboard.style.animation = '';
-      }, 800);
+      setTimeout(() => scoreboard.style.animation = '', 800);
     }
 
-    // Countdown logic
     let countdownNumber = 3;
     let countdownActive = true;
     countdownOverlay.textContent = countdownNumber;
 
     function countdown() {
-      if(countdownNumber > 1){
+      if (countdownNumber > 1) {
         countdownNumber--;
         countdownOverlay.textContent = countdownNumber;
         setTimeout(countdown, 1000);
@@ -349,18 +344,15 @@
     }
     countdown();
 
-    // Game loop
-    function gameLoop(time=0) {
-      if(!countdownActive) {
-        // Player 1 controls: WASD
-        if(keys['KeyA']) player1.moveLeft();
-        if(keys['KeyD']) player1.moveRight();
-        if(keys['KeyW']) player1.jump();
+    function gameLoop(time = 0) {
+      if (!countdownActive) {
+        if (keys['KeyA']) player1.moveLeft();
+        if (keys['KeyD']) player1.moveRight();
+        if (keys['KeyW']) player1.jump();
 
-        // Player 2 controls: Arrows
-        if(keys['ArrowLeft']) player2.moveLeft();
-        if(keys['ArrowRight']) player2.moveRight();
-        if(keys['ArrowUp']) player2.jump();
+        if (keys['ArrowLeft']) player2.moveLeft();
+        if (keys['ArrowRight']) player2.moveRight();
+        if (keys['ArrowUp']) player2.jump();
 
         player1.update();
         player2.update();
@@ -369,25 +361,15 @@
         checkCollision(player1, ball);
         checkCollision(player2, ball);
 
-        // Scoring
-        if(ball.y + ball.radius >= floorY){
-          if(ball.x < netX){
-            player2Score++;
-            updateScore();
-            resetRound();
-          } else if(ball.x > netX + netWidth){
-            player1Score++;
-            updateScore();
-            resetRound();
-          }
+        if (ball.y + ball.radius >= floorY) {
+          if (ball.x < netX) { player2Score++; updateScore(); resetRound(); }
+          else if (ball.x > netX + netWidth) { player1Score++; updateScore(); resetRound(); }
         }
       }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       drawGround();
       drawNet(time);
-
       player1.draw();
       player2.draw();
       ball.draw();
@@ -395,49 +377,39 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Reset round after score
-    function resetRound(){
+    function resetRound() {
       countdownActive = true;
       countdownNumber = 3;
       countdownOverlay.style.display = 'flex';
       countdownOverlay.textContent = countdownNumber;
       ball.reset();
-      player1.x = 150;
-      player1.y = floorY - player1.radius;
-      player1.speedX = 0;
-      player1.dy = 0;
-      player1.jumping = false;
-
-      player2.x = canvas.width - 150;
-      player2.y = floorY - player2.radius;
-      player2.speedX = 0;
-      player2.dy = 0;
-      player2.jumping = false;
-
+      Object.assign(player1, { x: 150, y: floorY - player1.radius, speedX: 0, dy: 0, jumping: false });
+      Object.assign(player2, { x: canvas.width - 150, y: floorY - player2.radius, speedX: 0, dy: 0, jumping: false });
       countdown();
     }
 
-    // Scoreboard animation keyframes
-    const styleSheet = document.createElement('style');
-    styleSheet.type = 'text/css';
-    styleSheet.innerText = `
-      @keyframes pulse {
-        0%, 100% { text-shadow: 0 0 10px #00FFB3; }
-        50% { text-shadow: 0 0 25px #00FFD6; }
+    [player1Img, player2Img, ballImg].forEach(img => img.onload = () => {
+      if (++loadedImages === 3) {
+        updateScore();
+        requestAnimationFrame(gameLoop);
       }
-    `;
-    document.head.appendChild(styleSheet);
-
-    // Wait for images to load
+    });
     let loadedImages = 0;
-    [player1Img, player2Img, ballImg].forEach(img => {
-      img.onload = () => {
-        loadedImages++;
-        if(loadedImages === 3) {
-          updateScore();
-          requestAnimationFrame(gameLoop);
-        }
-      }
+
+    // 🎮 Mobile controls
+    const keyMap = {
+      'p1-left': 'KeyA',
+      'p1-right': 'KeyD',
+      'p1-jump': 'KeyW',
+      'p2-left': 'ArrowLeft',
+      'p2-right': 'ArrowRight',
+      'p2-jump': 'ArrowUp',
+    };
+
+    Object.entries(keyMap).forEach(([btnId, keyCode]) => {
+      const btn = document.getElementById(btnId);
+      btn.addEventListener('touchstart', e => { keys[keyCode] = true; e.preventDefault(); });
+      btn.addEventListener('touchend', () => { keys[keyCode] = false; });
     });
   </script>
 </body>
