@@ -117,7 +117,6 @@
   <canvas id="gameCanvas"></canvas>
   <div id="countdownOverlay">3</div>
 
-  <!-- Touch Controls for Phones -->
   <div id="controls">
     <div class="left">
       <button id="p1-left">◀</button>
@@ -136,7 +135,6 @@
     const ctx = canvas.getContext('2d');
     const countdownOverlay = document.getElementById('countdownOverlay');
 
-    // Resize canvas to fit window with fixed aspect ratio
     function resizeCanvas() {
       const aspectRatio = 900 / 500;
       let width = window.innerWidth;
@@ -163,12 +161,11 @@
       requestAnimationFrame(gameLoop);
     });
 
+    const gravity = 0.7;
     let floorY = window.floorY || 450;
     let netX = window.netX || 445;
     const netHeight = 120;
     const netWidth = 10;
-
-    const gravity = 0.7;
 
     const player1Img = new Image();
     player1Img.crossOrigin = "anonymous";
@@ -318,31 +315,11 @@
       const sway = Math.sin(frame / 20) * 2;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       ctx.fillRect(netX + sway, floorY - netHeight, netWidth, netHeight);
-
-      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-      ctx.lineWidth = 1;
-      for (let y = floorY - netHeight; y <= floorY; y += 15) {
-        ctx.beginPath();
-        ctx.moveTo(netX + sway, y);
-        ctx.lineTo(netX + netWidth + sway, y);
-        ctx.stroke();
-      }
     }
 
     function drawGround() {
-      const grassHeight = 20;
       ctx.fillStyle = '#3A5D32';
       ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
-
-      ctx.strokeStyle = '#4A7A3D';
-      ctx.lineWidth = 2;
-      for (let x = 0; x < canvas.width; x += 12) {
-        ctx.beginPath();
-        const bladeHeight = 15 + Math.sin(x / 7 + performance.now() / 300) * 5;
-        ctx.moveTo(x, floorY + grassHeight);
-        ctx.lineTo(x, floorY + grassHeight - bladeHeight);
-        ctx.stroke();
-      }
     }
 
     function checkCollision(player, ball) {
@@ -359,9 +336,9 @@
       }
     }
 
-    // Initialize players and ball positions based on netX and floorY (updated on resize)
-    let player1 = new Player(netX / 2, player1Img, 0, netX - 5);
-    let player2 = new Player(netX + (canvas.width - netX) / 2, player2Img, netX + netWidth + 5, canvas.width);
+    // Player initial positions back to original
+    let player1 = new Player(150, player1Img, 0, netX - 5);
+    let player2 = new Player(canvas.width - 150, player2Img, netX + netWidth + 5, canvas.width);
     const ball = new Ball();
 
     let player1Score = 0;
@@ -446,8 +423,8 @@
       countdownOverlay.style.display = 'flex';
       countdownOverlay.textContent = countdownNumber;
       ball.reset();
-      Object.assign(player1, { x: netX / 2, y: floorY - player1.radius, speedX: 0, dy: 0, jumping: false });
-      Object.assign(player2, { x: netX + (canvas.width - netX) / 2, y: floorY - player2.radius, speedX: 0, dy: 0, jumping: false });
+      Object.assign(player1, { x: 150, y: floorY - player1.radius, speedX: 0, dy: 0, jumping: false });
+      Object.assign(player2, { x: canvas.width - 150, y: floorY - player2.radius, speedX: 0, dy: 0, jumping: false });
       countdown();
     }
 
@@ -460,7 +437,6 @@
       }
     });
 
-    // Mobile touch controls
     const keyMap = {
       'p1-left': 'KeyA',
       'p1-right': 'KeyD',
