@@ -98,9 +98,9 @@ function applyLang(lang) {
   const t = I18N[lang] || I18N.az;
   $('#title-text').textContent = t.title;
   $('#calc-title').textContent = t.calcTitle;
-  $('#label-ksq').innerHTML = `<strong>${t.ksq}</strong>`;
-  $('#label-bsq').innerHTML = `<strong>${t.bsq}</strong>`;
-  $('#label-scheme').innerHTML = `<strong>${t.scheme}</strong>`;
+  $('#label-ksq').innerHTML = <strong>${t.ksq}</strong>;
+  $('#label-bsq').innerHTML = <strong>${t.bsq}</strong>;
+  $('#label-scheme').innerHTML = <strong>${t.scheme}</strong>;
   $('#label-result').textContent = t.result;
   $('#history-title').textContent = t.history;
   $('#exam-title').textContent = t.exam;
@@ -135,9 +135,15 @@ function updateWeightLabels() {
 }
 kqsWeight.addEventListener('input', () => {
   updateWeightLabels();
+  // live recompute if custom is active
   if (schemeSelect.value === 'custom') computeAndDisplay();
 });
 updateWeightLabels();
+
+schemeSelect.addEventListener('change', () => {
+  customWeights.classList.toggle('hidden', schemeSelect.value !== 'custom');
+  computeAndDisplay(); // update conversion display when scheme changes
+});
 
 /* --------- Parsing KQS --------- */
 function parseKQS(input) {
@@ -147,7 +153,8 @@ function parseKQS(input) {
     .filter(n => !Number.isNaN(n));
 }
 
-/* --------- Core Calculations --------- */
+/* --------- Core Calculations (AZ preserved) --------- */
+/* AZ: final = KQS_avg * 0.4 + BSQ * 0.6  (preserved) */
 function calcAZ(ksqArray, bsq) {
   const kAvg = ksqArray.length ? (ksqArray.reduce((a,b)=>a+b,0) / ksqArray.length) : 0;
   const b = Number.isFinite(bsq) ? bsq : 0;
@@ -155,6 +162,7 @@ function calcAZ(ksqArray, bsq) {
   return { kAvg, final };
 }
 
+/* Custom: user-defined KQS weight (0-100) */
 function calcCustom(ksqArray, bsq, kWeightPercent) {
   const kAvg = ksqArray.length ? (ksqArray.reduce((a,b)=>a+b,0) / ksqArray.length) : 0;
   const b = Number.isFinite(bsq) ? bsq : 0;
@@ -164,23 +172,23 @@ function calcCustom(ksqArray, bsq, kWeightPercent) {
   return { kAvg, final };
 }
 
-/* --------- Converters --------- */
+/* --------- Converters for display --------- */
 function toUSGPA(final) {
+  // Map numeric 0-100 -> grade/GPA
   let grade, gpa;
-  if (final >= 93) { grade='A'; gpa=4.0; }
-  else if (final >= 90) { grade='A-'; gpa=3.7; }
-  else if (final >= 87) { grade='B+'; gpa=3.3; }
-  else if (final >= 83) { grade='B'; gpa=3.0; }
-  else if (final >= 80) { grade='B-'; gpa=2.7; }
-  else if (final >= 77) { grade='C+'; gpa=2.3; }
-  else if (final >= 73) { grade='C'; gpa=2.0; }
-  else if (final >= 70) { grade='C-'; gpa=1.7; }
-  else if (final >= 67) { grade='D+'; gpa=1.3; }
-  else if (final >= 65) { grade='D'; gpa=1.0; }
-  else { grade='F'; gpa=0.0; }
+  if (final >= 93) { grade = 'A'; gpa = 4.0; }
+  else if (final >= 90) { grade = 'A-'; gpa = 3.7; }
+  else if (final >= 87) { grade = 'B+'; gpa = 3.3; }
+  else if (final >= 83) { grade = 'B'; gpa = 3.0; }
+  else if (final >= 80) { grade = 'B-'; gpa = 2.7; }
+  else if (final >= 77) { grade = 'C+'; gpa = 2.3; }
+  else if (final >= 73) { grade = 'C'; gpa = 2.0; }
+  else if (final >= 70) { grade = 'C-'; gpa = 1.7; }
+  else if (final >= 67) { grade = 'D+'; gpa = 1.3; }
+  else if (final >= 65) { grade = 'D'; gpa = 1.0; }
+  else { grade = 'F'; gpa = 0.0; }
   return { grade, gpa };
 }
-
 function toUKClass(final) {
   if (final >= 70) return { percent: final, class: 'First Class (1st)' };
   if (final >= 60) return { percent: final, class: 'Upper Second (2:1)' };
@@ -188,7 +196,6 @@ function toUKClass(final) {
   if (final >= 40) return { percent: final, class: 'Third' };
   return { percent: final, class: 'Fail' };
 }
-
 function toECTS(final) {
   if (final >= 90) return { grade: 'A' };
   if (final >= 80) return { grade: 'B' };
@@ -198,84 +205,9 @@ function toECTS(final) {
   return { grade: 'F' };
 }
 
-/* --------- Switch Scheme & Inputs --------- */
-function updateInputsByScheme() {
-  const scheme = schemeSelect.value;
-  if (scheme === 'az' || scheme === 'custom') {
-    ksqInput.parentElement.style.display = 'block';
-    bsqInput.parentElement.style.display = 'block';
-    bsqInput.placeholder = I18N[currentLang].bsq;
-  } else {
-    ksqInput.parentElement.style.display = 'none';
-    bsqInput.parentElement.style.display = 'block';
-    bsqInput.placeholder = 'Enter numeric score (0–100)';
-  }
-  customWeights.classList.toggle('hidden', scheme !== 'custom');
-  computeAndDisplay();
-}
-
-schemeSelect.addEventListener('change', updateInputsByScheme);
-ksqInput.addEventListener('input', computeAndDisplay);
-bsqInput.addEventListener('input', computeAndDisplay);
-
-/* --------- Compute & Display --------- */
-function showTips(kAvg, bsq, final) {
-  const t = I18N[currentLang] || I18N.az;
-  if (final >= 90) tipsBox.textContent = t.tipHigh;
-  else if (kAvg < bsq) tipsBox.textContent = t.tipImproveK;
-  else tipsBox.textContent = t.tipImproveB;
-}
-
-function computeAndDisplay() {
-  const scheme = schemeSelect.value;
-  const t = I18N[currentLang] || I18N.az;
-  let finalNum = 0;
-  let convertText = '';
-  
-  const kqs = parseKQS(ksqInput.value || '');
-  const bsqVal = parseFloat(bsqInput.value);
-
-  if (scheme === 'az') {
-    if (!kqs.length) { resultEl.textContent='—'; convertedEl.textContent=''; tipsBox.textContent=t.needKQS; return; }
-    const { kAvg, final } = calcAZ(kqs, bsqVal);
-    finalNum = final;
-    convertText = `AZ: ${toFixedSmart(finalNum,2)}/100`;
-    showTips(kAvg, Number.isFinite(bsqVal)?bsqVal:0, finalNum);
-  } else if (scheme === 'custom') {
-    if (!kqs.length) { resultEl.textContent='—'; convertedEl.textContent=''; tipsBox.textContent=t.needKQS; return; }
-    const { kAvg, final } = calcCustom(kqs, bsqVal, Number(kqsWeight.value));
-    finalNum = final;
-    convertText = `Custom: ${toFixedSmart(finalNum,2)}/100`;
-    showTips(kAvg, Number.isFinite(bsqVal)?bsqVal:0, finalNum);
-  } else if (scheme === 'us') {
-    if (!Number.isFinite(bsqVal)) { resultEl.textContent='—'; convertedEl.textContent='Enter numeric score'; return; }
-    finalNum = bsqVal;
-    const u = toUSGPA(finalNum);
-    convertText = `US: ${u.grade} / GPA ${u.gpa.toFixed(2)} · ${toFixedSmart(finalNum,2)}/100`;
-    tipsBox.textContent = '';
-  } else if (scheme === 'uk') {
-    if (!Number.isFinite(bsqVal)) { resultEl.textContent='—'; convertedEl.textContent='Enter numeric score'; return; }
-    finalNum = bsqVal;
-    const uk = toUKClass(finalNum);
-    convertText = `UK: ${uk.class} · ${toFixedSmart(uk.percent,2)}%`;
-    tipsBox.textContent = '';
-  } else if (scheme === 'ects') {
-    if (!Number.isFinite(bsqVal)) { resultEl.textContent='—'; convertedEl.textContent='Enter numeric score'; return; }
-    finalNum = bsqVal;
-    const e = toECTS(finalNum);
-    convertText = `ECTS: ${e.grade} · ${toFixedSmart(finalNum,2)}/100`;
-    tipsBox.textContent = '';
-  }
-
-  resultEl.textContent = toFixedSmart(finalNum,3);
-  convertedEl.textContent = convertText;
-
-  return finalNum;
-}
-
-/* --------- Chart & history --------- */
+/* --------- Chart & history handling --------- */
 function initChart() {
-  const canvas = $('#historyChart');
+  const canvas = document.getElementById('historyChart');
   if (!canvas) return;
   if (window.Chart && !chart) {
     chart = new Chart(canvas.getContext('2d'), {
@@ -299,12 +231,74 @@ function initChart() {
     });
   }
 }
-
 function updateChart() {
   if (!chart) { initChart(); return; }
   chart.data.labels = history.map(h => h.date);
   chart.data.datasets[0].data = history.map(h => h.final);
   chart.update();
+}
+
+/* --------- Result display (no counting animation) --------- */
+function showTips(kAvg, bsq, final) {
+  const t = I18N[currentLang] || I18N.az;
+  let msg = '';
+  if (final >= 90) msg = t.tipHigh;
+  else if (kAvg < bsq) msg = t.tipImproveK;
+  else msg = t.tipImproveB;
+  tipsBox.textContent = msg;
+}
+
+function computeAndDisplay() {
+  const t = I18N[currentLang] || I18N.az;
+  const ksqArr = parseKQS(ksqInput.value || '');
+  if (ksqArr.length === 0) {
+    resultEl.textContent = '—';
+    convertedEl.textContent = '';
+    tipsBox.textContent = t.needKQS;
+    return null;
+  }
+
+  const bsqRaw = bsqInput.value;
+  const bsq = (bsqRaw === '' || bsqRaw === null) ? NaN : parseFloat(bsqRaw);
+
+  let base;
+  if (schemeSelect.value === 'custom') {
+    base = calcCustom(ksqArr, bsq, Number(kqsWeight.value));
+  } else {
+    // Always preserve AZ numeric result as the main computed value
+    base = calcAZ(ksqArr, bsq);
+  }
+
+  // Display final immediately (no numeric animation)
+  const finalNum = Number(toFixedSmart(base.final, 3));
+  resultEl.textContent = toFixedSmart(finalNum, 3);
+
+  // Confetti only as a small effect for >=90
+  if (window.confetti && finalNum >= 90) {
+    try {
+      confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+    } catch (e) { /* ignore */ }
+  }
+
+  // Converted scheme display updates immediately
+  let convertText = '';
+  if (schemeSelect.value === 'az' || schemeSelect.value === 'custom') {
+    convertText = AZ: ${toFixedSmart(finalNum, 2)}/100;
+  } else if (schemeSelect.value === 'us') {
+    const u = toUSGPA(finalNum);
+    convertText = US: ${u.grade} (GPA ${u.gpa.toFixed(1)}) · ${toFixedSmart(finalNum, 2)}/100;
+  } else if (schemeSelect.value === 'uk') {
+    const u = toUKClass(finalNum);
+    convertText = UK: ${u.class} · ${toFixedSmart(u.percent, 2)}%;
+  } else if (schemeSelect.value === 'ects') {
+    const e = toECTS(finalNum);
+    convertText = ECTS: ${e.grade} · ${toFixedSmart(finalNum, 2)}/100;
+  }
+  convertedEl.textContent = convertText;
+
+  showTips(base.kAvg, Number.isFinite(bsq) ? bsq : 0, finalNum);
+
+  return { kAvg: Number(toFixedSmart(base.kAvg, 3)), bsq: Number.isFinite(bsq) ? bsq : 0, final: finalNum };
 }
 
 /* --------- Buttons: Hesabla, Save, Clear --------- */
@@ -313,12 +307,12 @@ btnCalc.addEventListener('click', computeAndDisplay);
 btnSave.addEventListener('click', () => {
   const t = I18N[currentLang] || I18N.az;
   const res = computeAndDisplay();
-  if (res === null) return;
+  if (!res) return;
   const entry = {
     date: new Date().toLocaleString(),
-    kAvg: parseFloat(ksqInput.value) || 0,
-    bsq: parseFloat(bsqInput.value) || 0,
-    final: parseFloat(resultEl.textContent) || 0,
+    kAvg: res.kAvg,
+    bsq: res.bsq,
+    final: res.final,
     scheme: schemeSelect.value
   };
   history.push(entry);
@@ -340,7 +334,7 @@ if (btnCSV) {
   btnCSV.addEventListener('click', () => {
     const t = I18N[currentLang] || I18N.az;
     const header = t.csvHeader;
-    const rows = history.map(h => `${h.date},${h.kAvg},${h.bsq},${h.final},${h.scheme}`);
+    const rows = history.map(h => ${h.date},${h.kAvg},${h.bsq},${h.final},${h.scheme});
     const csv = [header, ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -352,7 +346,7 @@ if (btnCSV) {
   });
 }
 
-/* --------- PDF Export --------- */
+/* --------- PDF Export (uses html2canvas + jsPDF loaded in HTML) --------- */
 if (btnPDF) {
   btnPDF.addEventListener('click', async () => {
     const t = I18N[currentLang] || I18N.az;
@@ -381,15 +375,81 @@ if (btnPDF) {
   });
 }
 
-/* --------- Share --------- */
+/* --------- Share button --------- */
 if (btnShare) {
   btnShare.addEventListener('click', async () => {
     const t = I18N[currentLang] || I18N.az;
-    const text = `${t.shareText} ${resultEl.textContent} (${convertedEl.textContent})`;
+    const text = ${t.shareText} ${resultEl.textContent} (${convertedEl.textContent});
     if (navigator.share) {
-      try { await navigator.share({ text }); } catch {}
+      try { await navigator.share({ text }); } catch (e) { /* ignore */ }
     } else if (navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(text);
         tipsBox.textContent = 'Copied to clipboard.';
+      } catch { tipsBox.textContent = 'Copy failed.'; }
+    }
+  });
+}
+
+/* --------- Exam countdown --------- */
+let countdownTimer = null;
+$('#btn-countdown').addEventListener('click', () => {
+  const dateStr = $('#examDate').value;
+  const out = $('#countdown');
+  if (!dateStr) { out.textContent = '—'; return; }
+  const target = new Date(dateStr + 'T00:00:00');
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    const now = new Date();
+    const diff = target - now;
+    if (diff <= 0) {
+      clearInterval(countdownTimer);
+      out.textContent = '0d 0h 0m 0s';
+      return;
+    }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    out.textContent = ${d}d ${h}h ${m}m ${s}s;
+  }, 1000);
+});
+
+/* --------- Embedded calc logic (safe eval-like) --------- */
+const resultCalc = $('#resultCalc');
+$$('.horizontal-buttons button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const c = btn.dataset.c;
+    if (c === 'C') resultCalc.value = '';
+    else if (c === 'B') resultCalc.value = resultCalc.value.slice(0, -1);
+    else if (c === '=') {
+      const expr = resultCalc.value;
+      if (!/^[0-9+\-*/.%() ]+$/.test(expr)) { resultCalc.value = 'Xəta'; return; }
+      try {
+        const val = Function("use strict"; return (${expr}))();
+        resultCalc.value = String(val);
+      } catch {
+        resultCalc.value = 'Xəta';
       }
+    } else {
+      resultCalc.value += c;
+    }
+  });
+});
+
+/* --------- Recompute triggers (updates conversions immediately) --------- */
+kqsWeight.addEventListener('change', computeAndDisplay);
+schemeSelect.addEventListener('change', computeAndDisplay);
+ksqInput.addEventListener('input', computeAndDisplay);
+bsqInput.addEventListener('input', computeAndDisplay);
+
+/* --------- Init on load --------- */
+document.addEventListener('DOMContentLoaded', () => {
+  initChart();
+  updateChart();
+  computeAndDisplay();
+  // attempt to register service worker (HTML already attempts; this is a safety fallback)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker?.register('./sw.js').catch(() => { /* ignore */ });
+  }
+});  
