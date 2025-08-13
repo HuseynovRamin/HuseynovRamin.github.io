@@ -95,17 +95,18 @@ schemeSelect.addEventListener('change', () => {
 // --- Compute Function ---
 function computeAndDisplay() {
   let finalNum = 0;
-  let kAvg = parseKQS(ksqInput.value).reduce((a,b)=>a+b,0)/parseKQS(ksqInput.value).length || 0;
+  let kqsArr = parseKQS(ksqInput.value);
+  let kAvg = kqsArr.length ? kqsArr.reduce((a,b)=>a+b,0)/kqsArr.length : 0;
   let bsq = parseFloat(bsqInput.value);
 
   switch(schemeSelect.value){
     case 'az':
-      if(!parseKQS(ksqInput.value).length){ tipsBox.textContent='Ən azı bir KQS qiyməti daxil edin.'; resultEl.textContent='—'; return;}
+      if(!kqsArr.length){ tipsBox.textContent='Ən azı bir KQS qiyməti daxil edin.'; resultEl.textContent='—'; return;}
       finalNum = kAvg*0.4 + (Number.isFinite(bsq)?bsq:0)*0.6;
       convertedEl.textContent = `AZ: ${toFixedSmart(finalNum,2)}/100`;
       break;
     case 'custom':
-      if(!parseKQS(ksqInput.value).length){ tipsBox.textContent='Ən azı bir KQS qiyməti daxil edin.'; resultEl.textContent='—'; return;}
+      if(!kqsArr.length){ tipsBox.textContent='Ən azı bir KQS qiyməti daxil edin.'; resultEl.textContent='—'; return;}
       let kw = clamp(Number(kqsWeight.value)/100,0,1);
       let bw = 1-kw;
       finalNum = kAvg*kw + (Number.isFinite(bsq)?bsq:0)*bw;
