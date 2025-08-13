@@ -98,9 +98,9 @@ function applyLang(lang) {
   const t = I18N[lang] || I18N.az;
   $('#title-text').textContent = t.title;
   $('#calc-title').textContent = t.calcTitle;
-  $('#label-ksq').innerHTML = <strong>${t.ksq}</strong>;
-  $('#label-bsq').innerHTML = <strong>${t.bsq}</strong>;
-  $('#label-scheme').innerHTML = <strong>${t.scheme}</strong>;
+  $('#label-ksq').innerHTML = `<strong>${t.ksq}</strong>`;
+  $('#label-bsq').innerHTML = `<strong>${t.bsq}</strong>`;
+  $('#label-scheme').innerHTML = `<strong>${t.scheme}</strong>`;
   $('#label-result').textContent = t.result;
   $('#history-title').textContent = t.history;
   $('#exam-title').textContent = t.exam;
@@ -283,16 +283,16 @@ function computeAndDisplay() {
   // Converted scheme display updates immediately
   let convertText = '';
   if (schemeSelect.value === 'az' || schemeSelect.value === 'custom') {
-    convertText = AZ: ${toFixedSmart(finalNum, 2)}/100;
+    convertText = `AZ: ${toFixedSmart(finalNum, 2)}/100`;
   } else if (schemeSelect.value === 'us') {
     const u = toUSGPA(finalNum);
-    convertText = US: ${u.grade} (GPA ${u.gpa.toFixed(1)}) · ${toFixedSmart(finalNum, 2)}/100;
+    convertText = `US: ${u.grade} (GPA ${u.gpa.toFixed(1)}) · ${toFixedSmart(finalNum, 2)}/100`;
   } else if (schemeSelect.value === 'uk') {
     const u = toUKClass(finalNum);
-    convertText = UK: ${u.class} · ${toFixedSmart(u.percent, 2)}%;
+    convertText = `UK: ${u.class} · ${toFixedSmart(u.percent, 2)}%`;
   } else if (schemeSelect.value === 'ects') {
     const e = toECTS(finalNum);
-    convertText = ECTS: ${e.grade} · ${toFixedSmart(finalNum, 2)}/100;
+    convertText = `ECTS: ${e.grade} · ${toFixedSmart(finalNum, 2)}/100`;
   }
   convertedEl.textContent = convertText;
 
@@ -334,7 +334,7 @@ if (btnCSV) {
   btnCSV.addEventListener('click', () => {
     const t = I18N[currentLang] || I18N.az;
     const header = t.csvHeader;
-    const rows = history.map(h => ${h.date},${h.kAvg},${h.bsq},${h.final},${h.scheme});
+    const rows = history.map(h => `${h.date},${h.kAvg},${h.bsq},${h.final},${h.scheme}`);
     const csv = [header, ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -379,7 +379,7 @@ if (btnPDF) {
 if (btnShare) {
   btnShare.addEventListener('click', async () => {
     const t = I18N[currentLang] || I18N.az;
-    const text = ${t.shareText} ${resultEl.textContent} (${convertedEl.textContent});
+    const text = `${t.shareText} ${resultEl.textContent} (${convertedEl.textContent})`;
     if (navigator.share) {
       try { await navigator.share({ text }); } catch (e) { /* ignore */ }
     } else if (navigator.clipboard) {
@@ -411,7 +411,7 @@ $('#btn-countdown').addEventListener('click', () => {
     const h = Math.floor((diff % 86400000) / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);
-    out.textContent = ${d}d ${h}h ${m}m ${s}s;
+    out.textContent = `${d}d ${h}h ${m}m ${s}s`;
   }, 1000);
 });
 
@@ -426,7 +426,7 @@ $$('.horizontal-buttons button').forEach(btn => {
       const expr = resultCalc.value;
       if (!/^[0-9+\-*/.%() ]+$/.test(expr)) { resultCalc.value = 'Xəta'; return; }
       try {
-        const val = Function("use strict"; return (${expr}))();
+        const val = Function(`"use strict"; return (${expr})`)();
         resultCalc.value = String(val);
       } catch {
         resultCalc.value = 'Xəta';
@@ -452,4 +452,4 @@ document.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker?.register('./sw.js').catch(() => { /* ignore */ });
   }
-});  
+});
