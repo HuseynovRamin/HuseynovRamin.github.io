@@ -460,7 +460,6 @@ $('#btn-countdown').addEventListener('click', () => {
   }, 1000);
 });
 
-/* --------- Embedded calc logic (safe eval-like) --------- */
 const resultCalc = $('#resultCalc');
 $$('.horizontal-buttons button').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -469,7 +468,10 @@ $$('.horizontal-buttons button').forEach(btn => {
     else if (c === 'B') resultCalc.value = resultCalc.value.slice(0, -1);
     else if (c === '=') {
       const expr = resultCalc.value;
-      if (!/^[0-9+\-*/.%() ]+$/.test(expr)) { resultCalc.value = 'Xəta'; return; }
+      if (!/^[0-9+\-*/.%() ]+$/.test(expr)) { 
+        resultCalc.value = 'Xəta'; 
+        return; 
+      }
       try {
         const val = Function(`"use strict"; return (${expr})`)();
         resultCalc.value = String(val);
@@ -493,8 +495,11 @@ document.addEventListener('DOMContentLoaded', () => {
   updateKQSBSQLabels();
   computeAndDisplay();
   initChart();
-  // attempt to register service worker (HTML already attempts; this is a safety fallback)
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker?.register('./sw.js').catch(() => { /* ignore */ });
+
+  // ✅ Register Service Worker for PWA
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then(() => console.log("✅ Service Worker registered"))
+      .catch(err => console.log("❌ Service Worker failed", err));
   }
 });
