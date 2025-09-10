@@ -1,92 +1,166 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="az">
 <head>
-  <meta charset="UTF-8">
-  <title>SAT Homework</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    .correct { background: #a7f3d0; }  /* green */
-    .incorrect { background: #fecaca; } /* red */
-  </style>
-</head>
-<body class="bg-gradient-to-r from-indigo-100 via-pink-50 to-yellow-50 p-6">
-  <div class="max-w-3xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-    <h1 class="text-2xl font-bold mb-4">SAT Homework - Geometry</h1>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Academic Grade Calculator</title>
+  <link rel="stylesheet" href="style.css" />
 
-    <!-- Student Info -->
-    <div class="mb-4">
-      <input id="studentName" placeholder="Your Name" class="border p-2 rounded w-full mb-2">
-      <input id="studentEmail" placeholder="Your Email" class="border p-2 rounded w-full">
-    </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 
-    <!-- Questions -->
-    <div class="mb-4">
-      <img src="images/q1.png" alt="Question 1" class="mb-2">
-      <input id="q1" placeholder="Answer (A/B/C/D)" class="border p-2 rounded w-full">
-    </div>
 
-    <div class="mb-4">
-      <img src="images/q2.png" alt="Question 2" class="mb-2">
-      <input id="q2" placeholder="Answer (A/B/C/D)" class="border p-2 rounded w-full">
-    </div>
-
-    <div class="mb-4">
-      <img src="images/q3.png" alt="Question 3" class="mb-2">
-      <input id="q3" placeholder="Answer (A/B/C/D)" class="border p-2 rounded w-full">
-    </div>
-
-    <!-- Submit -->
-    <button onclick="submitHomework()" class="bg-indigo-600 text-white px-4 py-2 rounded">Submit</button>
-
-    <!-- Results -->
-    <div id="results" class="mt-6 hidden p-4 rounded bg-gray-100"></div>
-  </div>
-
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d6efd" />
   <script>
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwTyLuIGW04l95B2zmM8LXajXsHTKwBZBKI42Z2ZwTTbF1AoSyTFWyJ1xN4TUGmC98K/exec";
-
-    const correctAnswers = {
-      q1: "B",
-      q2: "D",
-      q3: "A"
-    };
-
-    function submitHomework() {
-      const name = document.getElementById("studentName").value.trim();
-      const email = document.getElementById("studentEmail").value.trim();
-      const answers = {
-        q1: document.getElementById("q1").value.trim().toUpperCase(),
-        q2: document.getElementById("q2").value.trim().toUpperCase(),
-        q3: document.getElementById("q3").value.trim().toUpperCase()
-      };
-
-      // Check correctness
-      const correctness = {};
-      Object.keys(answers).forEach(q => {
-        correctness[q] = (answers[q] === correctAnswers[q]);
+    
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(console.warn);
       });
-
-      // Show results
-      const resultsDiv = document.getElementById("results");
-      resultsDiv.innerHTML = "<h2 class='font-bold mb-2'>Results</h2>";
-      Object.keys(answers).forEach(q => {
-        const isCorrect = correctness[q];
-        resultsDiv.innerHTML += `<div class='p-2 mb-2 rounded ${isCorrect ? "correct" : "incorrect"}'>
-          ${q.toUpperCase()}: Your answer = ${answers[q] || "?"}, Correct = ${correctAnswers[q]}
-        </div>`;
-      });
-      resultsDiv.classList.remove("hidden");
-
-      // Send to Google Sheets
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify({ name, email, homework: "Geometry", answers, correctness }),
-        headers: { "Content-Type": "application/json" }
-      })
-      .then(res => res.json())
-      .then(data => console.log("Submitted:", data))
-      .catch(err => console.error("Error:", err));
     }
   </script>
+</head>
+<body>
+ 
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">📚</span>
+      <h1 id="title-text">Akademik Qiymət Hesablama</h1>
+      <span class="badge" id="az-badge" title="Azerbaijan 40/60">🇦🇿 40/60</span>
+    </div>
+
+    <div class="controls">
+      <div class="lang-switch">
+        <button class="chip" data-lang="az">🇦🇿 AZ</button>
+        <button class="chip" data-lang="en">🇺🇸 EN</button>
+      </div>
+      <label class="switch" title="Dark mode">
+        <input type="checkbox" id="darkToggle" />
+        <span class="slider"></span>
+      </label>
+    </div>
+  </header>
+
+ 
+  <div id="google_translate_element" class="translate-widget" aria-hidden="true"></div>
+  <script>
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement(
+        {pageLanguage: "az", layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
+        "google_translate_element"
+      );
+    }
+  </script>
+  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+ 
+  <main class="container">
+    <section class="card">
+      <h2 id="calc-title">📊 KQS və BSQ daxil edin</h2>
+
+      <label for="ksq" id="label-ksq"><strong>📊 KQS qiymətləri (vergüllə ayırın):</strong></label>
+      <input type="text" id="ksq" placeholder="Məs: 85, 90, 78" class="input-field" inputmode="decimal" />
+
+      <label for="bsq" id="label-bsq"><strong>📝 BSQ qiyməti (əgər varsa):</strong></label>
+      <input type="number" id="bsq" placeholder="Məs: 92" class="input-field" />
+
+     
+      <div class="row">
+        <div class="scheme">
+          <label id="label-scheme"><strong>🎯 Qiymətləndirmə sistemi:</strong></label>
+          <select id="schemeSelect" aria-label="Grading scheme">
+            <option value="az">🇦🇿 Azerbaijan (KQS 40% + BSQ 60%)</option>
+            <option value="us">🇺🇸 US GPA (4.0 scale)</option>
+            <option value="uk">🇬🇧 UK Percent & Class</option>
+            <option value="ects">🇪🇺 ECTS (A–F)</option>
+            <option value="custom">⚙️ Custom weighting</option>
+          </select>
+        </div>
+
+        <div id="customWeights" class="weights hidden">
+          <label for="kqsWeight" id="label-kqs-w"><span>📐 KQS %</span> <span id="kqsWeightVal">40</span>%</label>
+          <input type="range" id="kqsWeight" min="0" max="100" value="40" />
+          <label for="bsqWeight" id="label-bsq-w"><span>📐 BSQ %</span> <span id="bsqWeightVal">60</span>%</label>
+          <input type="range" id="bsqWeight" min="0" max="100" value="60" disabled />
+          <small id="weight-note">AZ default 40/60 saxlanılıb. Custom seçsən, sürüşdür.</small>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btn-calc" class="primary">🚀 Hesabla</button>
+        <button id="btn-save" class="secondary">💾 Yadda saxla</button>
+        <button id="btn-clear" class="ghost">🧹 Tarixi sil</button>
+      </div>
+
+      <div class="result-line">
+        <h2 class="result-box">✅ <span id="label-result">Nəticə:</span> <span id="result">-</span></h2>
+        <div id="converted" class="converted"></div>
+      </div>
+
+      <div class="tips" id="tipsBox" aria-live="polite"></div>
+    </section>
+
+   
+    <section class="card">
+      <h2 id="history-title">📈 Nəticə tarixi</h2>
+      <canvas id="historyChart" height="120"></canvas>
+      <div class="actions">
+        <button id="btn-pdf" class="secondary">📄 PDF Yüklə</button>
+        <button id="btn-csv" class="secondary">🧾 CSV Yüklə</button>
+        <button id="btn-share" class="ghost">🔗 Paylaş</button>
+      </div>
+    </section>
+
+    
+    <section class="card">
+      <h2 id="exam-title">⏳ İmtahana geri sayım</h2>
+      <div class="row">
+        <input type="date" id="examDate" />
+        <button id="btn-countdown" class="ghost">🕒 Başlat</button>
+      </div>
+      <div id="countdown" class="countdown">—</div>
+    </section>
+
+    
+    <section class="card">
+      <h2>🧮 Kalkulyator</h2>
+      <input type="text" id="resultCalc" readonly />
+      <div class="horizontal-buttons">
+        <button data-c="C">C</button>
+        <button data-c="B">⌫</button>
+        <button data-c="%">%</button>
+        <button data-c="/">÷</button>
+
+        <button data-c="7">7</button>
+        <button data-c="8">8</button>
+        <button data-c="9">9</button>
+        <button data-c="*">×</button>
+
+        <button data-c="4">4</button>
+        <button data-c="5">5</button>
+        <button data-c="6">6</button>
+        <button data-c="-">−</button>
+
+        <button data-c="1">1</button>
+        <button data-c="2">2</button>
+        <button data-c="3">3</button>
+        <button data-c="+">+</button>
+
+        <button class="zero" data-c="0">0</button>
+        <button data-c=".">.</button>
+        <button class="equal" data-c="=">=</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>© <span id="year"></span> Ramin — Global Academic Calculator • PWA</small>
+  </footer>
+
+  <script src="script.js" defer></script>
 </body>
 </html>
