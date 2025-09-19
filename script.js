@@ -33,6 +33,7 @@ const I18N = {
     tipImproveB: "BSQ aşağıdır: imtahan strategiyası və sınaq testlərinə fokuslan.",
     countdown: "Geri sayım:",
     days: "gün",
+    begins: "Başlat",
     pdfTitle: "Akademik Hesabat",
     shareText: "Mənim akademik nəticəm:",
     csvHeader: "Tarix,KQS Orta,BSQ,Nəticə,Sxem"
@@ -62,6 +63,7 @@ const I18N = {
     tipImproveB: "Final exam score is lower: focus on exam strategy and timed mocks.",
     countdown: "Countdown:",
     days: "days",
+    begins: "Start the timer"
     pdfTitle: "Academic Report",
     shareText: "My academic result:",
     csvHeader: "Date,KQS Avg,BSQ,Final,Scheme"
@@ -71,6 +73,7 @@ const I18N = {
 let currentLang = localStorage.getItem('lang') || 'az';
 const darkToggle = $('#darkToggle');
 const schemeSelect = $('#schemeSelect');
+const begins = $('#begins');
 const customWeights = $('#customWeights');
 const kqsWeight = $('#kqsWeight');
 const bsqWeight = $('#bsqWeight');
@@ -100,6 +103,7 @@ function applyLang(lang) {
   $('#label-bsq').innerHTML = `<strong>${t.bsq}</strong>`;
   $('#label-scheme').innerHTML = `<strong>${t.scheme}</strong>`;
   $('#label-result').textContent = t.result;
+  $('#begins').textContent = t.begins;
   $('#history-title').textContent = t.history;
   $('#exam-title').textContent = t.exam;
   $('#az-badge').textContent = t.azBadge;
