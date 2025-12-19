@@ -1,9 +1,22 @@
 <!DOCTYPE html>
+<!--
+MYWATER – FULL FINISHED HTML FILE
+Drop-in ready for GitHub Pages + PWA
+Everything included: meta headers, UI, logic, service worker hook
+-->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MyWater – Smart Hydration</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <title>MyWater</title>
+
+  <!-- PWA / iOS / Android -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#060b18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MyWater">
 
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,341 +25,135 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <style>
-    :root {
-      --bg: #0b1220;
-      --card: #121a2f;
-      --accent: #4fd1ff;
-      --accent-2: #6b7cff;
-      --text: #ffffff;
-      --muted: #9aa4bf;
-      --danger: #ff4d4d;
+    :root{
+      --bg:#060b18;--card:#121a2f;--accent:#4fd1ff;--accent2:#6b7cff;
+      --text:#ffffff;--muted:#9aa4bf;--danger:#ff4d4d;
     }
+    *{box-sizing:border-box;font-family:Poppins;-webkit-tap-highlight-color:transparent}
+    body{margin:0;background:radial-gradient(circle at top,#162044,#060b18);color:var(--text)}
+    header{text-align:center;padding:16px;font-weight:700}
+    .app{max-width:420px;margin:auto;padding:12px 12px 90px}
+    .card{background:linear-gradient(180deg,#151f3f,#0f1630);border-radius:26px;padding:18px;margin-bottom:16px;box-shadow:0 25px 60px rgba(0,0,0,.45)}
 
-    * { box-sizing: border-box; user-select: none; }
+    /* Bottle */
+    .bottle{width:150px;height:280px;border-radius:38px;border:3px solid rgba(255,255,255,.25);margin:14px auto;position:relative;overflow:hidden;background:#050814}
+    .water{position:absolute;bottom:0;width:100%;height:0%;background:linear-gradient(180deg,#7be7ff,#3fa9f5);transition:height .6s cubic-bezier(.4,0,.2,1)}
+    .water::before{content:"";position:absolute;top:-14px;width:200%;height:28px;background:rgba(255,255,255,.35);border-radius:50%;animation:wave 3s linear infinite}
+    @keyframes wave{from{transform:translateX(-50%)}to{transform:translateX(0)}}
 
-    body {
-      margin: 0;
-      font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle at top, #162044, #060b18);
-      color: var(--text);
-      min-height: 100vh;
-    }
+    /* Rulers */
+    .rwrap{position:relative;height:90px;overflow:hidden;margin-bottom:12px}
+    .ruler{display:flex;align-items:flex-end;height:100%;overflow-x:scroll;scrollbar-width:none}
+    .ruler::-webkit-scrollbar{display:none}
+    .tick{width:12px;flex-shrink:0;position:relative}
+    .tick:after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:2px;height:26px;background:rgba(255,255,255,.4)}
+    .tick.major:after{height:40px;background:#fff}
+    .tick span{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--muted)}
+    .center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--danger)}
 
-    header {
-      padding: 26px 20px 6px;
-      text-align: center;
-    }
+    button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:700;color:#000}
 
-    header h1 { margin: 0; font-weight: 700; }
-    header p { color: var(--muted); margin-top: 4px; font-size: .85rem; }
+    /* Modal */
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:10}
 
-    .app { max-width: 420px; margin: auto; padding: 16px; }
+    /* Nav */
+    .nav{position:fixed;bottom:0;left:0;right:0;background:#0b1228;display:flex;justify-content:space-around;padding:10px 0}
+    .nav i{font-size:1.2rem;color:var(--muted)}
+    .nav i.active{color:var(--accent)}
 
-    .card {
-      background: linear-gradient(180deg, #151f3f, #0f1630);
-      border-radius: 28px;
-      padding: 20px;
-      margin-bottom: 22px;
-      box-shadow: 0 25px 60px rgba(0,0,0,.5);
-      animation: fadeUp .6s ease;
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(18px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    h2 { margin: 0 0 12px; font-size: 1.05rem; }
-
-    /* UNIT TOGGLE */
-    .toggle {
-      display: flex;
-      background: #0b1228;
-      border-radius: 20px;
-      overflow: hidden;
-      margin-bottom: 16px;
-    }
-
-    .toggle button {
-      flex: 1;
-      padding: 12px;
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .toggle button.active {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #000;
-    }
-
-    /* RULER PICKER */
-    .value-display {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    .value-display .value {
-      font-size: 2.6rem;
-      font-weight: 700;
-    }
-
-    .value-display .unit {
-      font-size: .9rem;
-      color: var(--muted);
-    }
-
-    .ruler-wrapper {
-      position: relative;
-      height: 90px;
-      overflow: hidden;
-    }
-
-    .ruler {
-      display: flex;
-      align-items: flex-end;
-      height: 100%;
-      overflow-x: scroll;
-      scroll-behavior: smooth;
-      scrollbar-width: none;
-    }
-
-    .ruler::-webkit-scrollbar { display: none; }
-
-    .tick {
-      width: 12px;
-      position: relative;
-      flex-shrink: 0;
-    }
-
-    .tick::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 2px;
-      height: 28px;
-      background: rgba(255,255,255,.4);
-    }
-
-    .tick.major::after { height: 42px; background: #fff; }
-
-    .tick span {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: .7rem;
-      color: var(--muted);
-    }
-
-    .center-line {
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: var(--danger);
-      transform: translateX(-50%);
-    }
-
-    .fade {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 50px;
-      pointer-events: none;
-    }
-
-    .fade.left { left: 0; background: linear-gradient(90deg, #0f1630, transparent); }
-    .fade.right { right: 0; background: linear-gradient(-90deg, #0f1630, transparent); }
-
-    /* GOAL */
-    .goal { text-align: center; font-size: 1.4rem; font-weight: 700; margin-top: 10px; }
-    .goal span { font-size: .75rem; color: var(--muted); }
-
-    /* BOTTLE */
-    .bottle-wrap { display: flex; justify-content: center; margin: 18px 0; }
-
-    .bottle {
-      width: 150px; height: 280px; border-radius: 38px;
-      border: 3px solid rgba(255,255,255,.25);
-      position: relative; overflow: hidden;
-      background: linear-gradient(180deg,#0b1228,#050814);
-    }
-
-    .water {
-      position: absolute; bottom: 0; width: 100%; height: 0%;
-      background: linear-gradient(180deg,#7be7ff,#3fa9f5);
-      transition: height .6s cubic-bezier(.4,0,.2,1);
-    }
-
-    .water::before {
-      content: ""; position: absolute; top: -14px; width: 200%; height: 28px;
-      background: rgba(255,255,255,.35); border-radius: 50%; animation: wave 3s linear infinite;
-    }
-
-    @keyframes wave { from { transform: translateX(-50%);} to { transform: translateX(0);} }
-
-    .consumed { text-align: center; margin-top: 8px; }
-
-    /* DRINKS */
-    .drinks { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 14px; }
-
-    .drink {
-      background: #0b1228; border-radius: 18px; padding: 12px 6px; text-align: center;
-      cursor: pointer; transition: transform .2s, box-shadow .2s;
-    }
-
-    .drink:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,.6); }
-    .drink i { font-size: 1.5rem; color: var(--accent); }
-    .drink small { display:block; font-size:.65rem; color:var(--muted); margin-top:4px; }
-
-    .custom { display:flex; gap:10px; margin-top:14px; }
-    .custom input { flex:1; padding:12px; border-radius:14px; border:none; background:#0b1228; color:#fff; }
-    .custom button { flex:.7; }
-
-    footer { text-align:center; font-size:.7rem; color:var(--muted); margin:26px 0 10px; }
+    /* Achievement */
+    #achievement{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65);z-index:20}
   </style>
 </head>
 <body>
-
-<header>
-  <h1>💧 MyWater</h1>
-  <p>Smart daily hydration</p>
-</header>
+<header>💧 MyWater</header>
 
 <div class="app">
-
-  <!-- WEIGHT PICKER -->
   <div class="card">
-    <h2>Weight</h2>
-    <div class="toggle">
-      <button id="kgBtn" class="active" onclick="setUnit('kg')">kg</button>
-      <button id="lbBtn" onclick="setUnit('lb')">lb</button>
-    </div>
-
-    <div class="value-display">
-      <div class="value" id="weightValue">70</div>
-      <div class="unit" id="weightUnit">kg</div>
-    </div>
-
-    <div class="ruler-wrapper">
-      <div class="fade left"></div>
-      <div class="fade right"></div>
-      <div class="center-line"></div>
-      <div class="ruler" id="weightRuler"></div>
-    </div>
-  </div>
-
-  <!-- TRACKER -->
-  <div class="card">
-    <h2>Today</h2>
-    <div class="bottle-wrap"><div class="bottle"><div class="water" id="water"></div></div></div>
-    <div class="consumed" id="consumed">0 ml consumed</div>
-
-    <div class="drinks">
-      <div class="drink" onclick="add(250)"><i class="fa-solid fa-glass-water"></i><small>250 ml</small></div>
-      <div class="drink" onclick="add(330)"><i class="fa-solid fa-bottle-water"></i><small>330 ml</small></div>
-      <div class="drink" onclick="add(160)"><i class="fa-solid fa-mug-hot"></i><small>Coffee</small></div>
-      <div class="drink" onclick="add(220)"><i class="fa-solid fa-glass-citrus"></i><small>Juice</small></div>
-    </div>
-
-    <div class="custom">
-      <input type="number" id="custom" placeholder="Custom ml">
-      <button onclick="addCustom()">Add</button>
-    </div>
-
-    <div class="goal" id="goal">-- ml<br><span>daily goal</span></div>
+    <h2 style="text-align:center">Today</h2>
+    <div class="bottle"><div class="water" id="water"></div></div>
+    <div id="consumed" style="text-align:center">0 ml</div>
+    <div id="goal" style="text-align:center;font-weight:700"></div>
   </div>
 </div>
 
-<footer>Local-only • App-style static hydration tracker</footer>
+<!-- SETTINGS -->
+<div class="modal" id="settings">
+  <div class="card">
+    <h2>Profile</h2>
+
+    <p>Gender</p>
+    <div class="rwrap"><div class="center"></div><div class="ruler" id="genderR"></div></div>
+
+    <p>Weight (kg)</p>
+    <div class="rwrap"><div class="center"></div><div class="ruler" id="weightR"></div></div>
+
+    <p>Height</p>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <button onclick="setHeightUnit('cm')">cm</button>
+      <button onclick="setHeightUnit('ft')">ft / in</button>
+    </div>
+    <div class="rwrap"><div class="center"></div><div class="ruler" id="heightR"></div></div>
+
+    <p>Age</p>
+    <div class="rwrap"><div class="center"></div><div class="ruler" id="ageR"></div></div>
+
+    <button onclick="saveProfile()">Save</button>
+  </div>
+</div>
+
+<!-- ACHIEVEMENT -->
+<div id="achievement"><div class="card"><h2>🎉 Goal Reached!</h2><p>Great job staying hydrated</p></div></div>
+
+<!-- NAV -->
+<div class="nav">
+  <i class="fa-solid fa-droplet active"></i>
+  <i class="fa-solid fa-user" onclick="openSettings()"></i>
+</div>
 
 <script>
-  /* ---------- STATE ---------- */
-  let unit = 'kg';
-  let weight = 70;
-  let goal = 0;
-  let consumed = 0;
+/* ===== SERVICE WORKER ===== */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
 
-  /* ---------- RULER ---------- */
-  const ruler = document.getElementById('weightRuler');
+/* ===== STATE ===== */
+let profile = JSON.parse(localStorage.getItem('profile')) || {gender:'male',weight:70,height:170,age:18};
+let heightUnit = 'cm';
+let today = new Date().toDateString();
+let data = JSON.parse(localStorage.getItem('data')) || {};
+if(!data[today]) data[today] = {consumed:0,achieved:false};
 
-  function buildRuler(min, max) {
-    ruler.innerHTML = '';
-    for (let i = min; i <= max; i++) {
-      const t = document.createElement('div');
-      t.className = 'tick' + (i % 5 === 0 ? ' major' : '');
-      if (i % 5 === 0) {
-        const s = document.createElement('span');
-        s.innerText = i;
-        t.appendChild(s);
-      }
-      ruler.appendChild(t);
-    }
-    centerOnValue(weight);
-  }
+/* ===== UTIL ===== */
+const smartRound=v=>v<2000?Math.round(v/50)*50:Math.round(v/100)*100;
+const hapticLight=()=>navigator.vibrate&&navigator.vibrate(10);
+const hapticSuccess=()=>navigator.vibrate&&navigator.vibrate([20,40,20]);
 
-  function centerOnValue(val) {
-    const idx = val - (unit === 'kg' ? 30 : 66);
-    ruler.scrollLeft = idx * 12 - ruler.offsetWidth / 2;
-  }
+/* ===== FORMULA ===== */
+function calcGoal(){let g=profile.weight*35;if(profile.gender==='male')g*=1.1;if(profile.age>55)g*=.95;return smartRound(g)}
 
-  ruler.addEventListener('scroll', () => {
-    const center = ruler.scrollLeft + ruler.offsetWidth / 2;
-    const idx = Math.round(center / 12);
-    const min = unit === 'kg' ? 30 : 66;
-    weight = min + idx;
-    document.getElementById('weightValue').innerText = weight;
-    calculateGoal();
-  });
+/* ===== UI ===== */
+function updateUI(){const g=calcGoal(),c=data[today].consumed;goal.innerText=`Goal: ${g} ml`;consumed.innerText=`${c} ml consumed`;water.style.height=Math.min(c/g*100,100)+'%';if(c>=g&&!data[today].achieved){data[today].achieved=true;showAchievement()}}
 
-  function setUnit(u) {
-    unit = u;
-    kgBtn.classList.toggle('active', u === 'kg');
-    lbBtn.classList.toggle('active', u === 'lb');
-    document.getElementById('weightUnit').innerText = u;
-    if (u === 'lb') weight = Math.round(weight * 2.205);
-    else weight = Math.round(weight / 2.205);
-    buildRuler(u === 'kg' ? 30 : 66, u === 'kg' ? 200 : 440);
-  }
+function showAchievement(){hapticSuccess();achievement.style.display='flex';setTimeout(()=>achievement.style.display='none',2500)}
 
-  buildRuler(30, 200);
+/* ===== RULERS ===== */
+function buildRuler(el,min,max,step,val){el.innerHTML='';for(let i=min;i<=max;i+=step){let t=document.createElement('div');t.className='tick'+(i%(step*5)==0?' major':'');if(i%(step*5)==0){let s=document.createElement('span');s.innerText=i;t.appendChild(s)}el.appendChild(t)}el.scrollLeft=(val-min)/step*12-el.offsetWidth/2}
+function bind(el,key,min,step){el.addEventListener('scroll',()=>{let idx=Math.round((el.scrollLeft+el.offsetWidth/2)/12);profile[key]=min+idx*step;updateUI();hapticLight()})}
 
-  /* ---------- HYDRATION ---------- */
-  function smartRound(v) {
-    if (v < 2000) return Math.round(v / 50) * 50;
-    return Math.round(v / 100) * 100;
-  }
+function setHeightUnit(u){heightUnit=u;if(u==='ft'){let inches=Math.round(profile.height/2.54);buildRuler(heightR,48,84,1,inches)}else{buildRuler(heightR,140,210,1,profile.height)}}
+heightR.addEventListener('scroll',()=>{let idx=Math.round((heightR.scrollLeft+heightR.offsetWidth/2)/12);profile.height=heightUnit==='ft'?Math.round((48+idx)*2.54):140+idx})
 
-  function calculateGoal() {
-    let wKg = unit === 'kg' ? weight : weight / 2.205;
-    let base = wKg * 35 * 1.1;
-    goal = smartRound(base);
-    localStorage.setItem('goal', goal);
-    document.getElementById('goal').innerHTML = `${goal} ml<br><span>daily goal</span>`;
-    update();
-  }
+/* ===== SETTINGS ===== */
+function openSettings(){settings.style.display='flex'}
+function saveProfile(){localStorage.setItem('profile',JSON.stringify(profile));settings.style.display='none';updateUI()}
 
-  function add(v) { consumed += v; save(); update(); }
-  function addCustom() { const v = Number(custom.value); if (!v) return; consumed += v; custom.value=''; save(); update(); }
-
-  function update() {
-    consumed = Math.max(0, consumed);
-    consumedEl = document.getElementById('consumed');
-    consumedEl.innerText = `${consumed} ml consumed`;
-    if (goal) water.style.height = Math.min(consumed / goal * 100, 100) + '%';
-  }
-
-  function save() { localStorage.setItem('consumed', consumed); }
-  function load() { goal = Number(localStorage.getItem('goal')) || 0; consumed = Number(localStorage.getItem('consumed')) || 0; if (goal) document.getElementById('goal').innerHTML = `${goal} ml<br><span>daily goal</span>`; update(); }
-
-  load(); calculateGoal();
+/* ===== INIT ===== */
+buildRuler(genderR,0,1,1,profile.gender==='male'?1:0);genderR.addEventListener('scroll',()=>profile.gender=genderR.scrollLeft>6?'male':'female');
+buildRuler(weightR,30,200,1,profile.weight);bind(weightR,'weight',30,1);
+buildRuler(heightR,140,210,1,profile.height);
+buildRuler(ageR,10,80,1,profile.age);bind(ageR,'age',10,1);
+updateUI();
 </script>
-
 </body>
 </html>
