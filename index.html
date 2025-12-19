@@ -19,6 +19,8 @@
   --accent2:#6b7cff;
   --text:#fff;
   --muted:#9aa4bf;
+  --success:#4dffb8;
+  --warning:#ffb84d;
 }
 *{box-sizing:border-box;font-family:Poppins}
 body{margin:0;background:radial-gradient(circle at top,#162044,#060b18);color:var(--text)}
@@ -30,6 +32,7 @@ body{margin:0;background:radial-gradient(circle at top,#162044,#060b18);color:va
   border-radius:26px;
   padding:18px;
   margin-bottom:16px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 
 /* BOTTLE */
@@ -37,6 +40,7 @@ body{margin:0;background:radial-gradient(circle at top,#162044,#060b18);color:va
   width:150px;height:280px;margin:16px auto;
   border-radius:36px;border:3px solid rgba(255,255,255,.25);
   position:relative;overflow:hidden;
+  box-shadow:0 0 30px rgba(79,209,255,0.2);
 }
 .water{
   position:absolute;bottom:0;width:100%;height:0%;
@@ -51,7 +55,9 @@ button{
   background:linear-gradient(135deg,var(--accent),var(--accent2));
   font-weight:700;color:#000;
   cursor:pointer;
+  transition:transform 0.2s, box-shadow 0.2s;
 }
+button:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(79,209,255,0.4)}
 
 /* NAV */
 .nav{
@@ -59,18 +65,26 @@ button{
   background:#0b1228;
   display:flex;justify-content:space-around;
   padding:12px 0;
+  border-top:1px solid rgba(255,255,255,0.1);
+  z-index:100;
 }
-.nav i{color:var(--muted);font-size:1.3rem}
-.nav i.active{color:var(--accent)}
+.nav i{color:var(--muted);font-size:1.3rem;cursor:pointer;transition:color 0.3s}
+.nav i.active{color:var(--accent);text-shadow:0 0 10px rgba(79,209,255,0.7)}
+.nav i:hover{color:var(--accent)}
 
 /* MODAL */
 .modal{
   position:fixed;inset:0;
-  background:rgba(0,0,0,.65);
+  background:rgba(0,0,0,.85);
   display:none;align-items:center;justify-content:center;
-  z-index:50;
+  z-index:1000;
+  backdrop-filter:blur(5px);
 }
-.modal-content{width:90%;max-width:380px}
+.modal-content{
+  width:90%;max-width:380px;
+  animation:modalSlide 0.3s ease-out;
+}
+@keyframes modalSlide{from{transform:translateY(50px);opacity:0}to{transform:translateY(0);opacity:1}}
 
 /* GENDER */
 .gender-grid{
@@ -82,60 +96,306 @@ button{
   padding:20px;font-size:18px;
 }
 
-/* RULER */
-.rwrap{position:relative;height:80px;overflow:hidden}
+/* RULER FIX */
+.rwrap{
+  position:relative;
+  height:120px;
+  overflow:hidden;
+  margin:20px 0;
+  background:rgba(255,255,255,0.05);
+  border-radius:15px;
+  padding:10px 0;
+}
+.ruler-container{
+  width:100%;
+  height:100px;
+  position:relative;
+}
 .ruler{
-  display:flex;overflow-x:scroll;
+  display:flex;
+  height:100px;
+  align-items:flex-end;
+  overflow-x:scroll;
   scrollbar-width:none;
-  padding:0 50%;
+  padding:0 calc(50% - 11px);
+  scroll-behavior:smooth;
 }
 .ruler::-webkit-scrollbar{display:none}
-.tick{width:22px;flex-shrink:0;position:relative}
-.tick::after{
-  content:"";position:absolute;bottom:0;left:50%;
-  transform:translateX(-50%);
-  width:2px;height:26px;background:rgba(255,255,255,.4)
+.tick{
+  width:22px;
+  flex-shrink:0;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-end;
 }
-.tick.major::after{height:40px;background:#fff}
-.tick span{
-  position:absolute;top:-18px;left:50%;
+.tick::after{
+  content:"";
+  position:absolute;
+  bottom:20px;
+  left:50%;
   transform:translateX(-50%);
-  font-size:12px;color:var(--muted)
+  width:2px;
+  background:rgba(255,255,255,.4);
+  z-index:1;
+}
+.tick.minor::after{height:20px;}
+.tick.major::after{
+  height:40px;
+  background:#fff;
+  width:3px;
+}
+.tick span{
+  position:absolute;
+  bottom:-25px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:12px;
+  color:var(--muted);
+  white-space:nowrap;
 }
 .center-line{
-  position:absolute;top:0;bottom:0;left:50%;
-  width:2px;background:#ff4d4d
+  position:absolute;
+  top:0;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:4px;
+  background:var(--accent);
+  z-index:2;
+  box-shadow:0 0 10px var(--accent);
+}
+.ruler-value{
+  text-align:center;
+  font-size:28px;
+  font-weight:700;
+  margin:10px 0;
+  color:var(--accent);
+  text-shadow:0 0 10px rgba(79,209,255,0.5);
 }
 
-/* AGE */
+/* AGE WHEEL FIX */
+.age-wheel-container{
+  width:100%;
+  height:120px;
+  position:relative;
+  margin:20px 0;
+  background:rgba(255,255,255,0.05);
+  border-radius:15px;
+  overflow:hidden;
+}
 .age-wheel{
-  display:flex;overflow-x:scroll;
+  display:flex;
+  height:100%;
+  align-items:center;
+  overflow-x:scroll;
   scrollbar-width:none;
-  padding:0 50%;
+  scroll-behavior:smooth;
+  padding:0 calc(50% - 30px);
 }
 .age-wheel::-webkit-scrollbar{display:none}
 .age-item{
-  width:60px;text-align:center;
-  font-size:22px;color:var(--muted)
+  width:60px;
+  height:60px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  font-size:22px;
+  color:var(--muted);
+  cursor:pointer;
+  transition:all 0.3s;
+  border-radius:50%;
+}
+.age-item:hover{
+  background:rgba(79,209,255,0.1);
 }
 .age-item.active{
   color:var(--accent);
   font-weight:700;
-  transform:scale(1.3);
+  font-size:28px;
+  background:rgba(79,209,255,0.2);
+  transform:scale(1.2);
+  box-shadow:0 0 20px rgba(79,209,255,0.4);
 }
+.age-center-line{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:3px;
+  height:80%;
+  background:var(--accent);
+  z-index:1;
+  box-shadow:0 0 10px var(--accent);
+}
+
+/* DRINK AMOUNT GRID */
+.amount-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin:20px 0;
+}
+.amount-btn{
+  padding:16px 8px;
+  font-size:14px;
+  background:rgba(255,255,255,0.1);
+  border:2px solid transparent;
+  border-radius:12px;
+  color:var(--text);
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.amount-btn:hover{
+  background:rgba(79,209,255,0.2);
+  transform:translateY(-2px);
+}
+.amount-btn.active{
+  background:rgba(79,209,255,0.3);
+  border-color:var(--accent);
+  color:var(--accent);
+  box-shadow:0 0 15px rgba(79,209,255,0.3);
+}
+.custom-input{
+  grid-column:span 3;
+  padding:15px;
+  background:rgba(255,255,255,0.05);
+  border:2px solid rgba(79,209,255,0.3);
+  border-radius:12px;
+  color:var(--text);
+  font-size:16px;
+  text-align:center;
+  outline:none;
+}
+.custom-input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 10px rgba(79,209,255,0.3);
+}
+
+/* GOAL DISPLAY */
+.goal-display{
+  position:fixed;
+  top:20px;
+  right:20px;
+  width:120px;
+  padding:15px;
+  background:linear-gradient(135deg,var(--card),#1a2545);
+  border-radius:20px;
+  text-align:center;
+  box-shadow:0 8px 25px rgba(0,0,0,0.4);
+  border:2px solid rgba(79,209,255,0.3);
+  z-index:50;
+}
+.goal-progress{
+  width:60px;
+  height:60px;
+  margin:10px auto;
+  position:relative;
+}
+.goal-circle{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  background:conic-gradient(var(--accent) 0%, transparent 0%);
+  position:relative;
+}
+.goal-circle-inner{
+  position:absolute;
+  top:10px;
+  left:10px;
+  right:10px;
+  bottom:10px;
+  background:var(--card);
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:14px;
+}
+
+/* NOTIFICATION */
+.notification{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%) translateY(-100px);
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#000;
+  padding:15px 25px;
+  border-radius:15px;
+  font-weight:600;
+  box-shadow:0 10px 30px rgba(79,209,255,0.4);
+  z-index:1000;
+  transition:transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  text-align:center;
+}
+.notification.show{
+  transform:translateX(-50%) translateY(0);
+}
+
+/* DRINK HISTORY */
+.drink-history{
+  margin-top:20px;
+  max-height:200px;
+  overflow-y:auto;
+}
+.drink-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  margin:8px 0;
+  background:rgba(255,255,255,0.05);
+  border-radius:12px;
+  border-left:4px solid var(--accent);
+}
+.drink-item i{margin-right:10px;color:var(--accent)}
 </style>
 </head>
 
 <body>
 
 <div class="app">
-  <div class="card">
-    <h2 style="text-align:center">Today</h2>
-    <div class="bottle"><div class="water" id="water"></div></div>
-    <div id="consumed" style="text-align:center">0 ml</div>
-    <div id="goal" style="text-align:center;font-weight:700"></div>
-    <button onclick="openDrink()">Add Drink</button>
+  <!-- Goal Display -->
+  <div class="goal-display">
+    <div>Daily Goal</div>
+    <div class="goal-progress">
+      <div class="goal-circle" id="goalCircle">
+        <div class="goal-circle-inner" id="goalPercent">0%</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">Stay Hydrated!</div>
   </div>
+
+  <!-- Main Card -->
+  <div class="card">
+    <h2 style="text-align:center;margin-bottom:10px">Today's Hydration</h2>
+    <div style="text-align:center;color:var(--muted);font-size:14px;margin-bottom:20px">
+      <i class="fas fa-tint"></i> Track your water intake
+    </div>
+    
+    <div class="bottle">
+      <div class="water" id="water"></div>
+    </div>
+    
+    <div id="consumed" style="text-align:center;font-size:32px;font-weight:700;margin:15px 0;color:var(--accent)">0 ml</div>
+    <div id="goal" style="text-align:center;font-weight:600;margin-bottom:20px;color:var(--muted)"></div>
+    
+    <button onclick="openDrink()" style="display:flex;align-items:center;justify-content:center;gap:10px">
+      <i class="fas fa-plus-circle"></i> Add Drink
+    </button>
+
+    <!-- Drink History -->
+    <div class="drink-history" id="drinkHistory"></div>
+  </div>
+</div>
+
+<!-- Notification -->
+<div class="notification" id="notification">
+  <i class="fas fa-check-circle"></i> Drink added successfully!
 </div>
 
 <!-- ONBOARDING -->
@@ -143,24 +403,54 @@ button{
   <div class="modal-content card" id="stepBox"></div>
 </div>
 
-<!-- DRINK -->
+<!-- DRINK SELECTION -->
 <div class="modal" id="drinkModal">
   <div class="modal-content card">
-    <h3>Select Drink</h3>
+    <h3 style="display:flex;align-items:center;gap:10px"><i class="fas fa-wine-bottle"></i> Select Drink</h3>
     <div class="gender-grid">
-      <button onclick="selectDrink('water')">💧 Water</button>
-      <button onclick="selectDrink('coffee')">☕ Coffee</button>
-      <button onclick="selectDrink('tea')">🍵 Tea</button>
-      <button onclick="selectDrink('soda')">🥤 Soda</button>
-      <button onclick="selectDrink('juice')">🧃 Juice</button>
-      <button onclick="selectDrink('milk')">🥛 Milk</button>
+      <button onclick="selectDrinkType('water')" style="display:flex;flex-direction:column;align-items:center;gap:5px">
+        <i class="fas fa-tint" style="font-size:24px"></i>Water
+      </button>
+      <button onclick="selectDrinkType('coffee')" style="display:flex;flex-direction:column;align-items:center;gap:5px">
+        <i class="fas fa-coffee" style="font-size:24px"></i>Coffee
+      </button>
+      <button onclick="selectDrinkType('tea')" style="display:flex;flex-direction:column;align-items:center;gap:5px">
+        <i class="fas fa-mug-hot" style="font-size:24px"></i>Tea
+      </button>
+      <button onclick="selectDrinkType('soda')" style="display:flex;flex-direction:column;align-items:center;gap:5px">
+        <i class="fas fa-glass-whiskey" style="font-size:24px"></i>Soda
+      </button>
+      <button onclick="selectDrinkType('juice')" style="display:flex;flex-direction:column;align-items:center;gap:5px">
+        <i class="fas fa-apple-alt" style="font-size:24px"></i>Juice
+      </button>
+      <button onclick="selectDrinkType('milk')" style="display:flex;flex-direction:column;align-items:center;gap:5px">
+        <i class="fas fa-wine-bottle" style="font-size:24px"></i>Milk
+      </button>
     </div>
+    <button onclick="drinkModal.style.display='none'" style="margin-top:20px;background:rgba(255,255,255,0.1);color:var(--text)">
+      Cancel
+    </button>
+  </div>
+</div>
+
+<!-- AMOUNT SELECTION -->
+<div class="modal" id="amountModal">
+  <div class="modal-content card">
+    <h3 id="amountTitle" style="display:flex;align-items:center;gap:10px"></h3>
+    <div class="amount-grid" id="amountGrid"></div>
+    <button onclick="confirmDrink()" style="margin-top:20px">
+      <i class="fas fa-check"></i> Confirm
+    </button>
+    <button onclick="amountModal.style.display='none'" style="margin-top:10px;background:rgba(255,255,255,0.1);color:var(--text)">
+      Cancel
+    </button>
   </div>
 </div>
 
 <div class="nav">
   <i class="fa-solid fa-droplet active"></i>
   <i class="fa-solid fa-user" onclick="startOnboarding()"></i>
+  <i class="fa-solid fa-chart-line" onclick="showStats()"></i>
 </div>
 
 <script>
@@ -168,33 +458,81 @@ button{
 let profile = JSON.parse(localStorage.getItem("profile")) || {};
 let data = JSON.parse(localStorage.getItem("data")) || {};
 let today = new Date().toDateString();
-if(!data[today]) data[today]={consumed:0};
+if(!data[today]) data[today]={consumed:0, drinks:[]};
 
 const DRINKS = {
-  water:1,
-  coffee:0.98,
-  tea:0.99,
-  soda:0.93,
-  juice:0.88,
-  milk:0.87
+  water:{factor:1, icon:"fa-tint", color:"#4fd1ff"},
+  coffee:{factor:0.98, icon:"fa-coffee", color:"#8B4513"},
+  tea:{factor:0.99, icon:"fa-mug-hot", color:"#D2691E"},
+  soda:{factor:0.93, icon:"fa-glass-whiskey", color:"#FF6B6B"},
+  juice:{factor:0.88, icon:"fa-apple-alt", color:"#FFB84D"},
+  milk:{factor:0.87, icon:"fa-wine-bottle", color:"#FFFFFF"}
 };
+
+let selectedDrink = null;
+let selectedAmount = 250;
 
 /* HAPTIC */
 const haptic=()=>navigator.vibrate&&navigator.vibrate(10);
 
+/* NOTIFICATION */
+function showNotification(message){
+  const notif=document.getElementById("notification");
+  notif.innerHTML=`<i class="fas fa-check-circle"></i> ${message}`;
+  notif.classList.add("show");
+  setTimeout(()=>notif.classList.remove("show"),3000);
+}
+
 /* GOAL */
 function calcGoal(){
+  if(!profile.weight) return 2000;
   let g = profile.weight * 35;
   if(profile.gender==="male") g*=1.1;
+  if(profile.age>50) g*=0.95;
+  if(profile.height>180) g*=1.05;
   return Math.round(g/50)*50;
 }
 
 /* UI */
 function updateUI(){
   let g=calcGoal(), c=data[today].consumed;
-  goal.innerText="Goal: "+g+" ml";
+  goal.innerText=`Goal: ${g} ml`;
   consumed.innerText=Math.round(c)+" ml";
-  water.style.height=Math.min(c/g*100,100)+"%";
+  let percent=Math.min(Math.round(c/g*100),100);
+  water.style.height=percent+"%";
+  
+  // Update goal circle
+  goalCircle.style.background=`conic-gradient(var(--accent) ${percent}%, transparent ${percent}%)`;
+  goalPercent.innerText=percent+"%";
+  
+  // Update drink history
+  updateDrinkHistory();
+  
+  // Save data
+  localStorage.setItem("data",JSON.stringify(data));
+}
+
+function updateDrinkHistory(){
+  const history=document.getElementById("drinkHistory");
+  history.innerHTML="<h4 style='margin-bottom:10px'><i class='fas fa-history'></i> Recent Drinks</h4>";
+  
+  if(!data[today].drinks || data[today].drinks.length===0){
+    history.innerHTML+="<div style='text-align:center;color:var(--muted);padding:20px'>No drinks added yet</div>";
+    return;
+  }
+  
+  data[today].drinks.slice(-5).reverse().forEach(drink=>{
+    const item=document.createElement("div");
+    item.className="drink-item";
+    item.innerHTML=`
+      <div>
+        <i class="fas ${DRINKS[drink.type].icon}" style="color:${DRINKS[drink.type].color}"></i>
+        ${drink.type.charAt(0).toUpperCase()+drink.type.slice(1)}
+      </div>
+      <div>${drink.amount} ml</div>
+    `;
+    history.appendChild(item);
+  });
 }
 
 /* ONBOARDING */
@@ -207,90 +545,199 @@ function renderStep(){
   const box=stepBox;
   if(step===0){
     box.innerHTML=`
-      <h2>Select Gender</h2>
+      <h2 style="display:flex;align-items:center;gap:10px"><i class="fas fa-venus-mars"></i> Select Gender</h2>
       <div class="gender-grid">
-        <button onclick="setGender('male')">👨 Male</button>
-        <button onclick="setGender('female')">👩 Female</button>
+        <button onclick="setGender('male')" style="display:flex;flex-direction:column;align-items:center;gap:5px">
+          <i class="fas fa-male" style="font-size:24px"></i>Male
+        </button>
+        <button onclick="setGender('female')" style="display:flex;flex-direction:column;align-items:center;gap:5px">
+          <i class="fas fa-female" style="font-size:24px"></i>Female
+        </button>
       </div>`;
   }
   if(step===1){
     box.innerHTML=`
-      <h2>Select Weight (kg)</h2>
+      <h2 style="display:flex;align-items:center;gap:10px"><i class="fas fa-weight"></i> Select Weight (kg)</h2>
+      <div class="ruler-value" id="wv">${profile.weight||70} kg</div>
       <div class="rwrap">
         <div class="center-line"></div>
-        <div class="ruler" id="wr"></div>
+        <div class="ruler-container">
+          <div class="ruler" id="wr"></div>
+        </div>
       </div>
-      <div id="wv"></div>
-      <button onclick="next()">Next</button>`;
+      <button onclick="next()" style="margin-top:20px">Next</button>`;
     buildRuler(wr,30,200,profile.weight||70,v=>wv.innerText=v+" kg",v=>profile.weight=v);
   }
   if(step===2){
     box.innerHTML=`
-      <h2>Select Height (cm)</h2>
+      <h2 style="display:flex;align-items:center;gap:10px"><i class="fas fa-ruler-vertical"></i> Select Height (cm)</h2>
+      <div class="ruler-value" id="hv">${profile.height||170} cm</div>
       <div class="rwrap">
         <div class="center-line"></div>
-        <div class="ruler" id="hr"></div>
+        <div class="ruler-container">
+          <div class="ruler" id="hr"></div>
+        </div>
       </div>
-      <div id="hv"></div>
-      <button onclick="next()">Next</button>`;
+      <button onclick="next()" style="margin-top:20px">Next</button>`;
     buildRuler(hr,100,220,profile.height||170,v=>hv.innerText=v+" cm",v=>profile.height=v);
   }
   if(step===3){
     box.innerHTML=`
-      <h2>Select Age</h2>
-      <div class="age-wheel" id="age"></div>
-      <button onclick="finish()">Finish</button>`;
+      <h2 style="display:flex;align-items:center;gap:10px"><i class="fas fa-birthday-cake"></i> Select Age</h2>
+      <div class="ruler-value" id="av">${profile.age||25} years</div>
+      <div class="age-wheel-container">
+        <div class="age-center-line"></div>
+        <div class="age-wheel" id="age"></div>
+      </div>
+      <button onclick="finish()" style="margin-top:20px">Finish Setup</button>`;
     buildAge();
   }
 }
-function setGender(g){profile.gender=g;haptic();next()}
-function next(){step++;renderStep()}
+function setGender(g){
+  profile.gender=g;
+  haptic();
+  next();
+}
+function next(){
+  step++;
+  renderStep();
+}
 function finish(){
   localStorage.setItem("profile",JSON.stringify(profile));
   onboarding.style.display="none";
   updateUI();
+  showNotification("Profile setup completed!");
 }
 
-/* RULER */
+/* FIXED RULER */
 function buildRuler(el,min,max,val,show,set){
   el.innerHTML="";
   for(let i=min;i<=max;i++){
     let t=document.createElement("div");
-    t.className="tick"+(i%5===0?" major":"");
-    if(i%5===0){let s=document.createElement("span");s.innerText=i;t.appendChild(s)}
+    t.className="tick"+(i%5===0?" major":" minor");
+    if(i%5===0){
+      let s=document.createElement("span");
+      s.innerText=i;
+      t.appendChild(s);
+    }
     el.appendChild(t);
   }
   el.scrollLeft=(val-min)*22;
+  
+  let isScrolling;
   el.onscroll=()=>{
-    let v=min+Math.round(el.scrollLeft/22);
-    set(v);show(v);haptic();
+    clearTimeout(isScrolling);
+    isScrolling=setTimeout(()=>{
+      let v=min+Math.round(el.scrollLeft/22);
+      if(v<min) v=min;
+      if(v>max) v=max;
+      set(v);
+      show(v);
+      haptic();
+    },50);
   };
 }
 
-/* AGE */
+/* FIXED AGE WHEEL */
 function buildAge(){
   age.innerHTML="";
+  const currentAge=profile.age||25;
   for(let i=10;i<=80;i++){
     let d=document.createElement("div");
-    d.className="age-item"+(i===profile.age?" active":"");
+    d.className="age-item"+(i===currentAge?" active":"");
     d.innerText=i;
-    d.onclick=()=>{profile.age=i;buildAge();haptic()};
+    d.onclick=()=>{
+      profile.age=i;
+      av.innerText=i+" years";
+      buildAge();
+      haptic();
+    };
     age.appendChild(d);
+  }
+  age.scrollLeft=(currentAge-10)*60-60;
+}
+
+/* DRINK SELECTION */
+function openDrink(){
+  drinkModal.style.display="flex";
+}
+
+function selectDrinkType(type){
+  selectedDrink=type;
+  drinkModal.style.display="none";
+  amountModal.style.display="flex";
+  
+  const drinkInfo=DRINKS[type];
+  amountTitle.innerHTML=`<i class="fas ${drinkInfo.icon}" style="color:${drinkInfo.color}"></i> Select ${type.charAt(0).toUpperCase()+type.slice(1)} Amount`;
+  
+  const amounts=[50,100,150,200,250,300,400,500,700,1000];
+  const grid=document.getElementById("amountGrid");
+  grid.innerHTML="";
+  
+  amounts.forEach(ml=>{
+    const btn=document.createElement("button");
+    btn.className="amount-btn"+(ml===selectedAmount?" active":"");
+    btn.innerText=ml===1000?"1 Liter":ml+" ml";
+    btn.onclick=()=>{
+      document.querySelectorAll(".amount-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedAmount=ml;
+      customInput.value="";
+    };
+    grid.appendChild(btn);
+  });
+  
+  const customInput=document.createElement("input");
+  customInput.type="number";
+  customInput.placeholder="Custom amount (ml)";
+  customInput.className="custom-input";
+  customInput.oninput=()=>{
+    if(customInput.value){
+      selectedAmount=parseInt(customInput.value)||0;
+      document.querySelectorAll(".amount-btn").forEach(b=>b.classList.remove("active"));
+    }
+  };
+  grid.appendChild(customInput);
+}
+
+function confirmDrink(){
+  if(!selectedDrink||!selectedAmount||selectedAmount<=0){
+    showNotification("Please select a valid amount");
+    return;
+  }
+  
+  const drinkInfo=DRINKS[selectedDrink];
+  const effectiveAmount=selectedAmount*drinkInfo.factor;
+  
+  data[today].consumed+=effectiveAmount;
+  data[today].drinks.push({
+    type:selectedDrink,
+    amount:selectedAmount,
+    time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+  });
+  
+  amountModal.style.display="none";
+  updateUI();
+  showNotification(`Added ${selectedAmount}ml of ${selectedDrink}`);
+  haptic();
+  
+  // Check if goal reached
+  if(data[today].consumed>=calcGoal()){
+    setTimeout(()=>showNotification("🎉 Daily goal achieved! Great job!"),500);
   }
 }
 
-/* DRINK */
-function openDrink(){drinkModal.style.display="flex"}
-function selectDrink(t){
-  let ml=250;
-  data[today].consumed+=ml*DRINKS[t];
-  drinkModal.style.display="none";
-  updateUI();
+/* STATS */
+function showStats(){
+  showNotification("Stats feature coming soon!");
 }
 
 /* INIT */
-if(!profile.gender) startOnboarding();
-else updateUI();
+if(!profile.gender){
+  setTimeout(startOnboarding,1000);
+}else{
+  updateUI();
+}
 </script>
 
 </body>
