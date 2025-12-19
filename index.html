@@ -6,458 +6,292 @@
 <title>MyWater</title>
 
 <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#060b18">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
-:root {
+:root{
   --bg:#060b18;
-  --card:#0d162f;
+  --card:#121a2f;
   --accent:#4fd1ff;
-  --text:#e6f1ff;
-  --muted:#7b8dbd;
+  --accent2:#6b7cff;
+  --text:#fff;
+  --muted:#9aa4bf;
 }
+*{box-sizing:border-box;font-family:Poppins}
+body{margin:0;background:radial-gradient(circle at top,#162044,#060b18);color:var(--text)}
+.app{max-width:420px;margin:auto;padding:14px;padding-bottom:90px}
 
-*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont}
-body{
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  overflow-x:hidden;
-}
-
-.hidden{display:none}
-
-.center{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-}
-
-button{
-  background:var(--accent);
-  color:#002;
-  border:none;
-  padding:14px 20px;
-  border-radius:16px;
-  font-size:16px;
-  cursor:pointer;
-}
-
-button:disabled{
-  opacity:.4;
-}
-
+/* CARD */
 .card{
-  background:var(--card);
-  margin:16px;
-  padding:20px;
-  border-radius:20px;
+  background:linear-gradient(180deg,#151f3f,#0f1630);
+  border-radius:26px;
+  padding:18px;
+  margin-bottom:16px;
 }
 
-h2{margin-top:0}
-
-/* ===== Onboarding ===== */
-#onboarding{
-  position:fixed;
-  inset:0;
-  background:var(--bg);
-  z-index:10;
+/* BOTTLE */
+.bottle{
+  width:150px;height:280px;margin:16px auto;
+  border-radius:36px;border:3px solid rgba(255,255,255,.25);
+  position:relative;overflow:hidden;
+}
+.water{
+  position:absolute;bottom:0;width:100%;height:0%;
+  background:linear-gradient(180deg,#7be7ff,#3fa9f5);
+  transition:height .6s ease;
 }
 
-.step{
-  max-width:420px;
-  margin:auto;
-  padding:24px;
-}
-
-.gender-btns button{
-  width:48%;
-}
-
-.ruler{
-  overflow-x:auto;
-  display:flex;
-  align-items:flex-end;
-  height:90px;
-  margin:30px 0;
-  padding:0 50%;
-  scroll-snap-type:x mandatory;
-}
-
-.tick{
-  width:22px;
-  height:30px;
-  border-left:2px solid var(--muted);
-  position:relative;
-  scroll-snap-align:center;
-}
-
-.tick.major{height:55px}
-
-.tick span{
-  position:absolute;
-  top:60px;
-  left:-10px;
-  font-size:12px;
-}
-
-.indicator{
-  position:absolute;
-  top:0;
-  left:50%;
-  width:3px;
-  height:100%;
-  background:var(--accent);
-}
-
-.value{
-  text-align:center;
-  font-size:24px;
-}
-
-/* Age wheel */
-.age-wheel{
-  display:flex;
-  overflow-x:auto;
-  padding:0 50%;
-  scroll-snap-type:x mandatory;
-}
-
-.age-item{
-  width:60px;
-  text-align:center;
-  font-size:22px;
-  color:var(--muted);
-  scroll-snap-align:center;
+/* BUTTON */
+button{
+  width:100%;padding:14px;
+  border:none;border-radius:18px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  font-weight:700;color:#000;
   cursor:pointer;
 }
 
+/* NAV */
+.nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#0b1228;
+  display:flex;justify-content:space-around;
+  padding:12px 0;
+}
+.nav i{color:var(--muted);font-size:1.3rem}
+.nav i.active{color:var(--accent)}
+
+/* MODAL */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.65);
+  display:none;align-items:center;justify-content:center;
+  z-index:50;
+}
+.modal-content{width:90%;max-width:380px}
+
+/* GENDER */
+.gender-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;margin-top:24px;
+}
+.gender-grid button{
+  padding:20px;font-size:18px;
+}
+
+/* RULER */
+.rwrap{position:relative;height:80px;overflow:hidden}
+.ruler{
+  display:flex;overflow-x:scroll;
+  scrollbar-width:none;
+  padding:0 50%;
+}
+.ruler::-webkit-scrollbar{display:none}
+.tick{width:22px;flex-shrink:0;position:relative}
+.tick::after{
+  content:"";position:absolute;bottom:0;left:50%;
+  transform:translateX(-50%);
+  width:2px;height:26px;background:rgba(255,255,255,.4)
+}
+.tick.major::after{height:40px;background:#fff}
+.tick span{
+  position:absolute;top:-18px;left:50%;
+  transform:translateX(-50%);
+  font-size:12px;color:var(--muted)
+}
+.center-line{
+  position:absolute;top:0;bottom:0;left:50%;
+  width:2px;background:#ff4d4d
+}
+
+/* AGE */
+.age-wheel{
+  display:flex;overflow-x:scroll;
+  scrollbar-width:none;
+  padding:0 50%;
+}
+.age-wheel::-webkit-scrollbar{display:none}
+.age-item{
+  width:60px;text-align:center;
+  font-size:22px;color:var(--muted)
+}
 .age-item.active{
   color:var(--accent);
-  font-size:28px;
-}
-
-/* ===== App ===== */
-#progress{
-  height:16px;
-  background:#111c3f;
-  border-radius:10px;
-  overflow:hidden;
-}
-
-#progress span{
-  display:block;
-  height:100%;
-  background:var(--accent);
-  width:0%;
-  transition:.4s;
-}
-
-.drinks{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:12px;
-}
-
-.drink{
-  background:#111c3f;
-  padding:16px;
-  border-radius:16px;
-  text-align:center;
-  cursor:pointer;
-}
-
-.drink span{
-  font-size:24px;
-  display:block;
-}
-
-/* Volume modal */
-#volumeModal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.5);
-  display:flex;
-  justify-content:center;
-  align-items:flex-end;
-  z-index:20;
-}
-
-#volumeCard{
-  background:var(--card);
-  width:100%;
-  border-radius:20px 20px 0 0;
-  padding:20px;
-  animation:slideUp .3s ease;
-}
-
-@keyframes slideUp{
-  from{transform:translateY(100%)}
-  to{transform:translateY(0)}
-}
-
-.volumes{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:10px;
-}
-
-.volume{
-  background:#111c3f;
-  padding:14px;
-  border-radius:14px;
-  text-align:center;
-  cursor:pointer;
-}
-
-/* Confetti */
-.confetti{
-  position:fixed;
-  width:6px;
-  height:6px;
-  background:var(--accent);
-  animation:fall 2s linear forwards;
-}
-
-@keyframes fall{
-  to{transform:translateY(100vh) rotate(360deg);opacity:0}
+  font-weight:700;
+  transform:scale(1.3);
 }
 </style>
 </head>
 
 <body>
 
+<div class="app">
+  <div class="card">
+    <h2 style="text-align:center">Today</h2>
+    <div class="bottle"><div class="water" id="water"></div></div>
+    <div id="consumed" style="text-align:center">0 ml</div>
+    <div id="goal" style="text-align:center;font-weight:700"></div>
+    <button onclick="openDrink()">Add Drink</button>
+  </div>
+</div>
+
 <!-- ONBOARDING -->
-<div id="onboarding">
-  <div class="step" id="stepGender">
-    <h2>Choose gender</h2>
-    <div class="gender-btns center">
-      <button onclick="setGender('male')">Male</button>
-      <button onclick="setGender('female')">Female</button>
-    </div>
-  </div>
-
-  <div class="step hidden" id="stepWeight">
-    <h2>Select weight (kg)</h2>
-    <div class="value" id="weightVal">60</div>
-    <div style="position:relative">
-      <div class="indicator"></div>
-      <div class="ruler" id="weightRuler"></div>
-    </div>
-    <button onclick="nextStep()">Next</button>
-  </div>
-
-  <div class="step hidden" id="stepHeight">
-    <h2>Select height (cm)</h2>
-    <div class="value" id="heightVal">170</div>
-    <div style="position:relative">
-      <div class="indicator"></div>
-      <div class="ruler" id="heightRuler"></div>
-    </div>
-    <button onclick="nextStep()">Next</button>
-  </div>
-
-  <div class="step hidden" id="stepAge">
-    <h2>Select age</h2>
-    <div class="age-wheel" id="ageWheel"></div>
-    <button onclick="finishProfile()">Finish</button>
-  </div>
+<div class="modal" id="onboarding">
+  <div class="modal-content card" id="stepBox"></div>
 </div>
 
-<!-- APP -->
-<div id="app" class="hidden">
-  <div class="card">
-    <h2>Today</h2>
-    <div id="progress"><span></span></div>
-    <p><span id="consumed">0</span> / <span id="goal">0</span> ml</p>
-  </div>
-
-  <div class="card">
-    <h2>Add drink</h2>
-    <div class="drinks">
-      <div class="drink" onclick="openDrink('water')"><span>💧</span>Water</div>
-      <div class="drink" onclick="openDrink('coffee')"><span>☕</span>Coffee</div>
-      <div class="drink" onclick="openDrink('tea')"><span>🍵</span>Tea</div>
-      <div class="drink" onclick="openDrink('soda')"><span>🥤</span>Soda</div>
-      <div class="drink" onclick="openDrink('juice')"><span>🧃</span>Juice</div>
-      <div class="drink" onclick="openDrink('milk')"><span>🥛</span>Milk</div>
+<!-- DRINK -->
+<div class="modal" id="drinkModal">
+  <div class="modal-content card">
+    <h3>Select Drink</h3>
+    <div class="gender-grid">
+      <button onclick="selectDrink('water')">💧 Water</button>
+      <button onclick="selectDrink('coffee')">☕ Coffee</button>
+      <button onclick="selectDrink('tea')">🍵 Tea</button>
+      <button onclick="selectDrink('soda')">🥤 Soda</button>
+      <button onclick="selectDrink('juice')">🧃 Juice</button>
+      <button onclick="selectDrink('milk')">🥛 Milk</button>
     </div>
   </div>
 </div>
 
-<!-- VOLUME MODAL -->
-<div id="volumeModal" class="hidden" onclick="closeVolume(event)">
-  <div id="volumeCard">
-    <h3>Select volume</h3>
-    <div class="volumes" id="volumeList"></div>
-  </div>
+<div class="nav">
+  <i class="fa-solid fa-droplet active"></i>
+  <i class="fa-solid fa-user" onclick="startOnboarding()"></i>
 </div>
 
 <script>
-/* ===== DATA ===== */
-const DRINKS={
-  water:1,
-  coffee:.98,
-  tea:.99,
-  soda:.93,
-  juice:.88,
-  milk:.87
-};
-const VOLUMES=[50,100,150,200,250,300,330,400,500,600,1000];
-
-let profile=JSON.parse(localStorage.getItem("profile"))||{};
-let data=JSON.parse(localStorage.getItem("data"))||{};
-let today=new Date().toDateString();
+/* STATE */
+let profile = JSON.parse(localStorage.getItem("profile")) || {};
+let data = JSON.parse(localStorage.getItem("data")) || {};
+let today = new Date().toDateString();
 if(!data[today]) data[today]={consumed:0};
 
-/* ===== ONBOARDING ===== */
+const DRINKS = {
+  water:1,
+  coffee:0.98,
+  tea:0.99,
+  soda:0.93,
+  juice:0.88,
+  milk:0.87
+};
+
+/* HAPTIC */
+const haptic=()=>navigator.vibrate&&navigator.vibrate(10);
+
+/* GOAL */
+function calcGoal(){
+  let g = profile.weight * 35;
+  if(profile.gender==="male") g*=1.1;
+  return Math.round(g/50)*50;
+}
+
+/* UI */
+function updateUI(){
+  let g=calcGoal(), c=data[today].consumed;
+  goal.innerText="Goal: "+g+" ml";
+  consumed.innerText=Math.round(c)+" ml";
+  water.style.height=Math.min(c/g*100,100)+"%";
+}
+
+/* ONBOARDING */
 let step=0;
-const steps=["stepGender","stepWeight","stepHeight","stepAge"];
-
-function showStep(i){
-  steps.forEach(id=>document.getElementById(id).classList.add("hidden"));
-  document.getElementById(steps[i]).classList.remove("hidden");
-  step=i;
+function startOnboarding(){
+  onboarding.style.display="flex";
+  step=0;renderStep();
 }
-
-function setGender(g){
-  profile.gender=g;
-  navigator.vibrate?.(20);
-  showStep(1);
+function renderStep(){
+  const box=stepBox;
+  if(step===0){
+    box.innerHTML=`
+      <h2>Select Gender</h2>
+      <div class="gender-grid">
+        <button onclick="setGender('male')">👨 Male</button>
+        <button onclick="setGender('female')">👩 Female</button>
+      </div>`;
+  }
+  if(step===1){
+    box.innerHTML=`
+      <h2>Select Weight (kg)</h2>
+      <div class="rwrap">
+        <div class="center-line"></div>
+        <div class="ruler" id="wr"></div>
+      </div>
+      <div id="wv"></div>
+      <button onclick="next()">Next</button>`;
+    buildRuler(wr,30,200,profile.weight||70,v=>wv.innerText=v+" kg",v=>profile.weight=v);
+  }
+  if(step===2){
+    box.innerHTML=`
+      <h2>Select Height (cm)</h2>
+      <div class="rwrap">
+        <div class="center-line"></div>
+        <div class="ruler" id="hr"></div>
+      </div>
+      <div id="hv"></div>
+      <button onclick="next()">Next</button>`;
+    buildRuler(hr,100,220,profile.height||170,v=>hv.innerText=v+" cm",v=>profile.height=v);
+  }
+  if(step===3){
+    box.innerHTML=`
+      <h2>Select Age</h2>
+      <div class="age-wheel" id="age"></div>
+      <button onclick="finish()">Finish</button>`;
+    buildAge();
+  }
 }
-
-function nextStep(){
-  navigator.vibrate?.(20);
-  showStep(step+1);
-}
-
-function finishProfile(){
+function setGender(g){profile.gender=g;haptic();next()}
+function next(){step++;renderStep()}
+function finish(){
   localStorage.setItem("profile",JSON.stringify(profile));
-  document.getElementById("onboarding").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
-  initApp();
+  onboarding.style.display="none";
+  updateUI();
 }
 
-/* ===== RULERS ===== */
-function buildRuler(el,min,max,val,cb){
+/* RULER */
+function buildRuler(el,min,max,val,show,set){
   el.innerHTML="";
-  el.style.padding="0 50%";
   for(let i=min;i<=max;i++){
     let t=document.createElement("div");
     t.className="tick"+(i%5===0?" major":"");
-    t.onclick=()=>snap(i);
-    if(i%5===0){
-      let s=document.createElement("span");
-      s.textContent=i;
-      t.appendChild(s);
-    }
+    if(i%5===0){let s=document.createElement("span");s.innerText=i;t.appendChild(s)}
     el.appendChild(t);
   }
-  function snap(v){
-    el.scrollLeft=(v-min)*22;
-    cb(v);
-    navigator.vibrate?.(10);
-  }
-  el.addEventListener("scroll",()=>{
+  el.scrollLeft=(val-min)*22;
+  el.onscroll=()=>{
     let v=min+Math.round(el.scrollLeft/22);
-    cb(v);
-  });
-  snap(val);
+    set(v);show(v);haptic();
+  };
 }
 
-/* Weight */
-buildRuler(weightRuler,30,150,60,v=>{
-  weightVal.textContent=v;
-  profile.weight=v;
-});
-
-/* Height */
-buildRuler(heightRuler,100,220,170,v=>{
-  heightVal.textContent=v;
-  profile.height=v;
-});
-
-/* Age */
-for(let i=10;i<=90;i++){
-  let d=document.createElement("div");
-  d.className="age-item";
-  d.textContent=i;
-  d.onclick=()=>selectAge(i);
-  ageWheel.appendChild(d);
-}
-function selectAge(a){
-  profile.age=a;
-  ageWheel.scrollLeft=(a-10)*60;
-  document.querySelectorAll(".age-item").forEach(e=>{
-    e.classList.toggle("active",+e.textContent===a);
-  });
-  navigator.vibrate?.(10);
-}
-
-/* ===== APP ===== */
-function initApp(){
-  let goal=Math.round(profile.weight*35);
-  document.getElementById("goal").textContent=goal;
-  updateUI();
-  if(Notification.permission!=="granted"){
-    Notification.requestPermission();
+/* AGE */
+function buildAge(){
+  age.innerHTML="";
+  for(let i=10;i<=80;i++){
+    let d=document.createElement("div");
+    d.className="age-item"+(i===profile.age?" active":"");
+    d.innerText=i;
+    d.onclick=()=>{profile.age=i;buildAge();haptic()};
+    age.appendChild(d);
   }
 }
 
-function updateUI(){
-  let goal=document.getElementById("goal").textContent;
-  let c=data[today].consumed;
-  consumed.textContent=Math.round(c);
-  let pct=Math.min(100,(c/goal)*100);
-  document.querySelector("#progress span").style.width=pct+"%";
-  if(c>=goal) confetti();
-}
-
-/* ===== DRINKS ===== */
-let currentDrink=null;
-function openDrink(d){
-  currentDrink=d;
-  volumeList.innerHTML="";
-  VOLUMES.forEach(v=>{
-    let div=document.createElement("div");
-    div.className="volume";
-    div.textContent=v+" ml";
-    div.onclick=()=>addDrink(v);
-    volumeList.appendChild(div);
-  });
-  volumeModal.classList.remove("hidden");
-}
-
-function closeVolume(e){
-  if(e.target.id==="volumeModal") volumeModal.classList.add("hidden");
-}
-
-function addDrink(v){
-  let water=v*DRINKS[currentDrink];
-  data[today].consumed+=water;
-  localStorage.setItem("data",JSON.stringify(data));
-  navigator.vibrate?.(30);
-  volumeModal.classList.add("hidden");
+/* DRINK */
+function openDrink(){drinkModal.style.display="flex"}
+function selectDrink(t){
+  let ml=250;
+  data[today].consumed+=ml*DRINKS[t];
+  drinkModal.style.display="none";
   updateUI();
 }
 
-/* ===== CONFETTI ===== */
-function confetti(){
-  for(let i=0;i<40;i++){
-    let c=document.createElement("div");
-    c.className="confetti";
-    c.style.left=Math.random()*100+"vw";
-    c.style.top="-10px";
-    document.body.appendChild(c);
-    setTimeout(()=>c.remove(),2000);
-  }
-}
-
-/* ===== INIT ===== */
-if(profile.gender){
-  document.getElementById("onboarding").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
-  initApp();
-}
+/* INIT */
+if(!profile.gender) startOnboarding();
+else updateUI();
 </script>
+
 </body>
 </html>
