@@ -63,6 +63,11 @@ button.secondary{
   color:var(--text);
   margin-top:10px;
 }
+button.small{
+  padding:8px 16px;
+  width:auto;
+  font-size:14px;
+}
 
 /* NAV */
 .nav{
@@ -125,13 +130,13 @@ button.secondary{
   align-items:flex-end;
   overflow-x:scroll;
   scrollbar-width:none;
-  padding:0 calc(50% - 11px);
+  padding:0 calc(50% - 5.5px); /* Half of tick width (11px/2) */
   scroll-behavior:smooth;
   -webkit-overflow-scrolling:touch;
 }
 .ruler::-webkit-scrollbar{display:none}
 .tick{
-  width:22px;
+  width:11px; /* Changed from 22px to 11px for 1-unit increments */
   flex-shrink:0;
   position:relative;
   display:flex;
@@ -145,14 +150,19 @@ button.secondary{
   bottom:20px;
   left:50%;
   transform:translateX(-50%);
-  width:2px;
-  background:rgba(255,255,255,.4);
+  width:1px;
+  background:rgba(255,255,255,.2);
   z-index:1;
 }
-.tick.minor::after{height:20px;}
+.tick.minor::after{height:15px;}
 .tick.major::after{
-  height:40px;
+  height:30px;
   background:#fff;
+  width:2px;
+}
+.tick.major5::after{
+  height:40px;
+  background:var(--accent);
   width:3px;
 }
 .tick span{
@@ -160,7 +170,7 @@ button.secondary{
   bottom:-25px;
   left:50%;
   transform:translateX(-50%);
-  font-size:12px;
+  font-size:11px;
   color:var(--muted);
   white-space:nowrap;
 }
@@ -212,6 +222,21 @@ button.secondary{
   cursor:pointer;
   font-weight:600;
 }
+.manual-controls{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:10px;
+}
+.manual-controls button{
+  width:50px;
+  height:50px;
+  border-radius:50%;
+  font-size:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 
 /* AGE WHEEL FIX */
 .age-wheel-container{
@@ -230,24 +255,24 @@ button.secondary{
   overflow-x:scroll;
   scrollbar-width:none;
   scroll-behavior:smooth;
-  padding:0 calc(50% - 30px);
+  padding:0 calc(50% - 15px);
   -webkit-overflow-scrolling:touch;
   touch-action:pan-x;
 }
 .age-wheel::-webkit-scrollbar{display:none}
 .age-item{
-  width:60px;
+  width:30px; /* Reduced from 60px for 1-year increments */
   height:60px;
   display:flex;
   align-items:center;
   justify-content:center;
   flex-shrink:0;
-  font-size:22px;
+  font-size:16px;
   color:var(--muted);
   cursor:pointer;
   transition:all 0.3s;
-  border-radius:50%;
-  margin:0 5px;
+  border-radius:8px;
+  margin:0 1px;
 }
 .age-item:hover{
   background:rgba(79,209,255,0.1);
@@ -255,10 +280,14 @@ button.secondary{
 .age-item.active{
   color:var(--accent);
   font-weight:700;
-  font-size:28px;
+  font-size:20px;
   background:rgba(79,209,255,0.2);
   transform:scale(1.2);
-  box-shadow:0 0 20px rgba(79,209,255,0.4);
+  box-shadow:0 0 15px rgba(79,209,255,0.4);
+}
+.age-item.major{
+  font-size:14px;
+  font-weight:600;
 }
 .age-center-line{
   position:absolute;
@@ -288,6 +317,9 @@ button.secondary{
   color:var(--text);
   cursor:pointer;
   transition:all 0.2s;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
 }
 .amount-btn:hover{
   background:rgba(79,209,255,0.2);
@@ -298,6 +330,11 @@ button.secondary{
   border-color:var(--accent);
   color:var(--accent);
   box-shadow:0 0 15px rgba(79,209,255,0.3);
+}
+.amount-detail{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:3px;
 }
 .custom-input{
   grid-column:span 3;
@@ -414,6 +451,15 @@ button.secondary{
   align-items:center;
   gap:10px;
 }
+.water-info{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:5px;
+  text-align:center;
+  padding:5px;
+  background:rgba(0,0,0,0.2);
+  border-radius:8px;
+}
 </style>
 </head>
 
@@ -507,6 +553,7 @@ button.secondary{
 <div class="modal" id="amountModal">
   <div class="modal-content card">
     <h3 id="amountTitle" style="display:flex;align-items:center;gap:10px"></h3>
+    <div class="water-info" id="waterContentInfo"></div>
     <div class="amount-grid" id="amountGrid"></div>
     <button onclick="confirmDrink()" style="margin-top:20px">
       <i class="fas fa-check"></i> Confirm
@@ -530,14 +577,56 @@ let data = JSON.parse(localStorage.getItem("data")) || {};
 let today = new Date().toDateString();
 if(!data[today]) data[today]={consumed:0, drinks:[]};
 
-// Improved hydration factors based on scientific data
+// Updated with ACTUAL WATER CONTENT percentages (not hydration factors)
 const DRINKS = {
-  water:{factor:1.0, icon:"fa-tint", color:"#4fd1ff", name:"Water"},
-  coffee:{factor:0.8, icon:"fa-coffee", color:"#8B4513", name:"Coffee"}, // Caffeine is diuretic
-  tea:{factor:0.9, icon:"fa-mug-hot", color:"#D2691E", name:"Tea"}, // Less caffeine than coffee
-  soda:{factor:0.7, icon:"fa-glass-whiskey", color:"#FF6B6B", name:"Soda"}, // High sugar, caffeine
-  juice:{factor:0.85, icon:"fa-apple-alt", color:"#FFB84D", name:"Juice"}, // Sugar content
-  milk:{factor:0.95, icon:"fa-wine-bottle", color:"#FFFFFF", name:"Milk"} // Good hydration
+  water:{
+    waterContent:100, // 100% water
+    hydrationFactor:1.0, // Full hydration value
+    icon:"fa-tint", 
+    color:"#4fd1ff", 
+    name:"Water",
+    description: "Pure water - 100% hydration"
+  },
+  coffee:{
+    waterContent:98, // 98% water (actual water content in brewed coffee)
+    hydrationFactor:0.8, // Reduced due to caffeine's diuretic effect
+    icon:"fa-coffee", 
+    color:"#8B4513", 
+    name:"Coffee",
+    description: "Brewed coffee - contains caffeine"
+  },
+  tea:{
+    waterContent:99, // 99% water (actual water content in brewed tea)
+    hydrationFactor:0.9, // Slightly reduced due to minimal caffeine
+    icon:"fa-mug-hot", 
+    color:"#D2691E", 
+    name:"Tea",
+    description: "Brewed tea - minimal caffeine"
+  },
+  soda:{
+    waterContent:90, // 90% water (actual water content in soda)
+    hydrationFactor:0.7, // Reduced due to sugar and caffeine
+    icon:"fa-glass-whiskey", 
+    color:"#FF6B6B", 
+    name:"Soda",
+    description: "Carbonated soft drink"
+  },
+  juice:{
+    waterContent:88, // 88% water (actual water content in fruit juice)
+    hydrationFactor:0.85, // Good hydration but contains sugars
+    icon:"fa-apple-alt", 
+    color:"#FFB84D", 
+    name:"Juice",
+    description: "Fruit juice - contains natural sugars"
+  },
+  milk:{
+    waterContent:87, // 87% water (actual water content in milk)
+    hydrationFactor:0.95, // Very good hydration with nutrients
+    icon:"fa-wine-bottle", 
+    color:"#FFFFFF", 
+    name:"Milk",
+    description: "Cow's milk - contains nutrients"
+  }
 };
 
 let selectedDrink = null;
@@ -630,7 +719,7 @@ function updateDrinkHistory(){
       <div>
         <i class="fas ${DRINKS[drink.type].icon}" style="color:${DRINKS[drink.type].color}"></i>
         ${drink.type.charAt(0).toUpperCase()+drink.type.slice(1)}
-        <div class="drink-time">${drink.time}</div>
+        <div class="drink-time">${drink.time} • ${drink.waterContent}ml water</div>
       </div>
       <div>${drink.amount} ml</div>
     `;
@@ -675,12 +764,16 @@ function renderStep(){
         </div>
       </div>
       <div class="manual-input-container">
-        <input type="number" class="manual-input" id="weightInput" placeholder="Enter weight" value="${profile.weight||70}" min="30" max="200">
+        <input type="number" class="manual-input" id="weightInput" placeholder="Enter weight" value="${profile.weight||70}" min="30" max="200" step="1">
         <button class="manual-input-btn" onclick="setWeightManual()">Set</button>
+      </div>
+      <div class="manual-controls">
+        <button onclick="adjustWeight(-1)" class="small"><i class="fas fa-minus"></i></button>
+        <button onclick="adjustWeight(1)" class="small"><i class="fas fa-plus"></i></button>
       </div>
       <button onclick="next()" style="margin-top:20px">Next</button>`;
     buildRuler(wr,30,200,profile.weight||70,v=>wv.innerText=v+" kg",v=>profile.weight=v);
-    setTimeout(() => wr.scrollLeft = ((profile.weight||70) - 30) * 22, 100);
+    setTimeout(() => wr.scrollLeft = ((profile.weight||70) - 30) * 11, 100);
   }
   if(step===2){
     box.innerHTML=`
@@ -693,12 +786,16 @@ function renderStep(){
         </div>
       </div>
       <div class="manual-input-container">
-        <input type="number" class="manual-input" id="heightInput" placeholder="Enter height" value="${profile.height||170}" min="100" max="220">
+        <input type="number" class="manual-input" id="heightInput" placeholder="Enter height" value="${profile.height||170}" min="100" max="220" step="1">
         <button class="manual-input-btn" onclick="setHeightManual()">Set</button>
+      </div>
+      <div class="manual-controls">
+        <button onclick="adjustHeight(-1)" class="small"><i class="fas fa-minus"></i></button>
+        <button onclick="adjustHeight(1)" class="small"><i class="fas fa-plus"></i></button>
       </div>
       <button onclick="next()" style="margin-top:20px">Next</button>`;
     buildRuler(hr,100,220,profile.height||170,v=>hv.innerText=v+" cm",v=>profile.height=v);
-    setTimeout(() => hr.scrollLeft = ((profile.height||170) - 100) * 22, 100);
+    setTimeout(() => hr.scrollLeft = ((profile.height||170) - 100) * 11, 100);
   }
   if(step===3){
     box.innerHTML=`
@@ -709,16 +806,20 @@ function renderStep(){
         <div class="age-wheel" id="age"></div>
       </div>
       <div class="manual-input-container">
-        <input type="number" class="manual-input" id="ageInput" placeholder="Enter age" value="${profile.age||25}" min="10" max="80">
+        <input type="number" class="manual-input" id="ageInput" placeholder="Enter age" value="${profile.age||25}" min="10" max="80" step="1">
         <button class="manual-input-btn" onclick="setAgeManual()">Set</button>
+      </div>
+      <div class="manual-controls">
+        <button onclick="adjustAge(-1)" class="small"><i class="fas fa-minus"></i></button>
+        <button onclick="adjustAge(1)" class="small"><i class="fas fa-plus"></i></button>
       </div>
       <button onclick="finish()" style="margin-top:20px">Finish Setup</button>`;
     buildAge();
     setTimeout(() => {
       if(age.scrollTo) {
-        age.scrollTo({left: ((profile.age||25) - 10) * 70, behavior: 'smooth'});
+        age.scrollTo({left: ((profile.age||25) - 10) * 31, behavior: 'smooth'});
       } else {
-        age.scrollLeft = ((profile.age||25) - 10) * 70;
+        age.scrollLeft = ((profile.age||25) - 10) * 31;
       }
     }, 100);
   }
@@ -734,7 +835,7 @@ function setWeightManual(){
   if(value >= 30 && value <= 200){
     profile.weight = value;
     wv.innerText = value + " kg";
-    wr.scrollLeft = (value - 30) * 22;
+    wr.scrollLeft = (value - 30) * 11;
     haptic();
   }
 }
@@ -744,7 +845,7 @@ function setHeightManual(){
   if(value >= 100 && value <= 220){
     profile.height = value;
     hv.innerText = value + " cm";
-    hr.scrollLeft = (value - 100) * 22;
+    hr.scrollLeft = (value - 100) * 11;
     haptic();
   }
 }
@@ -756,12 +857,50 @@ function setAgeManual(){
     av.innerText = value + " years";
     buildAge();
     if(age.scrollTo) {
-      age.scrollTo({left: (value - 10) * 70, behavior: 'smooth'});
+      age.scrollTo({left: (value - 10) * 31, behavior: 'smooth'});
     } else {
-      age.scrollLeft = (value - 10) * 70;
+      age.scrollLeft = (value - 10) * 31;
     }
     haptic();
   }
+}
+function adjustWeight(change){
+  const current = profile.weight || 70;
+  const newValue = Math.min(200, Math.max(30, current + change));
+  profile.weight = newValue;
+  const wv = document.getElementById('wv');
+  if(wv) wv.innerText = newValue + " kg";
+  const weightInput = document.getElementById('weightInput');
+  if(weightInput) weightInput.value = newValue;
+  if(wr) wr.scrollLeft = (newValue - 30) * 11;
+  haptic();
+}
+function adjustHeight(change){
+  const current = profile.height || 170;
+  const newValue = Math.min(220, Math.max(100, current + change));
+  profile.height = newValue;
+  const hv = document.getElementById('hv');
+  if(hv) hv.innerText = newValue + " cm";
+  const heightInput = document.getElementById('heightInput');
+  if(heightInput) heightInput.value = newValue;
+  if(hr) hr.scrollLeft = (newValue - 100) * 11;
+  haptic();
+}
+function adjustAge(change){
+  const current = profile.age || 25;
+  const newValue = Math.min(80, Math.max(10, current + change));
+  profile.age = newValue;
+  const av = document.getElementById('av');
+  if(av) av.innerText = newValue + " years";
+  const ageInput = document.getElementById('ageInput');
+  if(ageInput) ageInput.value = newValue;
+  buildAge();
+  if(age.scrollTo) {
+    age.scrollTo({left: (newValue - 10) * 31, behavior: 'smooth'});
+  } else {
+    age.scrollLeft = (newValue - 10) * 31;
+  }
+  haptic();
 }
 function next(){
   step++;
@@ -774,13 +913,18 @@ function finish(){
   showNotification("Profile setup completed! Your daily goal is " + calcGoal() + "ml");
 }
 
-/* FIXED RULER - Improved scrolling */
+/* FIXED RULER - 1 unit increments */
 function buildRuler(el,min,max,val,show,set){
   el.innerHTML="";
   for(let i=min;i<=max;i++){
     let t=document.createElement("div");
-    t.className="tick"+(i%5===0?" major":" minor");
-    if(i%5===0){
+    let tickClass = "tick minor";
+    if(i % 5 === 0) tickClass = "tick major5";
+    if(i % 10 === 0) tickClass = "tick major";
+    t.className = tickClass;
+    
+    // Show labels for every 10 units
+    if(i % 10 === 0){
       let s=document.createElement("span");
       s.innerText=i;
       t.appendChild(s);
@@ -788,9 +932,9 @@ function buildRuler(el,min,max,val,show,set){
     el.appendChild(t);
   }
   
-  // Set initial scroll position
+  // Set initial scroll position (11px per unit)
   setTimeout(() => {
-    el.scrollLeft = (val - min) * 22;
+    el.scrollLeft = (val - min) * 11;
   }, 50);
   
   let isScrolling;
@@ -798,7 +942,7 @@ function buildRuler(el,min,max,val,show,set){
     clearTimeout(isScrolling);
     isScrolling=setTimeout(()=>{
       let scrollLeft = el.scrollLeft;
-      let v=min+Math.round(scrollLeft/22);
+      let v=min+Math.round(scrollLeft/11);
       if(v<min) v=min;
       if(v>max) v=max;
       set(v);
@@ -811,42 +955,52 @@ function buildRuler(el,min,max,val,show,set){
   el.style.touchAction = 'pan-x';
 }
 
-/* FIXED AGE WHEEL - Improved scrolling */
+/* FIXED AGE WHEEL - 1 year increments */
 function buildAge(){
-  age.innerHTML="";
+  const ageElement = document.getElementById('age');
+  if(!ageElement) return;
+  
+  ageElement.innerHTML="";
   const currentAge=profile.age||25;
+  
   for(let i=10;i<=80;i++){
     let d=document.createElement("div");
-    d.className="age-item"+(i===currentAge?" active":"");
+    d.className="age-item"+(i===currentAge?" active":"")+(i % 5 === 0 ? " major" : "");
     d.innerText=i;
     d.onclick=()=>{
       profile.age=i;
-      av.innerText=i+" years";
+      const av = document.getElementById('av');
+      if(av) av.innerText=i+" years";
+      const ageInput = document.getElementById('ageInput');
+      if(ageInput) ageInput.value = i;
       buildAge();
       haptic();
     };
-    age.appendChild(d);
+    ageElement.appendChild(d);
   }
   
-  // Set initial scroll position
+  // Set initial scroll position (31px per year)
   setTimeout(() => {
-    if(age.scrollTo) {
-      age.scrollTo({left: (currentAge - 10) * 70, behavior: 'auto'});
+    if(ageElement.scrollTo) {
+      ageElement.scrollTo({left: (currentAge - 10) * 31, behavior: 'auto'});
     } else {
-      age.scrollLeft = (currentAge - 10) * 70;
+      ageElement.scrollLeft = (currentAge - 10) * 31;
     }
   }, 50);
   
   // Update active item on scroll
   let ageScrollTimeout;
-  age.onscroll = () => {
+  ageElement.onscroll = () => {
     clearTimeout(ageScrollTimeout);
     ageScrollTimeout = setTimeout(() => {
-      const scrollLeft = age.scrollLeft;
-      const newAge = Math.round(10 + scrollLeft / 70);
+      const scrollLeft = ageElement.scrollLeft;
+      const newAge = Math.round(10 + scrollLeft / 31);
       if(newAge >= 10 && newAge <= 80){
         profile.age = newAge;
-        av.innerText = newAge + " years";
+        const av = document.getElementById('av');
+        if(av) av.innerText = newAge + " years";
+        const ageInput = document.getElementById('ageInput');
+        if(ageInput) ageInput.value = newAge;
         buildAge();
         haptic();
       }
@@ -867,6 +1021,10 @@ function selectDrinkType(type){
   const drinkInfo=DRINKS[type];
   amountTitle.innerHTML=`<i class="fas ${drinkInfo.icon}" style="color:${drinkInfo.color}"></i> Select ${drinkInfo.name} Amount`;
   
+  // Update water content info - NOW SHOWING ACTUAL WATER CONTENT
+  const waterInfo = document.getElementById('waterContentInfo');
+  waterInfo.innerHTML = `${drinkInfo.description} • Contains ${drinkInfo.waterContent}% water`;
+  
   const amounts=[50,100,150,200,250,300,400,500,700,1000];
   const grid=document.getElementById("amountGrid");
   grid.innerHTML="";
@@ -874,7 +1032,15 @@ function selectDrinkType(type){
   amounts.forEach(ml=>{
     const btn=document.createElement("button");
     btn.className="amount-btn"+(ml===selectedAmount?" active":"");
-    btn.innerText=ml===1000?"1 Liter":ml+" ml";
+    
+    // Calculate ACTUAL WATER CONTENT for this amount (not hydration)
+    const actualWater = Math.round(ml * drinkInfo.waterContent / 100);
+    
+    btn.innerHTML=`
+      <div>${ml===1000?"1 Liter":ml+" ml"}</div>
+      <div class="amount-detail">${actualWater}ml of water</div>
+    `;
+    
     btn.onclick=()=>{
       document.querySelectorAll(".amount-btn").forEach(b=>b.classList.remove("active"));
       btn.classList.add("active");
@@ -904,19 +1070,31 @@ function confirmDrink(){
   }
   
   const drinkInfo=DRINKS[selectedDrink];
-  const effectiveAmount=Math.round(selectedAmount*drinkInfo.factor);
   
-  data[today].consumed+=effectiveAmount;
+  // Calculate ACTUAL WATER CONTENT
+  const actualWater = Math.round(selectedAmount * drinkInfo.waterContent / 100);
+  
+  // Calculate EFFECTIVE HYDRATION (water content adjusted by hydration factor)
+  const effectiveHydration = Math.round(actualWater * drinkInfo.hydrationFactor);
+  
+  data[today].consumed+=effectiveHydration;
   data[today].drinks.push({
     type:selectedDrink,
     amount:selectedAmount,
-    effective:effectiveAmount,
+    waterContent: actualWater, // Store actual water content
+    effective:effectiveHydration,
     time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
   });
   
   amountModal.style.display="none";
   updateUI();
-  showNotification(`Added ${selectedAmount}ml of ${drinkInfo.name} (${effectiveAmount}ml effective hydration)`);
+  
+  // Show clear message about water content vs hydration
+  if(selectedDrink === 'water') {
+    showNotification(`Added ${selectedAmount}ml of water (${actualWater}ml water → ${effectiveHydration}ml hydration)`);
+  } else {
+    showNotification(`Added ${selectedAmount}ml ${drinkInfo.name} (${actualWater}ml water → ${effectiveHydration}ml hydration)`);
+  }
   haptic();
   
   // Check if goal reached
@@ -936,4 +1114,21 @@ function showStats(){
 
 /* RESET FUNCTION */
 function resetToday(){
-  if(confirm("Are you sure
+  if(confirm("Are you sure you want to reset today's progress?")){
+    data[today] = {consumed:0, drinks:[]};
+    localStorage.setItem("data",JSON.stringify(data));
+    updateUI();
+    showNotification("Today's progress reset successfully");
+  }
+}
+
+/* INIT */
+if(!profile.gender){
+  setTimeout(startOnboarding,1000);
+}else{
+  updateUI();
+}
+</script>
+
+</body>
+</html>
