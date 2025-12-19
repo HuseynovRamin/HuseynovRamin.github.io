@@ -34,6 +34,7 @@ header{text-align:center;padding:16px;font-weight:700}
 .water::before{content:"";position:absolute;top:-14px;width:200%;height:28px;background:rgba(255,255,255,.35);border-radius:50%;animation:wave 3s linear infinite}
 @keyframes wave{from{transform:translateX(-50%)}to{transform:translateX(0)}}
 
+/* Rulers */
 .rwrap{position:relative;height:80px;overflow:hidden;margin-bottom:12px}
 .ruler{display:flex;align-items:flex-end;height:100%;overflow-x:scroll;scrollbar-width:none;scroll-behavior:smooth}
 .ruler::-webkit-scrollbar{display:none}
@@ -43,10 +44,11 @@ header{text-align:center;padding:16px;font-weight:700}
 .tick span{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:.75rem;color:var(--muted)}
 .center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--danger)}
 
+/* Buttons */
 button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:700;color:#000;cursor:pointer;margin-top:6px}
 
 /* Modals */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:20}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:50}
 .modal-content{width:90%;max-width:380px;padding:12px}
 
 /* Nav */
@@ -64,6 +66,12 @@ button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-
 .drink-item{min-width:70px;margin:0 6px;background:rgba(255,255,255,.05);border-radius:14px;padding:12px;text-align:center;cursor:pointer;transition:transform .2s}
 .drink-item.active{background:var(--accent);color:#000;transform:scale(1.1)}
 .drink-item span{display:block;font-size:.85rem}
+
+/* Age scroll */
+.age-wheel{display:flex;overflow-x:scroll;scroll-snap-type:x mandatory;padding:12px 0;scrollbar-width:none}
+.age-wheel::-webkit-scrollbar{display:none}
+.age-item{min-width:50px;margin:0 6px;text-align:center;flex-shrink:0;font-size:1.5rem;scroll-snap-align:center;color:var(--muted)}
+.age-item.active{color:var(--accent);font-weight:700;transform:scale(1.3);transition:all .2s}
 </style>
 </head>
 <body>
@@ -80,23 +88,10 @@ button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-
   </div>
 </div>
 
-<!-- PROFILE ONBOARDING -->
-<div class="modal" id="settings">
-  <div class="modal-content card">
-    <h2>Profile Setup</h2>
-    <p>Gender</p>
-    <div class="rwrap"><div class="center"></div><div class="ruler" id="genderR"></div></div>
-    <p>Weight (kg)</p>
-    <div class="rwrap"><div class="center"></div><div class="ruler" id="weightR"></div></div>
-    <p>Height</p>
-    <div style="display:flex;gap:8px;margin-bottom:6px">
-      <button onclick="setHeightUnit('cm')">cm</button>
-      <button onclick="setHeightUnit('ft')">ft / in</button>
-    </div>
-    <div class="rwrap"><div class="center"></div><div class="ruler" id="heightR"></div></div>
-    <p>Age</p>
-    <div class="rwrap"><div class="center"></div><div class="ruler" id="ageR"></div></div>
-    <button onclick="saveProfile()">Save</button>
+<!-- STEP ONBOARDING -->
+<div class="modal" id="onboarding">
+  <div class="modal-content card" id="stepContent">
+    <!-- Dynamic content injected via JS -->
   </div>
 </div>
 
@@ -123,14 +118,11 @@ button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-
 <!-- NAV -->
 <div class="nav">
   <i class="fa-solid fa-droplet active" onclick="openDrinkPicker('water')"></i>
-  <i class="fa-solid fa-user" onclick="openSettings()"></i>
+  <i class="fa-solid fa-user" onclick="openOnboarding()"></i>
   <i class="fa-solid fa-calendar" onclick="openCalendar()"></i>
 </div>
 
 <script>
-/* ===== SERVICE WORKER ===== */
-if('serviceWorker' in navigator){navigator.serviceWorker.register('service-worker.js');}
-
 /* ===== STATE ===== */
 let profile = JSON.parse(localStorage.getItem('profile')) || null;
 let heightUnit = 'cm';
@@ -146,43 +138,120 @@ const hapticSuccess=()=>navigator.vibrate&&navigator.vibrate([20,40,20]);
 /* ===== FORMULA ===== */
 function calcGoal(){let g=profile.weight*35;if(profile.gender==='male')g*=1.1;if(profile.age>55)g*=.95;return smartRound(g)}
 
-/* ===== UI ===== */
 function updateUI(){
   if(!profile)return;
   const g=calcGoal(),c=data[today].consumed;
   goal.innerText=`Goal: ${g} ml`;
-  consumed.innerText=`${c} ml consumed`;
+  consumed.innerText=`${c.toFixed(0)} ml consumed`;
   water.style.height=Math.min(c/g*100,100)+'%';
   if(c>=g&&!data[today].achieved){data[today].achieved=true;showAchievement()}
   localStorage.setItem('data',JSON.stringify(data));
 }
+
 function showAchievement(){hapticSuccess();achievement.style.display='flex';setTimeout(()=>achievement.style.display='none',2500)}
 
+/* ===== STEP-BASED ONBOARDING ===== */
+const steps=[
+  {id:'gender',title:'Select Gender',content:(step,next)=>`
+    <h2>${step.title}</h2>
+    <div style="display:flex;gap:12px;margin-top:12px">
+      <button onclick="profile.gender='male';next()">Male</button>
+      <button onclick="profile.gender='female';next()">Female</button>
+    </div>
+  `},
+  {id:'weight',title:'Select Weight',min:30,max:200,step:1,content:(step,next)=>`
+    <h2>${step.title}</h2>
+    <div class="rwrap"><div class="center"></div><div class="ruler" id="weightR"></div></div>
+    <div style="margin-top:8px">Selected: <span id="weightVal">${profile.weight}</span> kg</div>
+    <button onclick="next()">Next</button>
+  `},
+  {id:'height',title:'Select Height',min:100,max:220,step:1,content:(step,next)=>`
+    <h2>${step.title}</h2>
+    <div class="rwrap"><div class="center"></div><div class="ruler" id="heightR"></div></div>
+    <div style="margin-top:8px">Selected: <span id="heightVal">${profile.height}</span> cm</div>
+    <button onclick="next()">Next</button>
+  `},
+  {id:'age',title:'Select Age',min:10,max:80,step:1,content:(step,next)=>`
+    <h2>${step.title}</h2>
+    <div class="age-wheel" id="ageWheel"></div>
+    <button onclick="next()">Finish</button>
+  `}
+];
+
+let currentStep=0;
+
+function renderStep(){
+  const step=steps[currentStep];
+  stepContent.innerHTML=step.content(step,nextStep);
+  if(step.id==='weight'){
+    buildRuler(weightR,step.min,step.max,step.step,profile.weight);
+    bindRuler(weightR,'weight',step.min,step.step,'weightVal');
+  } else if(step.id==='height'){
+    buildRuler(heightR,step.min,step.max,step.step,profile.height);
+    bindRuler(heightR,'height',step.min,step.step,'heightVal');
+  } else if(step.id==='age'){
+    const wheel=document.getElementById('ageWheel');
+    wheel.innerHTML='';
+    for(let i=steps[currentStep].min;i<=steps[currentStep].max;i++){
+      const div=document.createElement('div');
+      div.className='age-item'+(i===profile.age?' active':'');
+      div.innerText=i;
+      div.onclick=()=>{profile.age=i;updateAgeWheel();hapticLight();}
+      wheel.appendChild(div);
+    }
+  }
+}
+
+function updateAgeWheel(){
+  document.querySelectorAll('.age-item').forEach(el=>{
+    el.classList.remove('active');
+    if(parseInt(el.innerText)===profile.age)el.classList.add('active');
+  });
+}
+
+function nextStep(){
+  currentStep++;
+  if(currentStep>=steps.length){
+    localStorage.setItem('profile',JSON.stringify(profile));
+    onboarding.style.display='none';
+    updateUI();
+  }else renderStep();
+}
+
+function openOnboarding(){onboarding.style.display='flex';currentStep=0;renderStep();}
+
 /* ===== RULERS ===== */
-function buildRuler(el,min,max,step,val){el.innerHTML='';for(let i=min;i<=max;i+=step){let t=document.createElement('div');t.className='tick'+(i%(step*5)==0?' major':'');if(i%(step*5)==0){let s=document.createElement('span');s.innerText=i;t.appendChild(s)}el.appendChild(t)}el.scrollLeft=(val-min)/step*18-el.offsetWidth/2}
-function bind(el,key,min,step){el.addEventListener('scroll',()=>{let idx=Math.round((el.scrollLeft+el.offsetWidth/2)/18);profile[key]=min+idx*step;updateUI();hapticLight()})}
-
-function setHeightUnit(u){heightUnit=u;if(u==='ft'){let inches=Math.round(profile.height/2.54);buildRuler(heightR,48,84,1,inches)}else{buildRuler(heightR,140,210,1,profile.height)}}
-heightR.addEventListener('scroll',()=>{let idx=Math.round((heightR.scrollLeft+heightR.offsetWidth/2)/18);profile.height=heightUnit==='ft'?Math.round((48+idx)*2.54):140+idx})
-
-/* ===== SETTINGS ===== */
-function openSettings(){settings.style.display='flex'}
-function saveProfile(){
-  localStorage.setItem('profile',JSON.stringify(profile));
-  settings.style.display='none';
-  updateUI();
+function buildRuler(el,min,max,step,val){
+  el.innerHTML='';
+  for(let i=min;i<=max;i+=step){
+    const t=document.createElement('div');
+    t.className='tick'+(i%5===0?' major':'');
+    if(i%5===0){const s=document.createElement('span');s.innerText=i;t.appendChild(s);}
+    el.appendChild(t);
+  }
+  const scrollPos=(val-min)/step*18-el.offsetWidth/2;
+  el.scrollLeft=scrollPos;
+}
+function bindRuler(el,key,min,step,valElId){
+  const display=document.getElementById(valElId);
+  el.addEventListener('scroll',()=>{
+    let idx=Math.round((el.scrollLeft+el.offsetWidth/2)/18);
+    profile[key]=min+idx*step;
+    if(display)display.innerText=profile[key];
+    hapticLight();
+  });
 }
 
 /* ===== DRINK LOGIC ===== */
 const DRINK_WATER_CONTENT = {water:1,coffee:0.98,tea:0.98,soda:0.93,juice:0.88,milk:0.88};
 const POPULAR_DRINKS = [
-  {ml:50,label:'small sip'}, {ml:150,label:'small cup'}, {ml:200,label:'glass'},
+  {ml:50,label:'sip'}, {ml:150,label:'cup'}, {ml:200,label:'glass'},
   {ml:250,label:'cup'}, {ml:330,label:'can'}, {ml:500,label:'bottle'}, {ml:1000,label:'1 liter'}
 ];
-let currentDrinkType = 'water';
+let currentDrinkType='water';
 
 function openDrinkPicker(type){
-  currentDrinkType = type;
+  currentDrinkType=type;
   drinkPicker.style.display='flex';
   drinkTitle.innerText=`Add ${type.charAt(0).toUpperCase()+type.slice(1)}`;
   drinkScroll.innerHTML='';
@@ -196,8 +265,8 @@ function openDrinkPicker(type){
 }
 
 function addDrink(ml){
-  const actualWater = ml*DRINK_WATER_CONTENT[currentDrinkType];
-  data[today].consumed += actualWater;
+  const actualWater=ml*DRINK_WATER_CONTENT[currentDrinkType];
+  data[today].consumed+=actualWater;
   data[today].drinks.push({type:currentDrinkType,ml,water:actualWater});
   localStorage.setItem('data',JSON.stringify(data));
   drinkPicker.style.display='none';
@@ -233,21 +302,12 @@ function openCalendar(){
 
 /* ===== INIT ===== */
 function initApp(){
-  if(!profile){
-    profile={gender:'male',weight:70,height:170,age:18};
-    settings.style.display='flex';
-  }
-  buildRuler(genderR,0,1,1,profile.gender==='male'?1:0);
-  genderR.addEventListener('scroll',()=>profile.gender=genderR.scrollLeft>6?'male':'female');
-  buildRuler(weightR,30,200,1,profile.weight);bind(weightR,'weight',30,1);
-  buildRuler(heightR,140,210,1,profile.height);
-  buildRuler(ageR,10,80,1,profile.age);bind(ageR,'age',10,1);
+  if(!profile)openOnboarding();
   updateUI();
 }
 
 initApp();
 addDrinkBtn.addEventListener('click',()=>openDrinkPicker('water'));
 </script>
-
 </body>
 </html>
