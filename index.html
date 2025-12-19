@@ -1,69 +1,58 @@
 <!DOCTYPE html>
-<!--
-MYWATER – FULL FINISHED HTML FILE
-Drop-in ready for GitHub Pages + PWA
-Everything included: meta headers, UI, logic, service worker hook
--->
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MyWater</title>
 
-  <title>MyWater</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#060b18">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MyWater">
 
-  <!-- PWA / iOS / Android -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#060b18">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MyWater">
+<!-- Fonts & Icons -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <!-- Fonts & Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{
+  --bg:#060b18;--card:#121a2f;--accent:#4fd1ff;--accent2:#6b7cff;
+  --text:#ffffff;--muted:#9aa4bf;--danger:#ff4d4d;
+}
+*{box-sizing:border-box;font-family:Poppins;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(circle at top,#162044,#060b18);color:var(--text)}
+header{text-align:center;padding:16px;font-weight:700}
+.app{max-width:420px;margin:auto;padding:12px 12px 90px}
+.card{background:linear-gradient(180deg,#151f3f,#0f1630);border-radius:26px;padding:18px;margin-bottom:16px;box-shadow:0 25px 60px rgba(0,0,0,.45)}
 
-  <style>
-    :root{
-      --bg:#060b18;--card:#121a2f;--accent:#4fd1ff;--accent2:#6b7cff;
-      --text:#ffffff;--muted:#9aa4bf;--danger:#ff4d4d;
-    }
-    *{box-sizing:border-box;font-family:Poppins;-webkit-tap-highlight-color:transparent}
-    body{margin:0;background:radial-gradient(circle at top,#162044,#060b18);color:var(--text)}
-    header{text-align:center;padding:16px;font-weight:700}
-    .app{max-width:420px;margin:auto;padding:12px 12px 90px}
-    .card{background:linear-gradient(180deg,#151f3f,#0f1630);border-radius:26px;padding:18px;margin-bottom:16px;box-shadow:0 25px 60px rgba(0,0,0,.45)}
+.bottle{width:150px;height:280px;border-radius:38px;border:3px solid rgba(255,255,255,.25);margin:14px auto;position:relative;overflow:hidden;background:#050814}
+.water{position:absolute;bottom:0;width:100%;height:0%;background:linear-gradient(180deg,#7be7ff,#3fa9f5);transition:height .6s cubic-bezier(.4,0,.2,1)}
+.water::before{content:"";position:absolute;top:-14px;width:200%;height:28px;background:rgba(255,255,255,.35);border-radius:50%;animation:wave 3s linear infinite}
+@keyframes wave{from{transform:translateX(-50%)}to{transform:translateX(0)}}
 
-    /* Bottle */
-    .bottle{width:150px;height:280px;border-radius:38px;border:3px solid rgba(255,255,255,.25);margin:14px auto;position:relative;overflow:hidden;background:#050814}
-    .water{position:absolute;bottom:0;width:100%;height:0%;background:linear-gradient(180deg,#7be7ff,#3fa9f5);transition:height .6s cubic-bezier(.4,0,.2,1)}
-    .water::before{content:"";position:absolute;top:-14px;width:200%;height:28px;background:rgba(255,255,255,.35);border-radius:50%;animation:wave 3s linear infinite}
-    @keyframes wave{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.rwrap{position:relative;height:90px;overflow:hidden;margin-bottom:12px}
+.ruler{display:flex;align-items:flex-end;height:100%;overflow-x:scroll;scrollbar-width:none}
+.ruler::-webkit-scrollbar{display:none}
+.tick{width:12px;flex-shrink:0;position:relative}
+.tick:after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:2px;height:26px;background:rgba(255,255,255,.4)}
+.tick.major:after{height:40px;background:#fff}
+.tick span{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--muted)}
+.center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--danger)}
 
-    /* Rulers */
-    .rwrap{position:relative;height:90px;overflow:hidden;margin-bottom:12px}
-    .ruler{display:flex;align-items:flex-end;height:100%;overflow-x:scroll;scrollbar-width:none}
-    .ruler::-webkit-scrollbar{display:none}
-    .tick{width:12px;flex-shrink:0;position:relative}
-    .tick:after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:2px;height:26px;background:rgba(255,255,255,.4)}
-    .tick.major:after{height:40px;background:#fff}
-    .tick span{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--muted)}
-    .center{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--danger)}
+button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:700;color:#000}
 
-    button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));font-weight:700;color:#000}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:10}
 
-    /* Modal */
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:10}
+.nav{position:fixed;bottom:0;left:0;right:0;background:#0b1228;display:flex;justify-content:space-around;padding:10px 0}
+.nav i{font-size:1.2rem;color:var(--muted)}
+.nav i.active{color:var(--accent)}
 
-    /* Nav */
-    .nav{position:fixed;bottom:0;left:0;right:0;background:#0b1228;display:flex;justify-content:space-around;padding:10px 0}
-    .nav i{font-size:1.2rem;color:var(--muted)}
-    .nav i.active{color:var(--accent)}
-
-    /* Achievement */
-    #achievement{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65);z-index:20}
-  </style>
+#achievement{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.65);z-index:20}
+</style>
 </head>
 <body>
 <header>💧 MyWater</header>
@@ -77,7 +66,6 @@ Everything included: meta headers, UI, logic, service worker hook
   </div>
 </div>
 
-<!-- SETTINGS -->
 <div class="modal" id="settings">
   <div class="card">
     <h2>Profile</h2>
@@ -102,57 +90,84 @@ Everything included: meta headers, UI, logic, service worker hook
   </div>
 </div>
 
-<!-- ACHIEVEMENT -->
 <div id="achievement"><div class="card"><h2>🎉 Goal Reached!</h2><p>Great job staying hydrated</p></div></div>
 
-<!-- NAV -->
 <div class="nav">
   <i class="fa-solid fa-droplet active"></i>
   <i class="fa-solid fa-user" onclick="openSettings()"></i>
 </div>
 
 <script>
-/* ===== SERVICE WORKER ===== */
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js');
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js');
 
-/* ===== STATE ===== */
 let profile = JSON.parse(localStorage.getItem('profile')) || {gender:'male',weight:70,height:170,age:18};
 let heightUnit = 'cm';
 let today = new Date().toDateString();
 let data = JSON.parse(localStorage.getItem('data')) || {};
 if(!data[today]) data[today] = {consumed:0,achieved:false};
 
-/* ===== UTIL ===== */
 const smartRound=v=>v<2000?Math.round(v/50)*50:Math.round(v/100)*100;
 const hapticLight=()=>navigator.vibrate&&navigator.vibrate(10);
 const hapticSuccess=()=>navigator.vibrate&&navigator.vibrate([20,40,20]);
 
-/* ===== FORMULA ===== */
 function calcGoal(){let g=profile.weight*35;if(profile.gender==='male')g*=1.1;if(profile.age>55)g*=.95;return smartRound(g)}
 
-/* ===== UI ===== */
-function updateUI(){const g=calcGoal(),c=data[today].consumed;goal.innerText=`Goal: ${g} ml`;consumed.innerText=`${c} ml consumed`;water.style.height=Math.min(c/g*100,100)+'%';if(c>=g&&!data[today].achieved){data[today].achieved=true;showAchievement()}}
+function updateUI(){
+  const g=calcGoal(),c=data[today].consumed;
+  goal.innerText=`Goal: ${g} ml`;
+  consumed.innerText=`${c} ml consumed`;
+  water.style.height=Math.min(c/g*100,100)+'%';
+  if(c>=g&&!data[today].achieved){data[today].achieved=true;showAchievement()}
+}
 
 function showAchievement(){hapticSuccess();achievement.style.display='flex';setTimeout(()=>achievement.style.display='none',2500)}
 
-/* ===== RULERS ===== */
-function buildRuler(el,min,max,step,val){el.innerHTML='';for(let i=min;i<=max;i+=step){let t=document.createElement('div');t.className='tick'+(i%(step*5)==0?' major':'');if(i%(step*5)==0){let s=document.createElement('span');s.innerText=i;t.appendChild(s)}el.appendChild(t)}el.scrollLeft=(val-min)/step*12-el.offsetWidth/2}
-function bind(el,key,min,step){el.addEventListener('scroll',()=>{let idx=Math.round((el.scrollLeft+el.offsetWidth/2)/12);profile[key]=min+idx*step;updateUI();hapticLight()})}
+function buildRuler(el,min,max,step,val){
+  el.innerHTML='';
+  for(let i=min;i<=max;i+=step){
+    let t=document.createElement('div');
+    t.className='tick'+(i%(step*5)==0?' major':'');
+    if(i%(step*5)==0){let s=document.createElement('span');s.innerText=i;t.appendChild(s)}
+    el.appendChild(t)
+  }
+  el.scrollLeft=(val-min)/step*12-el.offsetWidth/2
+}
 
-function setHeightUnit(u){heightUnit=u;if(u==='ft'){let inches=Math.round(profile.height/2.54);buildRuler(heightR,48,84,1,inches)}else{buildRuler(heightR,140,210,1,profile.height)}}
-heightR.addEventListener('scroll',()=>{let idx=Math.round((heightR.scrollLeft+heightR.offsetWidth/2)/12);profile.height=heightUnit==='ft'?Math.round((48+idx)*2.54):140+idx})
+function bind(el,key,min,step){
+  el.addEventListener('scroll',()=>{
+    let idx=Math.round((el.scrollLeft+el.offsetWidth/2)/12);
+    profile[key]=min+idx*step;
+    updateUI();
+    hapticLight()
+  })
+}
 
-/* ===== SETTINGS ===== */
+function setHeightUnit(u){
+  heightUnit=u;
+  if(u==='ft'){
+    let inches=Math.round(profile.height/2.54);
+    buildRuler(heightR,48,84,1,inches)
+  }else{
+    buildRuler(heightR,140,210,1,profile.height)
+  }
+}
+
 function openSettings(){settings.style.display='flex'}
 function saveProfile(){localStorage.setItem('profile',JSON.stringify(profile));settings.style.display='none';updateUI()}
 
-/* ===== INIT ===== */
-buildRuler(genderR,0,1,1,profile.gender==='male'?1:0);genderR.addEventListener('scroll',()=>profile.gender=genderR.scrollLeft>6?'male':'female');
-buildRuler(weightR,30,200,1,profile.weight);bind(weightR,'weight',30,1);
+// Init rulers
+buildRuler(genderR,0,1,1,profile.gender==='male'?1:0);
+genderR.addEventListener('scroll',()=>profile.gender=genderR.scrollLeft>6?'male':'female');
+
+buildRuler(weightR,30,200,1,profile.weight);
+bind(weightR,'weight',30,1);
+
 buildRuler(heightR,140,210,1,profile.height);
-buildRuler(ageR,10,80,1,profile.age);bind(ageR,'age',10,1);
+bind(heightR,'height',140,1);
+
+buildRuler(ageR,10,80,1,profile.age);
+bind(ageR,'age',10,1);
+
 updateUI();
 </script>
 </body>
