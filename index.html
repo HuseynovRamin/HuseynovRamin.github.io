@@ -76,7 +76,7 @@ button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-
 </head>
 <body>
 
-<header>💧 MyWater</header>
+<header>💧 Waterify</header>
 
 <div class="app">
   <div class="card">
@@ -124,7 +124,12 @@ button{width:100%;padding:12px;border-radius:16px;border:none;background:linear-
 
 <script>
 /* ===== STATE ===== */
-let profile = JSON.parse(localStorage.getItem('profile')) || null;
+let profile = JSON.parse(localStorage.getItem('profile')) || {
+  gender: null,
+  weight: 70,
+  height: 170,
+  age: 18
+};
 let heightUnit = 'cm';
 let today = new Date().toDateString();
 let data = JSON.parse(localStorage.getItem('data')) || {};
@@ -218,7 +223,12 @@ function nextStep(){
   }else renderStep();
 }
 
-function openOnboarding(){onboarding.style.display='flex';currentStep=0;renderStep();}
+function openOnboarding(){
+  profile.gender = null; // reset gender only
+  onboarding.style.display = 'flex';
+  currentStep = 0;
+  renderStep();
+}
 
 /* ===== RULERS ===== */
 function buildRuler(el,min,max,step,val){
