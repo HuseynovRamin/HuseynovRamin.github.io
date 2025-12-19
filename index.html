@@ -1,166 +1,358 @@
 <!DOCTYPE html>
-<html lang="az">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Academic Grade Calculator</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyWater – Smart Hydration</title>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0d6efd" />
-  <script>
-    
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(console.warn);
-      });
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #121a2f;
+      --accent: #4fd1ff;
+      --accent-2: #6b7cff;
+      --text: #ffffff;
+      --muted: #9aa4bf;
     }
-  </script>
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at top, #162044, #060b18);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 30px 20px 10px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .app {
+      max-width: 420px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, #151f3f, #0f1630);
+      border-radius: 28px;
+      padding: 22px;
+      margin-bottom: 22px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+      animation: fadeUp 0.7s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+    }
+
+    /* PROFILE */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    label {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    select, input {
+      width: 100%;
+      margin-top: 6px;
+      padding: 12px;
+      border-radius: 14px;
+      border: none;
+      background: #0b1228;
+      color: white;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #000;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(79,209,255,0.4);
+    }
+
+    /* GOAL */
+    .goal {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    .goal span {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* BOTTLE */
+    .bottle-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .bottle {
+      width: 160px;
+      height: 300px;
+      border-radius: 40px;
+      border: 3px solid rgba(255,255,255,0.2);
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, #0b1228, #050814);
+    }
+
+    .water {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 0%;
+      background: linear-gradient(180deg, #7be7ff, #3fa9f5);
+      transition: height 0.6s cubic-bezier(.4,0,.2,1);
+    }
+
+    .water::before {
+      content: "";
+      position: absolute;
+      top: -15px;
+      width: 200%;
+      height: 30px;
+      background: rgba(255,255,255,0.35);
+      border-radius: 50%;
+      animation: wave 3s linear infinite;
+    }
+
+    @keyframes wave {
+      from { transform: translateX(-50%); }
+      to { transform: translateX(0%); }
+    }
+
+    .consumed {
+      text-align: center;
+      font-size: 1.1rem;
+      margin-top: 10px;
+    }
+
+    /* DRINKS */
+    .drinks {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .drink {
+      background: #0b1228;
+      border-radius: 20px;
+      padding: 14px 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .drink:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+
+    .drink i {
+      font-size: 1.6rem;
+      color: var(--accent);
+    }
+
+    .drink small {
+      display: block;
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* CUSTOM */
+    .custom {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin: 30px 0 10px;
+    }
+
+  </style>
 </head>
 <body>
- 
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo">📚</span>
-      <h1 id="title-text">Akademik Qiymət Hesablama</h1>
-      <span class="badge" id="az-badge" title="Azerbaijan 40/60">🇦🇿 40/60</span>
-    </div>
 
-    <div class="controls">
-      <div class="lang-switch">
-        <button class="chip" data-lang="az">🇦🇿 AZ</button>
-        <button class="chip" data-lang="en">🇺🇸 EN</button>
+<header>
+  <h1>💧 MyWater</h1>
+  <p>Smart daily hydration</p>
+</header>
+
+<div class="app">
+
+  <!-- PROFILE -->
+  <div class="card">
+    <h2>Your Profile</h2>
+    <div class="profile-grid">
+      <div>
+        <label>Gender</label>
+        <select id="gender">
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
       </div>
-      <label class="switch" title="Dark mode">
-        <input type="checkbox" id="darkToggle" />
-        <span class="slider"></span>
-      </label>
+      <div>
+        <label>Weight (kg)</label>
+        <input type="number" id="weight">
+      </div>
+      <div>
+        <label>Height (cm)</label>
+        <input type="number" id="height">
+      </div>
+      <div>
+        <label>Age</label>
+        <input type="number" id="age">
+      </div>
     </div>
-  </header>
+    <button onclick="calculateGoal()">Update Daily Goal</button>
+    <div class="goal" id="goal">-- ml<br><span>daily goal</span></div>
+  </div>
 
- 
-  <div id="google_translate_element" class="translate-widget" aria-hidden="true"></div>
-  <script>
-    function googleTranslateElementInit() {
-      new google.translate.TranslateElement(
-        {pageLanguage: "az", layout: google.translate.TranslateElement.InlineLayout.VERTICAL},
-        "google_translate_element"
-      );
+  <!-- TRACKER -->
+  <div class="card">
+    <h2>Today</h2>
+
+    <div class="bottle-wrap">
+      <div class="bottle">
+        <div class="water" id="water"></div>
+      </div>
+    </div>
+
+    <div class="consumed" id="consumed">0 ml consumed</div>
+
+    <div class="drinks">
+      <div class="drink" onclick="add(250)"><i class="fa-solid fa-glass-water"></i><small>250 ml</small></div>
+      <div class="drink" onclick="add(330)"><i class="fa-solid fa-bottle-water"></i><small>330 ml</small></div>
+      <div class="drink" onclick="add(160)"><i class="fa-solid fa-mug-hot"></i><small>Coffee</small></div>
+      <div class="drink" onclick="add(220)"><i class="fa-solid fa-glass-citrus"></i><small>Juice</small></div>
+    </div>
+
+    <div class="custom">
+      <input type="number" id="custom" placeholder="Custom ml">
+      <button onclick="addCustom()">Add</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Data stored locally • App-like static experience
+</footer>
+
+<script>
+  let goal = 0;
+  let consumed = 0;
+
+  function calculateGoal() {
+    const g = gender.value;
+    const w = Number(weight.value);
+    const h = Number(height.value);
+    const a = Number(age.value);
+
+    if (!w || !h || !a) return alert('Fill all fields');
+
+    let base = w * 35;
+    if (g === 'male') base *= 1.1;
+    base += (h - 170) * 10;
+    if (a > 55) base *= 0.95;
+
+    goal = Math.round(base);
+    localStorage.setItem('goal', goal);
+    document.getElementById('goal').innerHTML = `${goal} ml<br><span>daily goal</span>`;
+    update();
+  }
+
+  function add(v) {
+    consumed += v;
+    save();
+    update();
+  }
+
+  function addCustom() {
+    const v = Number(custom.value);
+    if (!v) return;
+    consumed += v;
+    custom.value = '';
+    save();
+    update();
+  }
+
+  function update() {
+    consumed = Math.max(consumed, 0);
+    document.getElementById('consumed').innerText = `${consumed} ml consumed`;
+    if (goal) {
+      const p = Math.min((consumed / goal) * 100, 100);
+      water.style.height = p + '%';
     }
-  </script>
-  <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  }
 
- 
-  <main class="container">
-    <section class="card">
-      <h2 id="calc-title">📊 KQS və BSQ daxil edin</h2>
+  function save() {
+    localStorage.setItem('consumed', consumed);
+  }
 
-      <label for="ksq" id="label-ksq"><strong>📊 KQS qiymətləri (vergüllə ayırın):</strong></label>
-      <input type="text" id="ksq" placeholder="Məs: 85, 90, 78" class="input-field" inputmode="decimal" />
+  function load() {
+    goal = Number(localStorage.getItem('goal')) || 0;
+    consumed = Number(localStorage.getItem('consumed')) || 0;
+    if (goal) goalDiv = document.getElementById('goal').innerHTML = `${goal} ml<br><span>daily goal</span>`;
+    update();
+  }
 
-      <label for="bsq" id="label-bsq"><strong>📝 BSQ qiyməti (əgər varsa):</strong></label>
-      <input type="number" id="bsq" placeholder="Məs: 92" class="input-field" />
+  load();
+</script>
 
-     
-      <div class="row">
-        <div class="scheme">
-          <label id="label-scheme"><strong>🎯 Qiymətləndirmə sistemi:</strong></label>
-          <select id="schemeSelect" aria-label="Grading scheme">
-            <option value="az">🇦🇿 Azerbaijan (KQS 40% + BSQ 60%)</option>
-            <option value="us">🇺🇸 US GPA (4.0 scale)</option>
-            <option value="uk">🇬🇧 UK Percent & Class</option>
-            <option value="ects">🇪🇺 ECTS (A–F)</option>
-            <option value="custom">⚙️ Custom weighting</option>
-          </select>
-        </div>
-
-        <div id="customWeights" class="weights hidden">
-          <label for="kqsWeight" id="label-kqs-w"><span>📐 KQS %</span> <span id="kqsWeightVal">40</span>%</label>
-          <input type="range" id="kqsWeight" min="0" max="100" value="40" />
-          <label for="bsqWeight" id="label-bsq-w"><span>📐 BSQ %</span> <span id="bsqWeightVal">60</span>%</label>
-          <input type="range" id="bsqWeight" min="0" max="100" value="60" disabled />
-          <small id="weight-note">AZ default 40/60 saxlanılıb. Custom seçsən, sürüşdür.</small>
-        </div>
-      </div>
-
-      <div class="actions">
-        <button id="btn-calc" class="primary">🚀 Hesabla</button>
-        <button id="btn-save" class="secondary">💾 Yadda saxla</button>
-        <button id="btn-clear" class="ghost">🧹 Tarixi sil</button>
-      </div>
-
-      <div class="result-line">
-        <h2 class="result-box">✅ <span id="label-result">Nəticə:</span> <span id="result">-</span></h2>
-        <div id="converted" class="converted"></div>
-      </div>
-
-      <div class="tips" id="tipsBox" aria-live="polite"></div>
-    </section>
-
-   
-    <section class="card">
-      <h2 id="history-title">📈 Nəticə tarixi</h2>
-      <canvas id="historyChart" height="120"></canvas>
-      <div class="actions">
-        <button id="btn-pdf" class="secondary">📄 PDF Yüklə</button>
-        <button id="btn-csv" class="secondary">🧾 CSV Yüklə</button>
-        <button id="btn-share" class="ghost">🔗 Paylaş</button>
-      </div>
-    </section>
-
-    
-    <section class="card">
-      <h2 id="exam-title">⏳ İmtahana geri sayım</h2>
-      <div class="row">
-        <input type="date" id="examDate" />
-        <button id="btn-countdown" class="ghost">🕒 Başlat</button>
-      </div>
-      <div id="countdown" class="countdown">—</div>
-    </section>
-
-    
-    <section class="card">
-      <h2>🧮 Kalkulyator</h2>
-      <input type="text" id="resultCalc" readonly />
-      <div class="horizontal-buttons">
-        <button data-c="C">C</button>
-        <button data-c="B">⌫</button>
-        <button data-c="%">%</button>
-        <button data-c="/">÷</button>
-
-        <button data-c="7">7</button>
-        <button data-c="8">8</button>
-        <button data-c="9">9</button>
-        <button data-c="*">×</button>
-
-        <button data-c="4">4</button>
-        <button data-c="5">5</button>
-        <button data-c="6">6</button>
-        <button data-c="-">−</button>
-
-        <button data-c="1">1</button>
-        <button data-c="2">2</button>
-        <button data-c="3">3</button>
-        <button data-c="+">+</button>
-
-        <button class="zero" data-c="0">0</button>
-        <button data-c=".">.</button>
-        <button class="equal" data-c="=">=</button>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <small>© <span id="year"></span> Ramin Huseynov — Global Academic Calculator • PWA</small>
-  </footer>
-
-  <script src="script.js" defer></script>
 </body>
 </html>
