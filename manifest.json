@@ -11,12 +11,12 @@
     {
       "src": "data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjNGZkMWZmIiBoZWlnaHQ9IjE5MiIgd2lkdGg9IjE5MiIgdmlld0JveD0iMCAwIDI0IDI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAyYy0yLjIxIDAtNCAxLjgtNCA0IDAgMi43NiAyLjY4IDcuOTggNi41IDExLjU2IDMuODItMy41OCA2LjUtOC43OSA2LjUtMTEuNTYgMC0yLjItMS43OS00LTQtNHoiLz48L3N2Zz4=",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/svg+xml"
     },
     {
       "src": "data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjNGZkMWZmIiBoZWlnaHQ9IjUxMiIgd2lkdGg9IjUxMiIgdmlld0JveD0iMCAwIDI0IDI0IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAyYy0yLjIxIDAtNCAxLjgtNCA0IDAgMi43NiAyLjY4IDcuOTggNi41IDExLjU2IDMuODItMy41OCA2LjUtOC43OSA2LjUtMTEuNTYgMC0yLjItMS43OS00LTQtNHoiLz48L3N2Zz4=",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml"
     }
   ]
 }
