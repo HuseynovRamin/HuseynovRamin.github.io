@@ -380,6 +380,7 @@ body::before {
   justify-content: flex-end;
   scroll-snap-align: center;
   padding-bottom: 30px;
+  cursor: pointer;
 }
 
 .tick-line {
@@ -1040,10 +1041,23 @@ body::before {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* Chart Fixes */
+.chart-grid-white {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.chart-text-white {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
 </style>
 </head>
 
 <body>
+<!-- Water Drop Animation Container -->
+<div id="waterDropsContainer"></div>
+
 <!-- Achievement Badge -->
 <div class="achievement-badge" onclick="showAchievements()" title="View Achievements">
   <i class="fas fa-trophy"></i>
@@ -1293,7 +1307,7 @@ body::before {
         <label class="input-label">Weight (kg)</label>
         <div class="ruler-value-display" id="weightValue">70</div>
         <div class="input-with-controls">
-          <input type="number" class="manual-input" id="weightInput" min="30" max="200" step="1" value="70">
+          <input type="number" class="manual-input" id="weightInput" min="30" max="200" step="1" value="70" onchange="updateWeightFromInput()">
           <button class="unit-btn" onclick="adjustWeight(-1)">-1</button>
           <button class="unit-btn" onclick="adjustWeight(1)">+1</button>
         </div>
@@ -1308,7 +1322,7 @@ body::before {
         <label class="input-label">Height (cm)</label>
         <div class="ruler-value-display" id="heightValue">170</div>
         <div class="input-with-controls">
-          <input type="number" class="manual-input" id="heightInput" min="100" max="250" step="1" value="170">
+          <input type="number" class="manual-input" id="heightInput" min="100" max="250" step="1" value="170" onchange="updateHeightFromInput()">
           <button class="unit-btn" onclick="adjustHeight(-1)">-1</button>
           <button class="unit-btn" onclick="adjustHeight(1)">+1</button>
         </div>
@@ -1324,7 +1338,7 @@ body::before {
         <div class="age-display" id="ageValue">25</div>
         <div class="age-controls">
           <button class="age-btn" onclick="adjustAge(-1)"><i class="fas fa-minus"></i></button>
-          <input type="number" class="manual-input" id="ageManualInput" min="10" max="100" value="25" style="width: 100px;">
+          <input type="number" class="manual-input" id="ageManualInput" min="10" max="100" value="25" style="width: 100px;" onchange="updateAgeFromInput()">
           <button class="age-btn" onclick="adjustAge(1)"><i class="fas fa-plus"></i></button>
         </div>
         <div class="input-with-controls">
@@ -1366,7 +1380,7 @@ body::before {
         <label class="input-label">Daily Goal (ml)</label>
         <div class="input-with-controls">
           <input type="number" class="manual-input" id="dailyGoalInput" min="1000" max="5000" step="50" value="2000">
-          <button class="unit-btn" onclick="calculateGoalBasedOnProfile()">Auto Calc</button>
+          <button class="unit-btn" onclick="calculateRecommendedGoal()">Recommended</button>
         </div>
       </div>
 
@@ -1599,13 +1613,13 @@ const HYDRATION_TIPS = [
   "Proper hydration helps regulate body temperature"
 ];
 
-// Activity level multipliers
+// Activity level multipliers (based on scientific research)
 const ACTIVITY_LEVELS = {
-  sedentary: 1.0,
-  light: 1.2,
-  moderate: 1.4,
-  active: 1.6,
-  athlete: 1.8
+  sedentary: 1.0,    // Little or no exercise
+  light: 1.2,       // Light exercise 1-3 days/week
+  moderate: 1.4,    // Moderate exercise 3-5 days/week
+  active: 1.6,      // Hard exercise 6-7 days/week
+  athlete: 1.8      // Very hard exercise & physical job
 };
 
 // State management
@@ -1620,7 +1634,7 @@ let appState = {
   currentPieType: 'today',
   currentMonth: new Date().getMonth(),
   currentYear: new Date().getFullYear(),
-  dataVersion: 2 // Current data version
+  dataVersion: 3 // Current data version
 };
 
 // Charts
@@ -1633,22 +1647,26 @@ let distributionChart = null;
 
 function migrateData() {
   const version = localStorage.getItem('hydrotrack_version') || 1;
-  const currentVersion = 2;
+  const currentVersion = 3;
   
   if (parseInt(version) < currentVersion) {
     console.log(`Migrating from version ${version} to ${currentVersion}`);
     
-    // Migrate from version 1 to 2
-    if (version === 1) {
+    // Migrate from version 1 to 3
+    if (version <= 2) {
       // Check if old data exists
       const oldProfile = JSON.parse(localStorage.getItem('hydrotrack_profile'));
+      const oldHistory = JSON.parse(localStorage.getItem('hydrotrack_history')) || {};
+      
       if (oldProfile) {
-        // Add new fields with default values
-        oldProfile.gender = oldProfile.gender || 'male';
-        oldProfile.activityLevel = oldProfile.activityLevel || 'moderate';
+        // Add missing fields with default values
+        if (!oldProfile.gender) oldProfile.gender = 'male';
+        if (!oldProfile.activityLevel) oldProfile.activityLevel = 'moderate';
+        if (!oldProfile.currentStreak) oldProfile.currentStreak = 0;
+        if (!oldProfile.bestStreak) oldProfile.bestStreak = 0;
         
         // Recalculate goal with new formula
-        oldProfile.dailyGoal = calculateDailyGoal(
+        oldProfile.dailyGoal = calculateRecommendedGoalValue(
           oldProfile.weight || 70,
           oldProfile.height || 170,
           oldProfile.age || 25,
@@ -1659,6 +1677,16 @@ function migrateData() {
         localStorage.setItem('hydrotrack_profile', JSON.stringify(oldProfile));
       }
       
+      // Fix historical data structure
+      const today = new Date().toDateString();
+      const todayData = JSON.parse(localStorage.getItem('hydrotrack_today'));
+      
+      if (todayData && todayData.date !== today) {
+        // Save yesterday's data to history
+        oldHistory[todayData.date] = todayData;
+        localStorage.setItem('hydrotrack_history', JSON.stringify(oldHistory));
+      }
+      
       // Update version
       localStorage.setItem('hydrotrack_version', currentVersion);
     }
@@ -1666,46 +1694,66 @@ function migrateData() {
 }
 
 // ============================================
-// SCIENTIFIC GOAL CALCULATION - FIXED FORMULA
+// SCIENTIFIC GOAL CALCULATION - OFFICIAL FORMULA
 // ============================================
 
-function calculateDailyGoal(weight, height, age, gender, activityLevel = 'moderate') {
-  // Base formula based on weight
+function calculateRecommendedGoalValue(weight, height, age, gender, activityLevel = 'moderate') {
+  // Official formula based on medical research:
+  // Base water requirement = 30-40 ml per kg of body weight
+  // Adjust for gender, age, height, and activity level
+  
   let baseGoal;
   
+  // Base calculation (ml per kg)
   if (gender === 'male') {
-    // For men: Body weight (kg) × 35
-    baseGoal = weight * 35;
+    baseGoal = weight * 35; // 35 ml/kg for men
   } else if (gender === 'female') {
-    // For women: Body weight (kg) × 31
-    baseGoal = weight * 31;
+    baseGoal = weight * 31; // 31 ml/kg for women
   } else {
-    // For other/unspecified: Average of male and female
-    baseGoal = weight * 33;
+    baseGoal = weight * 33; // Average for other
   }
   
-  // Adjust for height (taller people need more water)
+  // Adjust for height (taller = more water)
   // Normalize to 170cm reference height
   const heightFactor = height / 170;
   baseGoal *= heightFactor;
   
-  // Adjust for age (older people may need slightly less)
-  if (age > 50) {
+  // Adjust for age (older = slightly less, children = more)
+  if (age < 18) {
+    // Children and teens need more relative to weight
+    baseGoal *= 1.1;
+  } else if (age > 50) {
+    // Elderly need slightly less
     baseGoal *= 0.95;
-  } else if (age < 18) {
-    // Children and teens
-    baseGoal *= 1.2;
   }
   
   // Apply activity level multiplier
   const activityMultiplier = ACTIVITY_LEVELS[activityLevel] || 1.0;
   baseGoal *= activityMultiplier;
   
-  // Round to nearest 50ml and ensure reasonable bounds
+  // Round to nearest 50ml
   const roundedGoal = Math.round(baseGoal / 50) * 50;
   
-  // Ensure goal is within reasonable bounds (1500-4000ml for safety)
+  // Ensure goal is within safe and reasonable bounds (1500-4000ml)
   return Math.max(1500, Math.min(roundedGoal, 4000));
+}
+
+function calculateRecommendedGoal() {
+  if (!appState.profile) return;
+  
+  const goal = calculateRecommendedGoalValue(
+    appState.profile.weight,
+    appState.profile.height,
+    appState.profile.age,
+    appState.profile.gender,
+    appState.profile.activityLevel
+  );
+  
+  document.getElementById('dailyGoalInput').value = goal;
+  appState.profile.dailyGoal = goal;
+  appState.todayData.goal = goal;
+  
+  showNotification(`Recommended daily goal: ${goal}ml`, "success");
 }
 
 // ============================================
@@ -1728,7 +1776,7 @@ function initializeApp() {
       age: 25,
       gender: "male",
       activityLevel: "moderate",
-      dailyGoal: calculateDailyGoal(70, 170, 25, "male", "moderate"),
+      dailyGoal: calculateRecommendedGoalValue(70, 170, 25, "male", "moderate"),
       createdAt: new Date().toISOString(),
       currentStreak: 0,
       bestStreak: 0
@@ -1737,8 +1785,19 @@ function initializeApp() {
   
   // Initialize today's data
   const today = new Date().toDateString();
-  if (!appState.todayData || appState.todayData.date !== today) {
+  const todayData = JSON.parse(localStorage.getItem('hydrotrack_today'));
+  
+  if (!todayData || todayData.date !== today) {
+    // Check and update streak
     checkAndUpdateStreak();
+    
+    // Save yesterday's data to history if it exists
+    if (todayData && todayData.date !== today) {
+      appState.historicalData[todayData.date] = todayData;
+      saveAllData();
+    }
+    
+    // Create new day data
     appState.todayData = {
       date: today,
       consumed: 0,
@@ -1746,6 +1805,8 @@ function initializeApp() {
       goal: appState.profile.dailyGoal,
       completed: false
     };
+  } else {
+    appState.todayData = todayData;
   }
   
   // Initialize settings
@@ -1782,11 +1843,24 @@ function initializeApp() {
 function loadAllData() {
   try {
     appState.profile = JSON.parse(localStorage.getItem('hydrotrack_profile')) || null;
-    appState.todayData = JSON.parse(localStorage.getItem('hydrotrack_today')) || null;
+    
+    // Load today's data
+    const todayData = JSON.parse(localStorage.getItem('hydrotrack_today'));
+    const today = new Date().toDateString();
+    
+    if (todayData && todayData.date === today) {
+      appState.todayData = todayData;
+    }
+    
     appState.historicalData = JSON.parse(localStorage.getItem('hydrotrack_history')) || {};
     appState.settings = JSON.parse(localStorage.getItem('hydrotrack_settings')) || {};
   } catch (e) {
     console.error('Error loading data:', e);
+    // Initialize fresh data on error
+    appState.profile = null;
+    appState.todayData = null;
+    appState.historicalData = {};
+    appState.settings = {};
   }
 }
 
@@ -1796,7 +1870,7 @@ function saveAllData() {
     localStorage.setItem('hydrotrack_today', JSON.stringify(appState.todayData));
     localStorage.setItem('hydrotrack_history', JSON.stringify(appState.historicalData));
     localStorage.setItem('hydrotrack_settings', JSON.stringify(appState.settings));
-    localStorage.setItem('hydrotrack_version', '2'); // Save current version
+    localStorage.setItem('hydrotrack_version', '3'); // Save current version
   } catch (e) {
     console.error('Error saving data:', e);
   }
@@ -1839,10 +1913,10 @@ function updateTimeProgress() {
     }
     
     // Calculate drinks in this time slot
-    const drinksInSlot = appState.todayData.drinks.filter(drink => {
+    const drinksInSlot = appState.todayData?.drinks?.filter(drink => {
       const drinkHour = new Date(drink.timestamp).getHours();
       return drinkHour >= slot.hour && drinkHour < slot.hour + 3;
-    });
+    }) || [];
     
     const totalInSlot = drinksInSlot.reduce((sum, drink) => sum + drink.amount, 0);
     
@@ -1887,7 +1961,7 @@ function selectGender(gender) {
   document.querySelectorAll('.gender-option').forEach(option => {
     option.classList.remove('active');
   });
-  event.target.classList.add('active');
+  event.target.closest('.gender-option').classList.add('active');
 }
 
 function selectActivityLevel(level) {
@@ -1895,28 +1969,15 @@ function selectActivityLevel(level) {
   document.querySelectorAll('.activity-level').forEach(item => {
     item.classList.remove('active');
   });
-  event.target.classList.add('active');
-}
-
-function calculateGoalBasedOnProfile() {
-  const goal = calculateDailyGoal(
-    appState.profile.weight,
-    appState.profile.height,
-    appState.profile.age,
-    appState.profile.gender,
-    appState.profile.activityLevel
-  );
-  
-  document.getElementById('dailyGoalInput').value = goal;
-  appState.profile.dailyGoal = goal;
-  appState.todayData.goal = goal;
-  
-  showNotification("Goal calculated based on your profile!", "success");
+  event.target.closest('.activity-level').classList.add('active');
 }
 
 function createWaterDrops() {
+  const container = document.getElementById('waterDropsContainer');
+  if (!container) return;
+  
   // Create animated water drops in background
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 15; i++) {
     setTimeout(() => {
       const drop = document.createElement('div');
       drop.className = 'water-drop';
@@ -1926,7 +1987,7 @@ function createWaterDrops() {
       drop.style.height = `${Math.random() * 20 + 10}px`;
       drop.style.opacity = Math.random() * 0.3 + 0.1;
       
-      document.body.appendChild(drop);
+      container.appendChild(drop);
       
       // Remove drop after animation
       setTimeout(() => {
@@ -1937,8 +1998,8 @@ function createWaterDrops() {
     }, i * 300);
   }
   
-  // Repeat every 10 seconds
-  setTimeout(createWaterDrops, 10000);
+  // Repeat every 15 seconds
+  setTimeout(createWaterDrops, 15000);
 }
 
 // ============================================
@@ -1951,19 +2012,16 @@ function checkAndUpdateStreak() {
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toDateString();
   
-  if (appState.historicalData[yesterdayStr]) {
-    if (appState.historicalData[yesterdayStr].completed) {
+  // Get yesterday's data from history
+  const yesterdayData = appState.historicalData[yesterdayStr];
+  
+  if (yesterdayData) {
+    if (yesterdayData.completed) {
       appState.profile.currentStreak = (appState.profile.currentStreak || 0) + 1;
       appState.profile.bestStreak = Math.max(appState.profile.bestStreak || 0, appState.profile.currentStreak);
     } else {
       appState.profile.currentStreak = 0;
     }
-  }
-  
-  // Save historical data for yesterday
-  const yesterdayData = JSON.parse(localStorage.getItem('hydrotrack_today'));
-  if (yesterdayData && yesterdayData.date === yesterdayStr) {
-    appState.historicalData[yesterdayStr] = yesterdayData;
   }
 }
 
@@ -1984,6 +2042,7 @@ function addDrink(type, amount) {
   };
   
   appState.todayData.consumed += effectiveHydration;
+  if (!appState.todayData.drinks) appState.todayData.drinks = [];
   appState.todayData.drinks.push(drinkRecord);
   
   if (!appState.todayData.completed && appState.todayData.consumed >= appState.todayData.goal) {
@@ -2002,8 +2061,10 @@ function addDrink(type, amount) {
 // ============================================
 
 function updateDashboard() {
-  const consumed = appState.todayData.consumed;
-  const goal = appState.todayData.goal;
+  if (!appState.todayData) return;
+  
+  const consumed = appState.todayData.consumed || 0;
+  const goal = appState.todayData.goal || appState.profile?.dailyGoal || 2000;
   const progress = Math.min(Math.round((consumed / goal) * 100), 100);
   
   document.getElementById('progressFill').style.width = `${progress}%`;
@@ -2011,13 +2072,14 @@ function updateDashboard() {
   document.getElementById('waterLevel').style.height = `${progress}%`;
   document.getElementById('consumedDisplay').textContent = `${consumed.toLocaleString()} ml`;
   document.getElementById('goalDisplay').textContent = `of ${goal.toLocaleString()} ml goal`;
-  document.getElementById('drinksCount').textContent = appState.todayData.drinks.length;
-  document.getElementById('streakCount').textContent = appState.profile.currentStreak || 0;
+  document.getElementById('drinksCount').textContent = appState.todayData.drinks?.length || 0;
+  document.getElementById('streakCount').textContent = appState.profile?.currentStreak || 0;
   
-  // Calculate quick stats
-  const totalDays = Object.keys(appState.historicalData).length || 1;
-  const totalCompletion = Object.values(appState.historicalData).filter(d => d.completed).length;
-  const avgHydration = Math.round((totalCompletion / totalDays) * 100);
+  // Calculate average hydration from historical data
+  const historicalDays = Object.values(appState.historicalData);
+  const totalDays = historicalDays.length || 1;
+  const completedDays = historicalDays.filter(d => d.completed).length;
+  const avgHydration = Math.round((completedDays / totalDays) * 100);
   document.getElementById('avgHydration').textContent = `${avgHydration}%`;
   
   // Update quick stats
@@ -2028,21 +2090,28 @@ function updateDashboard() {
   
   // Update hydration tip
   updateHydrationTip();
+  
+  // Update user name display
+  if (appState.profile?.name) {
+    document.getElementById('userName').textContent = appState.profile.name;
+  }
 }
 
 function updateQuickStats() {
+  if (!appState.todayData || !appState.historicalData) return;
+  
   // Today's best drink
-  const todayDrinks = appState.todayData.drinks;
+  const todayDrinks = appState.todayData.drinks || [];
   const todayBest = todayDrinks.length > 0 ? Math.max(...todayDrinks.map(d => d.amount)) : 0;
   document.getElementById('todayBest').textContent = `${todayBest}ml`;
   
-  // Weekly average
+  // Weekly average (last 7 days including today)
   const last7Days = getLastNDays(7);
   const weeklyTotal = last7Days.reduce((sum, day) => sum + (day?.consumed || 0), 0);
   const weekAvg = Math.round(weeklyTotal / 7);
   document.getElementById('weekAvg').textContent = `${weekAvg}ml`;
   
-  // Monthly total
+  // Monthly total (last 30 days)
   const last30Days = getLastNDays(30);
   const monthlyTotal = last30Days.reduce((sum, day) => sum + (day?.consumed || 0), 0);
   document.getElementById('monthTotal').textContent = `${Math.round(monthlyTotal / 1000)}L`;
@@ -2066,6 +2135,8 @@ function getLastNDays(n) {
 
 function updateRecentActivity() {
   const container = document.getElementById('recentActivity');
+  if (!appState.todayData?.drinks) return;
+  
   const recentDrinks = appState.todayData.drinks.slice(-5).reverse();
   
   if (recentDrinks.length === 0) {
@@ -2081,6 +2152,8 @@ function updateRecentActivity() {
   container.innerHTML = '';
   recentDrinks.forEach(drink => {
     const beverage = BEVERAGES[drink.type];
+    if (!beverage) return;
+    
     const item = document.createElement('div');
     item.style.cssText = `
       display: flex;
@@ -2118,7 +2191,7 @@ function updateHydrationTip() {
 }
 
 // ============================================
-// PROFILE MANAGEMENT (UPDATED)
+// PROFILE MANAGEMENT (FIXED)
 // ============================================
 
 function updateProfileUI() {
@@ -2143,7 +2216,8 @@ function updateProfileUI() {
   // Update gender selection
   document.querySelectorAll('.gender-option').forEach(option => {
     option.classList.remove('active');
-    if (option.textContent.includes(profile.gender || 'male')) {
+    const optionText = option.textContent.toLowerCase();
+    if (optionText.includes(profile.gender)) {
       option.classList.add('active');
     }
   });
@@ -2152,19 +2226,22 @@ function updateProfileUI() {
   document.querySelectorAll('.activity-level').forEach(item => {
     item.classList.remove('active');
     const levelText = item.querySelector('span:first-child').textContent.toLowerCase();
-    if (levelText.includes(profile.activityLevel || 'moderate')) {
+    if (levelText.includes(profile.activityLevel)) {
       item.classList.add('active');
     }
   });
   
+  // Initialize rulers
   initRuler('weightRuler', 30, 200, profile.weight, 'kg', (value) => {
-    profile.weight = value;
-    updateProfileUI();
+    appState.profile.weight = value;
+    document.getElementById('weightValue').textContent = value;
+    document.getElementById('weightInput').value = value;
   });
   
   initRuler('heightRuler', 100, 250, profile.height, 'cm', (value) => {
-    profile.height = value;
-    updateProfileUI();
+    appState.profile.height = value;
+    document.getElementById('heightValue').textContent = value;
+    document.getElementById('heightInput').value = value;
   });
   
   updateDrinkGrid();
@@ -2195,6 +2272,7 @@ function initRuler(containerId, min, max, initial, unit, onChange) {
     container.appendChild(tick);
   }
   
+  // Scroll to initial value
   setTimeout(() => {
     const tickWidth = 40;
     const centerOffset = container.clientWidth / 2;
@@ -2223,7 +2301,8 @@ function adjustWeight(change) {
   value = Math.max(30, Math.min(200, value));
   input.value = value;
   appState.profile.weight = value;
-  updateProfileUI();
+  document.getElementById('weightValue').textContent = value;
+  updateRuler('weightRuler', value);
 }
 
 function adjustHeight(change) {
@@ -2232,7 +2311,8 @@ function adjustHeight(change) {
   value = Math.max(100, Math.min(250, value));
   input.value = value;
   appState.profile.height = value;
-  updateProfileUI();
+  document.getElementById('heightValue').textContent = value;
+  updateRuler('heightRuler', value);
 }
 
 function adjustAge(change) {
@@ -2241,17 +2321,47 @@ function adjustAge(change) {
   value = Math.max(10, Math.min(100, value));
   input.value = value;
   appState.profile.age = value;
-  updateProfileUI();
+  document.getElementById('ageValue').textContent = value;
 }
 
 function setAge(age) {
   const input = document.getElementById('ageManualInput');
   input.value = age;
   appState.profile.age = age;
-  updateProfileUI();
+  document.getElementById('ageValue').textContent = age;
+}
+
+function updateWeightFromInput() {
+  const input = document.getElementById('weightInput');
+  let value = parseInt(input.value);
+  value = Math.max(30, Math.min(200, value));
+  input.value = value;
+  appState.profile.weight = value;
+  document.getElementById('weightValue').textContent = value;
+  updateRuler('weightRuler', value);
+}
+
+function updateHeightFromInput() {
+  const input = document.getElementById('heightInput');
+  let value = parseInt(input.value);
+  value = Math.max(100, Math.min(250, value));
+  input.value = value;
+  appState.profile.height = value;
+  document.getElementById('heightValue').textContent = value;
+  updateRuler('heightRuler', value);
+}
+
+function updateAgeFromInput() {
+  const input = document.getElementById('ageManualInput');
+  let value = parseInt(input.value);
+  value = Math.max(10, Math.min(100, value));
+  input.value = value;
+  appState.profile.age = value;
+  document.getElementById('ageValue').textContent = value;
 }
 
 function saveProfile() {
+  // Save profile data
   appState.profile.name = document.getElementById('userNameInput').value || 'User';
   appState.profile.weight = parseInt(document.getElementById('weightInput').value);
   appState.profile.height = parseInt(document.getElementById('heightInput').value);
@@ -2317,9 +2427,9 @@ function updateStatistics() {
     return;
   }
   
-  const totalConsumed = days.reduce((sum, day) => sum + day.consumed, 0);
+  const totalConsumed = days.reduce((sum, day) => sum + (day.consumed || 0), 0);
   const avgDaily = Math.round(totalConsumed / days.length);
-  const bestDay = Math.max(...days.map(d => d.consumed));
+  const bestDay = Math.max(...days.map(d => d.consumed || 0));
   const completionRate = Math.round((days.filter(d => d.completed).length / days.length) * 100);
   
   document.getElementById('totalConsumed').textContent = Math.round(totalConsumed / 1000).toLocaleString() + 'L';
@@ -2342,7 +2452,7 @@ function renderCalendar() {
   container.innerHTML = '';
   
   // Day headers
-  const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   dayNames.forEach(day => {
     const dayElement = document.createElement('div');
     dayElement.style.cssText = `
@@ -2392,7 +2502,8 @@ function renderCalendar() {
     dayElement.textContent = day;
     
     if (dayData) {
-      const progress = Math.min((dayData.consumed / (appState.profile.dailyGoal || 2000)) * 100, 100);
+      const goal = appState.profile?.dailyGoal || 2000;
+      const progress = Math.min((dayData.consumed / goal) * 100, 100);
       
       // Color coding based on progress
       if (progress >= 100) {
@@ -2419,7 +2530,7 @@ function renderCalendar() {
     
     // Add tooltip on hover
     dayElement.title = dayData ? 
-      `${dayData.consumed}ml consumed (${Math.round((dayData.consumed / (appState.profile.dailyGoal || 2000)) * 100)}%)` : 
+      `${dayData.consumed}ml consumed (${Math.round((dayData.consumed / (appState.profile?.dailyGoal || 2000)) * 100)}%)` : 
       'No data';
     
     container.appendChild(dayElement);
@@ -2429,6 +2540,10 @@ function renderCalendar() {
 function initializeCharts() {
   const trendCtx = document.getElementById('trendChart').getContext('2d');
   const distCtx = document.getElementById('distributionChart').getContext('2d');
+  
+  // Fix chart colors for better visibility
+  Chart.defaults.color = 'rgba(255, 255, 255, 0.8)';
+  Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.2)';
   
   trendChart = new Chart(trendCtx, {
     type: 'line',
@@ -2456,32 +2571,38 @@ function initializeCharts() {
           display: false
         },
         tooltip: {
-          backgroundColor: 'rgba(18, 26, 47, 0.9)',
+          backgroundColor: 'rgba(18, 26, 47, 0.95)',
           titleColor: 'var(--accent)',
           bodyColor: 'var(--text)',
           borderColor: 'var(--accent)',
-          borderWidth: 1
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 8
         }
       },
       scales: {
         y: {
           beginAtZero: true,
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)'
+            color: 'rgba(255, 255, 255, 0.15)',
+            drawBorder: false
           },
           ticks: {
-            color: 'var(--muted)',
+            color: 'rgba(255, 255, 255, 0.8)',
             callback: function(value) {
               return value + 'ml';
-            }
+            },
+            padding: 8
           }
         },
         x: {
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)'
+            color: 'rgba(255, 255, 255, 0.1)',
+            drawBorder: false
           },
           ticks: {
-            color: 'var(--muted)'
+            color: 'rgba(255, 255, 255, 0.8)',
+            padding: 8
           }
         }
       }
@@ -2506,18 +2627,23 @@ function initializeCharts() {
         legend: {
           position: 'bottom',
           labels: {
-            color: 'var(--muted)',
+            color: 'rgba(255, 255, 255, 0.8)',
             padding: 20,
             usePointStyle: true,
-            pointStyle: 'circle'
+            pointStyle: 'circle',
+            font: {
+              size: 11
+            }
           }
         },
         tooltip: {
-          backgroundColor: 'rgba(18, 26, 47, 0.9)',
+          backgroundColor: 'rgba(18, 26, 47, 0.95)',
           titleColor: 'var(--accent)',
           bodyColor: 'var(--text)',
           borderColor: 'var(--accent)',
-          borderWidth: 1
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 8
         }
       },
       cutout: '60%'
@@ -2554,6 +2680,18 @@ function updateCharts() {
       labels.push(day);
       data.push(dayData ? dayData.consumed : 0);
     }
+  } else if (appState.currentChartType === 'yearly') {
+    // Yearly view - monthly averages
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    labels = months;
+    data = Array(12).fill(0);
+    
+    // Calculate monthly averages
+    Object.entries(appState.historicalData).forEach(([dateStr, dayData]) => {
+      const date = new Date(dateStr);
+      const month = date.getMonth();
+      data[month] = Math.max(data[month], dayData.consumed);
+    });
   }
   
   trendChart.data.labels = labels;
@@ -2571,7 +2709,7 @@ function updateDistributionChart() {
   let drinks = [];
   
   if (appState.currentPieType === 'today') {
-    drinks = appState.todayData.drinks;
+    drinks = appState.todayData?.drinks || [];
   } else if (appState.currentPieType === 'week') {
     const last7Days = getLastNDays(7);
     drinks = last7Days.flatMap(day => day?.drinks || []);
@@ -2775,7 +2913,7 @@ function exportData() {
     historicalData: appState.historicalData,
     settings: appState.settings,
     exportDate: new Date().toISOString(),
-    version: 2
+    version: 3
   };
   
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -2806,12 +2944,14 @@ document.getElementById('importFile').addEventListener('change', function(event)
       
       if (confirm("This will replace all your current data. Continue?")) {
         // Migrate imported data if needed
-        if (data.version && data.version < 2) {
+        if (data.version && data.version < 3) {
           // Add missing fields
           if (data.profile) {
             data.profile.gender = data.profile.gender || 'male';
             data.profile.activityLevel = data.profile.activityLevel || 'moderate';
-            data.profile.dailyGoal = calculateDailyGoal(
+            data.profile.currentStreak = data.profile.currentStreak || 0;
+            data.profile.bestStreak = data.profile.bestStreak || 0;
+            data.profile.dailyGoal = calculateRecommendedGoalValue(
               data.profile.weight,
               data.profile.height,
               data.profile.age,
@@ -2862,12 +3002,15 @@ function showScreen(screenId) {
   
   if (screenId === 'dashboard') {
     document.querySelector('.nav-item:nth-child(1)').classList.add('active');
+  } else if (screenId === 'statsScreen') {
+    document.querySelector('.nav-item:nth-child(3)').classList.add('active');
+  } else if (screenId === 'profileScreen') {
+    document.querySelector('.nav-item:nth-child(4)').classList.add('active');
   }
 }
 
 function openProfile() {
   showScreen('profileScreen');
-  document.querySelector('.nav-item:nth-child(4)').classList.add('active');
 }
 
 function closeProfile() {
@@ -2916,7 +3059,7 @@ function showNotification(message, type = 'success') {
 }
 
 function showAchievements() {
-  showNotification("Coming Soon: Achievements System!", "success");
+  showNotification("Achievements system coming soon!", "success");
 }
 
 // ============================================
