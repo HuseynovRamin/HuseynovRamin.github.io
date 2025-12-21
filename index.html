@@ -1391,7 +1391,7 @@ body::before {
           <div class="level-circle level-3"></div>
           <div style="font-size: 11px;">75%</div>
         </div>
-        <div class="hydration-level active" onclick="setGoalPercentage(100)">
+        <div class="hydration-level" onclick="setGoalPercentage(100)">
           <div class="level-circle level-4"></div>
           <div style="font-size: 11px;">Goal</div>
         </div>
@@ -1947,20 +1947,20 @@ function checkAndUpdateAchievements() {
 }
 
 // ============================================
-// UPDATED: updateTimeProgress function for 24-hour coverage
+// FIXED: updateTimeProgress function for correct 24-hour coverage
 // ============================================
 
 function updateTimeProgress() {
   const container = document.getElementById('timeProgress');
   const timeSlots = [
-    { label: "12-3 AM", hour: 1, isNight: true },
-    { label: "3-6 AM", hour: 4, isNight: true },
-    { label: "6-9 AM", hour: 7 },
-    { label: "9-12 PM", hour: 10 },
-    { label: "12-3 PM", hour: 13 },
-    { label: "3-6 PM", hour: 16 },
-    { label: "6-9 PM", hour: 19, isNight: true },
-    { label: "9-12 AM", hour: 22, isNight: true }
+    { label: "12-3 AM", hour: 0, isNight: true },
+    { label: "3-6 AM", hour: 3, isNight: true },
+    { label: "6-9 AM", hour: 6 },
+    { label: "9-12 PM", hour: 9 },
+    { label: "12-3 PM", hour: 12 },
+    { label: "3-6 PM", hour: 15 },
+    { label: "6-9 PM", hour: 18, isNight: true },
+    { label: "9-12 AM", hour: 21, isNight: true }
   ];
   
   const currentHour = new Date().getHours();
@@ -1977,26 +1977,29 @@ function updateTimeProgress() {
     
     // Check if current hour is in this time slot
     let isActive = false;
-    if (slot.label === "12-3 AM") {
-      isActive = (currentHour >= 0 && currentHour < 3) || currentHour === 0;
-    } else if (slot.label === "9-12 AM") {
-      isActive = currentHour >= 21 || currentHour < 0;
+    const slotStart = slot.hour;
+    const slotEnd = slot.hour + 3;
+    
+    if (slot.label === "9-12 AM") {
+      // Special case: 9 PM to midnight (21:00 to 24:00)
+      isActive = currentHour >= 21;
     } else {
-      isActive = currentHour >= slot.hour && currentHour < slot.hour + 3;
+      isActive = currentHour >= slotStart && currentHour < slotEnd;
     }
     
     if (isActive) {
       div.classList.add('active');
     }
     
+    // Calculate drinks in this time slot
     const drinksInSlot = appState.todayData?.drinks?.filter(drink => {
       const drinkHour = new Date(drink.timestamp).getHours();
-      if (slot.label === "12-3 AM") {
-        return drinkHour >= 0 && drinkHour < 3;
-      } else if (slot.label === "9-12 AM") {
-        return drinkHour >= 21 || drinkHour === 0;
+      
+      if (slot.label === "9-12 AM") {
+        // 9 PM to midnight (21:00 to 24:00)
+        return drinkHour >= 21;
       } else {
-        return drinkHour >= slot.hour && drinkHour < slot.hour + 3;
+        return drinkHour >= slotStart && drinkHour < slotEnd;
       }
     }) || [];
     
@@ -2231,7 +2234,7 @@ function showDateDetails(dateStr, dayData) {
 }
 
 // ============================================
-// REST OF YOUR ORIGINAL CODE (UNCHANGED)
+// MAIN APP CODE
 // ============================================
 
 const BEVERAGES = {
@@ -2540,6 +2543,11 @@ function initializeApp() {
       }
     };
   }
+  
+  // FIX: Ensure current month/year are set correctly
+  const now = new Date();
+  appState.currentMonth = now.getMonth();
+  appState.currentYear = now.getFullYear();
   
   updateDashboard();
   updateProfileUI();
@@ -2941,6 +2949,10 @@ function quickAddDrink(type, amount) {
   addDrink(type, amount);
 }
 
+// ============================================
+// FIXED: setGoalPercentage function with proper hydration level highlighting
+// ============================================
+
 function setGoalPercentage(percentage) {
   const goal = appState.profile.dailyGoal;
   const targetAmount = Math.round((goal * percentage) / 100);
@@ -2952,15 +2964,41 @@ function setGoalPercentage(percentage) {
     }
   }
   
-  document.querySelectorAll('.hydration-level').forEach((level, index) => {
-    level.classList.toggle('active', 
-      (percentage === 0 && index === 0) ||
-      (percentage === 25 && index === 1) ||
-      (percentage === 50 && index === 2) ||
-      (percentage === 75 && index === 3) ||
-      (percentage === 100 && index === 4)
-    );
-  });
+  // Update hydration levels based on current progress
+  updateHydrationLevels();
+}
+
+// ============================================
+// NEW: updateHydrationLevels function to highlight based on current progress
+// ============================================
+
+function updateHydrationLevels() {
+  if (!appState.todayData || !appState.profile) return;
+  
+  const consumed = appState.todayData.consumed || 0;
+  const goal = appState.todayData.goal || appState.profile.dailyGoal || 2000;
+  const progress = Math.min(Math.round((consumed / goal) * 100), 100);
+  
+  const hydrationLevels = document.querySelectorAll('.hydration-level');
+  hydrationLevels.forEach(level => level.classList.remove('active'));
+  
+  // Determine which level to highlight based on progress
+  if (progress >= 87.5) {
+    // 87.5% or more = Goal level
+    hydrationLevels[4].classList.add('active');
+  } else if (progress >= 62.5) {
+    // 62.5% to 87.4% = 75% level
+    hydrationLevels[3].classList.add('active');
+  } else if (progress >= 37.5) {
+    // 37.5% to 62.4% = 50% level
+    hydrationLevels[2].classList.add('active');
+  } else if (progress >= 12.5) {
+    // 12.5% to 37.4% = 25% level
+    hydrationLevels[1].classList.add('active');
+  } else {
+    // Less than 12.5% = Low level
+    hydrationLevels[0].classList.add('active');
+  }
 }
 
 function checkAndUpdateStreak() {
@@ -2981,6 +3019,10 @@ function checkAndUpdateStreak() {
   }
 }
 
+// ============================================
+// UPDATED: updateDashboard function with hydration level updates
+// ============================================
+
 function updateDashboard() {
   if (!appState.todayData) return;
   
@@ -2999,6 +3041,9 @@ function updateDashboard() {
   const todayDrinks = appState.todayData.drinks || [];
   const todayBest = todayDrinks.length > 0 ? Math.max(...todayDrinks.map(d => d.amount)) : 0;
   document.getElementById('todayBest').textContent = `${todayBest}ml`;
+  
+  // Update hydration levels based on current progress
+  updateHydrationLevels();
   
   updateQuickStats();
   updateRecentActivity();
@@ -3219,11 +3264,26 @@ function saveProfile() {
   closeProfile();
 }
 
+// ============================================
+// FIXED: openStats function with proper chart initialization
+// ============================================
+
 function openStats() {
   showScreen('statsScreen');
   updateStatistics();
   renderCalendar();
-  updateCharts();
+  
+  // Initialize charts if they don't exist
+  if (!trendChart || !distributionChart) {
+    initializeCharts();
+  } else {
+    updateCharts();
+  }
+  
+  // Ensure distribution chart is properly initialized
+  setTimeout(() => {
+    updateDistributionChart();
+  }, 100);
 }
 
 function updateStatistics() {
@@ -3255,13 +3315,15 @@ function updateStatistics() {
 }
 
 function initializeCharts() {
-  const trendCtx = document.getElementById('trendChart').getContext('2d');
-  const distCtx = document.getElementById('distributionChart').getContext('2d');
+  const trendCtx = document.getElementById('trendChart');
+  const distCtx = document.getElementById('distributionChart');
+  
+  if (!trendCtx || !distCtx) return;
   
   Chart.defaults.color = 'rgba(255, 255, 255, 0.8)';
   Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.2)';
   
-  trendChart = new Chart(trendCtx, {
+  trendChart = new Chart(trendCtx.getContext('2d'), {
     type: 'line',
     data: {
       labels: [],
@@ -3311,7 +3373,7 @@ function initializeCharts() {
     }
   });
   
-  distributionChart = new Chart(distCtx, {
+  distributionChart = new Chart(distCtx.getContext('2d'), {
     type: 'doughnut',
     data: {
       labels: [],
@@ -3398,6 +3460,10 @@ function updateCharts() {
   updateDistributionChart();
 }
 
+// ============================================
+// FIXED: updateDistributionChart function to work properly
+// ============================================
+
 function updateDistributionChart() {
   if (!distributionChart) return;
   
@@ -3414,24 +3480,38 @@ function updateDistributionChart() {
     drinks = last30Days.flatMap(day => day?.drinks || []);
   }
   
+  // Initialize all drink types with 0
+  Object.keys(BEVERAGES).forEach(type => {
+    drinkTypes[type] = 0;
+  });
+  
+  // Count drinks
   drinks.forEach(drink => {
     drinkTypes[drink.type] = (drinkTypes[drink.type] || 0) + drink.amount;
   });
   
-  const labels = [];
-  const data = [];
-  const colors = [];
+  // Filter out drink types with 0 amount
+  const filteredDrinkTypes = Object.entries(drinkTypes)
+    .filter(([type, amount]) => amount > 0);
   
-  Object.entries(drinkTypes).forEach(([type, amount]) => {
-    labels.push(BEVERAGES[type]?.name || type);
-    data.push(amount);
-    colors.push(BEVERAGES[type]?.color || '#4fd1ff');
-  });
+  const labels = filteredDrinkTypes.map(([type, amount]) => BEVERAGES[type]?.name || type);
+  const data = filteredDrinkTypes.map(([type, amount]) => amount);
+  const colors = filteredDrinkTypes.map(([type, amount]) => BEVERAGES[type]?.color || '#4fd1ff');
   
   distributionChart.data.labels = labels;
   distributionChart.data.datasets[0].data = data;
   distributionChart.data.datasets[0].backgroundColor = colors;
-  distributionChart.update();
+  
+  // Update chart if we have data, otherwise show empty state
+  if (data.length > 0) {
+    distributionChart.update();
+  } else {
+    // Show empty state message
+    distributionChart.data.labels = ['No drinks recorded'];
+    distributionChart.data.datasets[0].data = [1];
+    distributionChart.data.datasets[0].backgroundColor = ['rgba(255, 255, 255, 0.1)'];
+    distributionChart.update();
+  }
 }
 
 function changeChartType(type) {
