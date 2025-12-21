@@ -1845,6 +1845,350 @@ body::before {
 
 <script>
 // ============================================
+// FIXED: updateTimeProgress function - Correct 24-hour coverage with proper labels
+// ============================================
+
+function updateTimeProgress() {
+  const container = document.getElementById('timeProgress');
+  const timeSlots = [
+    { label: "12-3AM", hour: 0, isNight: true },
+    { label: "3-6AM", hour: 3, isNight: true },
+    { label: "6-9AM", hour: 6 },
+    { label: "9-12", hour: 9 },
+    { label: "12-3PM", hour: 12 },
+    { label: "3-6PM", hour: 15 },
+    { label: "6-9PM", hour: 18, isNight: true },
+    { label: "9-12PM", hour: 21, isNight: true }
+  ];
+  
+  const currentHour = new Date().getHours();
+  
+  container.innerHTML = '';
+  
+  timeSlots.forEach(slot => {
+    const div = document.createElement('div');
+    div.className = 'time-slot';
+    
+    if (slot.isNight) {
+      div.classList.add('night');
+    }
+    
+    // Check if current hour is in this time slot
+    let isActive = false;
+    const slotStart = slot.hour;
+    const slotEnd = slot.hour + 3;
+    
+    if (slot.label === "9-12PM") {
+      // Special case: 9 PM to midnight (21:00 to 24:00)
+      isActive = currentHour >= 21 && currentHour < 24;
+    } else {
+      isActive = currentHour >= slotStart && currentHour < slotEnd;
+    }
+    
+    if (isActive) {
+      div.classList.add('active');
+    }
+    
+    // Calculate drinks in this time slot
+    const drinksInSlot = appState.todayData?.drinks?.filter(drink => {
+      const drinkHour = new Date(drink.timestamp).getHours();
+      
+      if (slot.label === "9-12PM") {
+        // 9 PM to midnight (21:00 to 24:00)
+        return drinkHour >= 21 && drinkHour < 24;
+      } else {
+        return drinkHour >= slotStart && drinkHour < slotEnd;
+      }
+    }) || [];
+    
+    const totalInSlot = drinksInSlot.reduce((sum, drink) => sum + drink.amount, 0);
+    
+    div.innerHTML = `
+      <div class="time-label">${slot.label}</div>
+      <div class="time-value">${totalInSlot}ml</div>
+    `;
+    
+    container.appendChild(div);
+  });
+}
+
+// ============================================
+// FIXED: showDateDetails function - Properly check both todayData and historicalData
+// ============================================
+
+function showDateDetails(dateStr, dayData) {
+  const modal = document.getElementById('dateDetailModal');
+  const content = document.getElementById('dateDetailContent');
+  
+  const date = new Date(dateStr);
+  const formattedDate = date.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  // Check if this is today's date
+  const todayStr = new Date().toDateString();
+  const isToday = dateStr === todayStr;
+  
+  // Get the correct data (either from todayData or historicalData)
+  let dayDataToShow = dayData;
+  if (isToday && appState.todayData) {
+    dayDataToShow = appState.todayData;
+  }
+  
+  if (dayDataToShow && (dayDataToShow.drinks || dayDataToShow.consumed > 0)) {
+    const goal = appState.profile?.dailyGoal || 2000;
+    const progress = Math.round((dayDataToShow.consumed / goal) * 100);
+    const drinksCount = dayDataToShow.drinks ? dayDataToShow.drinks.length : 0;
+    
+    let drinksHtml = '';
+    if (dayDataToShow.drinks && dayDataToShow.drinks.length > 0) {
+      drinksHtml = '<div style="margin-top: 15px;"><strong style="display: block; margin-bottom: 10px;">Drinks:</strong><div style="max-height: 200px; overflow-y: auto; padding-right: 10px;">';
+      dayDataToShow.drinks.forEach((drink, index) => {
+        const beverage = BEVERAGES[drink.type];
+        drinksHtml += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; position: relative;" class="drink-item-with-remove">
+            ${!isToday ? `<button class="remove-drink-btn" onclick="removeHistoricalDrink('${dateStr}', ${index})" title="Remove this drink" style="opacity: 0.7;">
+              <i class="fas fa-times"></i>
+            </button>` : ''}
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <i class="fas ${beverage.icon}" style="color: ${beverage.color};"></i>
+              <div>
+                <div style="font-weight: 600; font-size: 13px;">${beverage.name}</div>
+                <div style="font-size: 11px; color: var(--muted);">${drink.time}</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-weight: 700; font-size: 14px;">${drink.amount}ml</div>
+              <div style="font-size: 10px; color: var(--accent);">${drink.waterContent}ml water</div>
+            </div>
+          </div>
+        `;
+      });
+      drinksHtml += '</div></div>';
+    }
+    
+    content.innerHTML = `
+      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${dayDataToShow.consumed}ml</div>
+          <div style="font-size: 12px; color: var(--muted);">Total Consumed</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: ${progress >= 100 ? 'var(--success)' : progress >= 75 ? '#a6ff4d' : progress >= 50 ? 'var(--warning)' : '#ff9966'};">${progress}%</div>
+          <div style="font-size: 12px; color: var(--muted);">Goal Progress</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${drinksCount}</div>
+          <div style="font-size: 12px; color: var(--muted);">Number of Drinks</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: ${dayDataToShow.completed ? 'var(--success)' : 'var(--danger)'};">${dayDataToShow.completed ? '✓' : '✗'}</div>
+          <div style="font-size: 12px; color: var(--muted);">Goal ${dayDataToShow.completed ? 'Achieved' : 'Not Met'}</div>
+        </div>
+      </div>
+      ${drinksHtml}
+    `;
+  } else {
+    content.innerHTML = `
+      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
+      <div style="text-align: center; padding: 40px 20px;">
+        <i class="fas fa-tint" style="font-size: 48px; color: var(--muted); opacity: 0.5; margin-bottom: 20px;"></i>
+        <p style="color: var(--muted);">No hydration data recorded for this day.</p>
+      </div>
+    `;
+  }
+  
+  openModal('dateDetailModal');
+}
+
+// ============================================
+// FIXED: updateDistributionChart function - Proper initialization
+// ============================================
+
+function updateDistributionChart() {
+  if (!distributionChart) return;
+  
+  const drinkTypes = {};
+  let drinks = [];
+  
+  if (appState.currentPieType === 'today') {
+    drinks = appState.todayData?.drinks || [];
+  } else if (appState.currentPieType === 'week') {
+    const last7Days = getLastNDays(7);
+    drinks = last7Days.flatMap(day => day?.drinks || []);
+  } else if (appState.currentPieType === 'month') {
+    const last30Days = getLastNDays(30);
+    drinks = last30Days.flatMap(day => day?.drinks || []);
+  }
+  
+  // Initialize all drink types with 0
+  Object.keys(BEVERAGES).forEach(type => {
+    drinkTypes[type] = 0;
+  });
+  
+  // Count drinks
+  drinks.forEach(drink => {
+    drinkTypes[drink.type] = (drinkTypes[drink.type] || 0) + drink.amount;
+  });
+  
+  // Filter out drink types with 0 amount
+  const filteredDrinkTypes = Object.entries(drinkTypes)
+    .filter(([type, amount]) => amount > 0);
+  
+  // If no drinks, show empty state
+  if (filteredDrinkTypes.length === 0) {
+    distributionChart.data.labels = ['No drinks recorded'];
+    distributionChart.data.datasets[0].data = [1];
+    distributionChart.data.datasets[0].backgroundColor = ['rgba(255, 255, 255, 0.1)'];
+    distributionChart.update();
+    return;
+  }
+  
+  const labels = filteredDrinkTypes.map(([type, amount]) => BEVERAGES[type]?.name || type);
+  const data = filteredDrinkTypes.map(([type, amount]) => amount);
+  const colors = filteredDrinkTypes.map(([type, amount]) => BEVERAGES[type]?.color || '#4fd1ff');
+  
+  distributionChart.data.labels = labels;
+  distributionChart.data.datasets[0].data = data;
+  distributionChart.data.datasets[0].backgroundColor = colors;
+  
+  distributionChart.update();
+}
+
+// ============================================
+// FIXED: openStats function - Ensure charts are properly initialized
+// ============================================
+
+function openStats() {
+  showScreen('statsScreen');
+  updateStatistics();
+  renderCalendar();
+  
+  // Initialize charts if they don't exist
+  if (!trendChart || !distributionChart) {
+    initializeCharts();
+  } else {
+    updateCharts();
+  }
+  
+  // Force update of distribution chart
+  setTimeout(() => {
+    updateDistributionChart();
+  }, 50);
+}
+
+// ============================================
+// FIXED: renderCalendar function - Check both todayData and historicalData
+// ============================================
+
+function renderCalendar() {
+  const container = document.getElementById('calendarContainer');
+  const month = appState.currentMonth;
+  const year = appState.currentYear;
+  
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+  
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  container.innerHTML = '';
+  
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  dayNames.forEach(day => {
+    const dayElement = document.createElement('div');
+    dayElement.style.cssText = `
+      text-align: center;
+      padding: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    `;
+    dayElement.textContent = day;
+    container.appendChild(dayElement);
+  });
+  
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    container.appendChild(empty);
+  }
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dateStr = date.toDateString();
+    const todayStr = new Date().toDateString();
+    
+    // Check if this is today to use todayData instead of historicalData
+    let dayData = appState.historicalData[dateStr];
+    if (dateStr === todayStr && appState.todayData) {
+      dayData = appState.todayData;
+    }
+    
+    const dayElement = document.createElement('div');
+    dayElement.style.cssText = `
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+    `;
+    
+    dayElement.textContent = day;
+    dayElement.dataset.date = dateStr;
+    
+    if (dayData && (dayData.drinks || dayData.consumed > 0)) {
+      const goal = appState.profile?.dailyGoal || 2000;
+      const progress = Math.min((dayData.consumed / goal) * 100, 100);
+      
+      if (progress >= 100) {
+        dayElement.style.background = `linear-gradient(135deg, var(--success), rgba(77, 255, 184, 0.3))`;
+        dayElement.style.borderColor = 'var(--success)';
+      } else if (progress >= 75) {
+        dayElement.style.background = `linear-gradient(135deg, #a6ff4d, rgba(166, 255, 77, 0.3))`;
+      } else if (progress >= 50) {
+        dayElement.style.background = `linear-gradient(135deg, var(--warning), rgba(255, 184, 77, 0.3))`;
+      } else if (progress > 0) {
+        dayElement.style.background = `linear-gradient(135deg, #ff9966, rgba(255, 153, 102, 0.3))`;
+      }
+      
+      if (dayData.completed) {
+        dayElement.style.border = '2px solid var(--accent)';
+      }
+      
+      dayElement.onclick = () => showDateDetails(dateStr, dayData);
+    } else {
+      dayElement.onclick = () => showDateDetails(dateStr, null);
+    }
+    
+    if (date.toDateString() === new Date().toDateString()) {
+      dayElement.style.boxShadow = '0 0 0 2px var(--accent)';
+      dayElement.style.fontWeight = '700';
+    }
+    
+    if (dayData && (dayData.drinks || dayData.consumed > 0)) {
+      const goal = appState.profile?.dailyGoal || 2000;
+      const progress = Math.round((dayData.consumed / goal) * 100);
+      dayElement.title = `${dayData.consumed}ml (${progress}%)`;
+    } else {
+      dayElement.title = 'No data';
+    }
+    
+    container.appendChild(dayElement);
+  }
+}
+
+// ============================================
 // NEW: ACHIEVEMENT ANIMATION FUNCTIONS
 // ============================================
 
@@ -1944,74 +2288,6 @@ function checkAndUpdateAchievements() {
     
     saveAllData();
   }
-}
-
-// ============================================
-// FIXED: updateTimeProgress function for correct 24-hour coverage
-// ============================================
-
-function updateTimeProgress() {
-  const container = document.getElementById('timeProgress');
-  const timeSlots = [
-    { label: "12-3 AM", hour: 0, isNight: true },
-    { label: "3-6 AM", hour: 3, isNight: true },
-    { label: "6-9 AM", hour: 6 },
-    { label: "9-12 PM", hour: 9 },
-    { label: "12-3 PM", hour: 12 },
-    { label: "3-6 PM", hour: 15 },
-    { label: "6-9 PM", hour: 18, isNight: true },
-    { label: "9-12 AM", hour: 21, isNight: true }
-  ];
-  
-  const currentHour = new Date().getHours();
-  
-  container.innerHTML = '';
-  
-  timeSlots.forEach(slot => {
-    const div = document.createElement('div');
-    div.className = 'time-slot';
-    
-    if (slot.isNight) {
-      div.classList.add('night');
-    }
-    
-    // Check if current hour is in this time slot
-    let isActive = false;
-    const slotStart = slot.hour;
-    const slotEnd = slot.hour + 3;
-    
-    if (slot.label === "9-12 AM") {
-      // Special case: 9 PM to midnight (21:00 to 24:00)
-      isActive = currentHour >= 21;
-    } else {
-      isActive = currentHour >= slotStart && currentHour < slotEnd;
-    }
-    
-    if (isActive) {
-      div.classList.add('active');
-    }
-    
-    // Calculate drinks in this time slot
-    const drinksInSlot = appState.todayData?.drinks?.filter(drink => {
-      const drinkHour = new Date(drink.timestamp).getHours();
-      
-      if (slot.label === "9-12 AM") {
-        // 9 PM to midnight (21:00 to 24:00)
-        return drinkHour >= 21;
-      } else {
-        return drinkHour >= slotStart && drinkHour < slotEnd;
-      }
-    }) || [];
-    
-    const totalInSlot = drinksInSlot.reduce((sum, drink) => sum + drink.amount, 0);
-    
-    div.innerHTML = `
-      <div class="time-label">${slot.label}</div>
-      <div class="time-value">${totalInSlot}ml</div>
-    `;
-    
-    container.appendChild(div);
-  });
 }
 
 // ============================================
@@ -2148,89 +2424,6 @@ function updateRecentActivity() {
     
     container.appendChild(item);
   });
-}
-
-// ============================================
-// UPDATED: showDateDetails function with remove buttons
-// ============================================
-
-function showDateDetails(dateStr, dayData) {
-  const modal = document.getElementById('dateDetailModal');
-  const content = document.getElementById('dateDetailContent');
-  
-  const date = new Date(dateStr);
-  const formattedDate = date.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  
-  if (dayData) {
-    const goal = appState.profile?.dailyGoal || 2000;
-    const progress = Math.round((dayData.consumed / goal) * 100);
-    const drinksCount = dayData.drinks ? dayData.drinks.length : 0;
-    
-    let drinksHtml = '';
-    if (dayData.drinks && dayData.drinks.length > 0) {
-      drinksHtml = '<div style="margin-top: 15px;"><strong style="display: block; margin-bottom: 10px;">Drinks:</strong><div style="max-height: 200px; overflow-y: auto; padding-right: 10px;">';
-      dayData.drinks.forEach((drink, index) => {
-        const beverage = BEVERAGES[drink.type];
-        drinksHtml += `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; position: relative;" class="drink-item-with-remove">
-            <button class="remove-drink-btn" onclick="removeHistoricalDrink('${dateStr}', ${index})" title="Remove this drink" style="opacity: 0.7;">
-              <i class="fas fa-times"></i>
-            </button>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <i class="fas ${beverage.icon}" style="color: ${beverage.color};"></i>
-              <div>
-                <div style="font-weight: 600; font-size: 13px;">${beverage.name}</div>
-                <div style="font-size: 11px; color: var(--muted);">${drink.time}</div>
-              </div>
-            </div>
-            <div style="text-align: right;">
-              <div style="font-weight: 700; font-size: 14px;">${drink.amount}ml</div>
-              <div style="font-size: 10px; color: var(--accent);">${drink.waterContent}ml water</div>
-            </div>
-          </div>
-        `;
-      });
-      drinksHtml += '</div></div>';
-    }
-    
-    content.innerHTML = `
-      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
-        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${dayData.consumed}ml</div>
-          <div style="font-size: 12px; color: var(--muted);">Total Consumed</div>
-        </div>
-        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 700; color: ${progress >= 100 ? 'var(--success)' : progress >= 75 ? '#a6ff4d' : progress >= 50 ? 'var(--warning)' : '#ff9966'};">${progress}%</div>
-          <div style="font-size: 12px; color: var(--muted);">Goal Progress</div>
-        </div>
-        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${drinksCount}</div>
-          <div style="font-size: 12px; color: var(--muted);">Number of Drinks</div>
-        </div>
-        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 700; color: ${dayData.completed ? 'var(--success)' : 'var(--danger)'};">${dayData.completed ? '✓' : '✗'}</div>
-          <div style="font-size: 12px; color: var(--muted);">Goal ${dayData.completed ? 'Achieved' : 'Not Met'}</div>
-        </div>
-      </div>
-      ${drinksHtml}
-    `;
-  } else {
-    content.innerHTML = `
-      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
-      <div style="text-align: center; padding: 40px 20px;">
-        <i class="fas fa-tint" style="font-size: 48px; color: var(--muted); opacity: 0.5; margin-bottom: 20px;"></i>
-        <p style="color: var(--muted);">No hydration data recorded for this day.</p>
-      </div>
-    `;
-  }
-  
-  openModal('dateDetailModal');
 }
 
 // ============================================
@@ -2813,100 +3006,6 @@ function calculateRecommendedGoal() {
   showNotification(`Recommended daily goal: ${finalGoal}ml`, "success");
 }
 
-function renderCalendar() {
-  const container = document.getElementById('calendarContainer');
-  const month = appState.currentMonth;
-  const year = appState.currentYear;
-  
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
-  
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-  container.innerHTML = '';
-  
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  dayNames.forEach(day => {
-    const dayElement = document.createElement('div');
-    dayElement.style.cssText = `
-      text-align: center;
-      padding: 8px;
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 600;
-    `;
-    dayElement.textContent = day;
-    container.appendChild(dayElement);
-  });
-  
-  for (let i = 0; i < firstDay; i++) {
-    const empty = document.createElement('div');
-    container.appendChild(empty);
-  }
-  
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dateStr = date.toDateString();
-    const dayData = appState.historicalData[dateStr];
-    
-    const dayElement = document.createElement('div');
-    dayElement.style.cssText = `
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-    `;
-    
-    dayElement.textContent = day;
-    dayElement.dataset.date = dateStr;
-    
-    if (dayData) {
-      const goal = appState.profile?.dailyGoal || 2000;
-      const progress = Math.min((dayData.consumed / goal) * 100, 100);
-      
-      if (progress >= 100) {
-        dayElement.style.background = `linear-gradient(135deg, var(--success), rgba(77, 255, 184, 0.3))`;
-        dayElement.style.borderColor = 'var(--success)';
-      } else if (progress >= 75) {
-        dayElement.style.background = `linear-gradient(135deg, #a6ff4d, rgba(166, 255, 77, 0.3))`;
-      } else if (progress >= 50) {
-        dayElement.style.background = `linear-gradient(135deg, var(--warning), rgba(255, 184, 77, 0.3))`;
-      } else if (progress > 0) {
-        dayElement.style.background = `linear-gradient(135deg, #ff9966, rgba(255, 153, 102, 0.3))`;
-      }
-      
-      if (dayData.completed) {
-        dayElement.style.border = '2px solid var(--accent)';
-      }
-      
-      dayElement.onclick = () => showDateDetails(dateStr, dayData);
-    }
-    
-    if (date.toDateString() === new Date().toDateString()) {
-      dayElement.style.boxShadow = '0 0 0 2px var(--accent)';
-      dayElement.style.fontWeight = '700';
-    }
-    
-    if (dayData) {
-      dayElement.title = `${dayData.consumed}ml (${Math.round((dayData.consumed / (appState.profile?.dailyGoal || 2000)) * 100)}%)`;
-    } else {
-      dayElement.title = 'No data';
-      dayElement.onclick = () => showDateDetails(dateStr, null);
-    }
-    
-    container.appendChild(dayElement);
-  }
-}
-
 function updateGreetingMessage() {
   const hour = new Date().getHours();
   let greeting = "Stay Hydrated, Stay Healthy";
@@ -3264,28 +3363,6 @@ function saveProfile() {
   closeProfile();
 }
 
-// ============================================
-// FIXED: openStats function with proper chart initialization
-// ============================================
-
-function openStats() {
-  showScreen('statsScreen');
-  updateStatistics();
-  renderCalendar();
-  
-  // Initialize charts if they don't exist
-  if (!trendChart || !distributionChart) {
-    initializeCharts();
-  } else {
-    updateCharts();
-  }
-  
-  // Ensure distribution chart is properly initialized
-  setTimeout(() => {
-    updateDistributionChart();
-  }, 100);
-}
-
 function updateStatistics() {
   const history = appState.historicalData;
   const todayData = appState.todayData;
@@ -3458,60 +3535,6 @@ function updateCharts() {
   trendChart.update();
   
   updateDistributionChart();
-}
-
-// ============================================
-// FIXED: updateDistributionChart function to work properly
-// ============================================
-
-function updateDistributionChart() {
-  if (!distributionChart) return;
-  
-  const drinkTypes = {};
-  let drinks = [];
-  
-  if (appState.currentPieType === 'today') {
-    drinks = appState.todayData?.drinks || [];
-  } else if (appState.currentPieType === 'week') {
-    const last7Days = getLastNDays(7);
-    drinks = last7Days.flatMap(day => day?.drinks || []);
-  } else if (appState.currentPieType === 'month') {
-    const last30Days = getLastNDays(30);
-    drinks = last30Days.flatMap(day => day?.drinks || []);
-  }
-  
-  // Initialize all drink types with 0
-  Object.keys(BEVERAGES).forEach(type => {
-    drinkTypes[type] = 0;
-  });
-  
-  // Count drinks
-  drinks.forEach(drink => {
-    drinkTypes[drink.type] = (drinkTypes[drink.type] || 0) + drink.amount;
-  });
-  
-  // Filter out drink types with 0 amount
-  const filteredDrinkTypes = Object.entries(drinkTypes)
-    .filter(([type, amount]) => amount > 0);
-  
-  const labels = filteredDrinkTypes.map(([type, amount]) => BEVERAGES[type]?.name || type);
-  const data = filteredDrinkTypes.map(([type, amount]) => amount);
-  const colors = filteredDrinkTypes.map(([type, amount]) => BEVERAGES[type]?.color || '#4fd1ff');
-  
-  distributionChart.data.labels = labels;
-  distributionChart.data.datasets[0].data = data;
-  distributionChart.data.datasets[0].backgroundColor = colors;
-  
-  // Update chart if we have data, otherwise show empty state
-  if (data.length > 0) {
-    distributionChart.update();
-  } else {
-    // Show empty state message
-    distributionChart.data.labels = ['No drinks recorded'];
-    distributionChart.data.datasets[0].data = [1];
-    distributionChart.data.datasets[0].backgroundColor = ['rgba(255, 255, 255, 0.1)'];
-    distributionChart.update();
-  }
 }
 
 function changeChartType(type) {
