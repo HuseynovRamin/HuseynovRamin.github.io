@@ -1957,19 +1957,32 @@ function setGoalPercentage(percentage) {
 }
 
 function selectGender(gender) {
+  if (!appState.profile) return;
   appState.profile.gender = gender;
+  
+  // Update UI
   document.querySelectorAll('.gender-option').forEach(option => {
     option.classList.remove('active');
+    if (option.textContent.toLowerCase().includes(gender)) {
+      option.classList.add('active');
+    }
   });
-  event.target.closest('.gender-option').classList.add('active');
+  
+  // Save immediately
+  saveAllData();
 }
 
 function selectActivityLevel(level) {
+  if (!appState.profile) return;
   appState.profile.activityLevel = level;
+  
   document.querySelectorAll('.activity-level').forEach(item => {
     item.classList.remove('active');
+    const levelText = item.querySelector('span:first-child').textContent.toLowerCase();
+    if (levelText.includes(level)) {
+      item.classList.add('active');
+    }
   });
-  event.target.closest('.activity-level').classList.add('active');
 }
 
 function createWaterDrops() {
@@ -2052,12 +2065,13 @@ function addDrink(type, amount) {
   
   saveAllData();
   updateDashboard();
+  updateStatistics();
   updateTimeProgress();
   showNotification(`Added ${amount}ml of ${drink.name} (${waterContent}ml water)`, "success");
 }
 
 // ============================================
-// UI UPDATES (ENHANCED)
+// UI UPDATES (FIXED)
 // ============================================
 
 function updateDashboard() {
@@ -2073,13 +2087,19 @@ function updateDashboard() {
   document.getElementById('consumedDisplay').textContent = `${consumed.toLocaleString()} ml`;
   document.getElementById('goalDisplay').textContent = `of ${goal.toLocaleString()} ml goal`;
   document.getElementById('drinksCount').textContent = appState.todayData.drinks?.length || 0;
+  
+  // FIXED: Update streak from profile
   document.getElementById('streakCount').textContent = appState.profile?.currentStreak || 0;
   
-  // Calculate average hydration from historical data
+  // FIXED: Calculate average hydration correctly
   const historicalDays = Object.values(appState.historicalData);
-  const totalDays = historicalDays.length || 1;
-  const completedDays = historicalDays.filter(d => d.completed).length;
-  const avgHydration = Math.round((completedDays / totalDays) * 100);
+  const totalDays = historicalDays.length;
+  let avgHydration = 0;
+  
+  if (totalDays > 0) {
+    const completedDays = historicalDays.filter(d => d.completed).length;
+    avgHydration = Math.round((completedDays / totalDays) * 100);
+  }
   document.getElementById('avgHydration').textContent = `${avgHydration}%`;
   
   // Update quick stats
@@ -2105,10 +2125,11 @@ function updateQuickStats() {
   const todayBest = todayDrinks.length > 0 ? Math.max(...todayDrinks.map(d => d.amount)) : 0;
   document.getElementById('todayBest').textContent = `${todayBest}ml`;
   
-  // Weekly average (last 7 days including today)
+  // FIXED: Weekly average - only count days with data
   const last7Days = getLastNDays(7);
-  const weeklyTotal = last7Days.reduce((sum, day) => sum + (day?.consumed || 0), 0);
-  const weekAvg = Math.round(weeklyTotal / 7);
+  const daysWithData = last7Days.filter(d => d && d.consumed > 0);
+  const weeklyTotal = daysWithData.reduce((sum, day) => sum + (day?.consumed || 0), 0);
+  const weekAvg = daysWithData.length > 0 ? Math.round(weeklyTotal / daysWithData.length) : 0;
   document.getElementById('weekAvg').textContent = `${weekAvg}ml`;
   
   // Monthly total (last 30 days)
@@ -2118,7 +2139,7 @@ function updateQuickStats() {
   
   // Goal days percentage
   const goalDays = last30Days.filter(d => d?.completed).length;
-  const goalPercent = Math.round((goalDays / 30) * 100);
+  const goalPercent = last30Days.length > 0 ? Math.round((goalDays / last30Days.length) * 100) : 0;
   document.getElementById('goalDays').textContent = `${goalPercent}%`;
 }
 
@@ -2191,7 +2212,7 @@ function updateHydrationTip() {
 }
 
 // ============================================
-// PROFILE MANAGEMENT (FIXED)
+// PROFILE MANAGEMENT (FIXED WITH AUTO-UPDATE RULERS)
 // ============================================
 
 function updateProfileUI() {
@@ -2231,7 +2252,7 @@ function updateProfileUI() {
     }
   });
   
-  // Initialize rulers
+  // Initialize rulers with 5-unit increments and auto-update
   initRuler('weightRuler', 30, 200, profile.weight, 'kg', (value) => {
     appState.profile.weight = value;
     document.getElementById('weightValue').textContent = value;
@@ -2251,48 +2272,74 @@ function initRuler(containerId, min, max, initial, unit, onChange) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
   
-  for (let i = min; i <= max; i++) {
+  // Create ticks every 5 units (30, 35, 40, etc.)
+  for (let i = min; i <= max; i += 5) {
     const tick = document.createElement('div');
     tick.className = 'ruler-tick';
-    if (i === initial) tick.classList.add('active');
+    tick.dataset.value = i;
     
+    // Show every tick, but label only major ones
     const isMajor = i % 10 === 0;
-    const lineHeight = isMajor ? 40 : (i % 5 === 0 ? 30 : 20);
+    const lineHeight = isMajor ? 40 : 30;
     
     tick.innerHTML = `
       <div class="tick-line" style="height: ${lineHeight}px;"></div>
-      ${isMajor ? `<div class="tick-label">${i}${unit}</div>` : ''}
+      <div class="tick-label">${i}${unit}</div>
     `;
     
-    tick.onclick = () => {
-      onChange(i);
-      updateRuler(containerId, i);
-    };
+    if (i === initial) {
+      tick.classList.add('active');
+    }
     
     container.appendChild(tick);
   }
+  
+  // Set up scroll event listener for auto-update
+  let scrollTimeout;
+  container.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const center = container.scrollLeft + container.clientWidth / 2;
+      const ticks = Array.from(container.children);
+      let closestTick = null;
+      let closestDistance = Infinity;
+      
+      ticks.forEach(tick => {
+        const tickCenter = tick.offsetLeft + tick.offsetWidth / 2;
+        const distance = Math.abs(tickCenter - center);
+        
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestTick = tick;
+        }
+      });
+      
+      if (closestTick) {
+        const value = parseInt(closestTick.dataset.value);
+        onChange(value);
+        
+        // Update active state
+        ticks.forEach(t => t.classList.remove('active'));
+        closestTick.classList.add('active');
+        
+        // Vibrate if supported
+        if (navigator.vibrate) {
+          navigator.vibrate(10);
+        }
+      }
+    }, 150);
+  });
   
   // Scroll to initial value
   setTimeout(() => {
     const tickWidth = 40;
     const centerOffset = container.clientWidth / 2;
-    const targetTick = Array.from(container.children).find(t => parseInt(t.querySelector('.tick-label')?.textContent) === initial);
+    const targetTick = Array.from(container.children).find(t => parseInt(t.dataset.value) === initial);
     if (targetTick) {
       const tickIndex = Array.from(container.children).indexOf(targetTick);
       container.scrollLeft = (tickIndex * tickWidth) - centerOffset + (tickWidth / 2);
     }
   }, 100);
-}
-
-function updateRuler(containerId, value) {
-  const container = document.getElementById(containerId);
-  Array.from(container.children).forEach(tick => {
-    const label = tick.querySelector('.tick-label');
-    if (label) {
-      const tickValue = parseInt(label.textContent);
-      tick.classList.toggle('active', tickValue === value);
-    }
-  });
 }
 
 function adjustWeight(change) {
@@ -2360,6 +2407,14 @@ function updateAgeFromInput() {
   document.getElementById('ageValue').textContent = value;
 }
 
+function updateRuler(containerId, value) {
+  const container = document.getElementById(containerId);
+  Array.from(container.children).forEach(tick => {
+    const tickValue = parseInt(tick.dataset.value);
+    tick.classList.toggle('active', tickValue === value);
+  });
+}
+
 function saveProfile() {
   // Save profile data
   appState.profile.name = document.getElementById('userNameInput').value || 'User';
@@ -2417,9 +2472,15 @@ function openStats() {
 
 function updateStatistics() {
   const history = appState.historicalData;
-  const days = Object.values(history);
+  const todayData = appState.todayData;
   
-  if (days.length === 0) {
+  // Combine history with today's data
+  let allDays = Object.values(history);
+  if (todayData && todayData.consumed > 0) {
+    allDays = [todayData, ...allDays];
+  }
+  
+  if (allDays.length === 0) {
     document.getElementById('totalConsumed').textContent = '0';
     document.getElementById('avgDaily').textContent = '0';
     document.getElementById('bestDay').textContent = '0';
@@ -2427,10 +2488,11 @@ function updateStatistics() {
     return;
   }
   
-  const totalConsumed = days.reduce((sum, day) => sum + (day.consumed || 0), 0);
-  const avgDaily = Math.round(totalConsumed / days.length);
-  const bestDay = Math.max(...days.map(d => d.consumed || 0));
-  const completionRate = Math.round((days.filter(d => d.completed).length / days.length) * 100);
+  // FIXED: Calculate statistics correctly
+  const totalConsumed = allDays.reduce((sum, day) => sum + (day.consumed || 0), 0);
+  const avgDaily = Math.round(totalConsumed / allDays.length);
+  const bestDay = Math.max(...allDays.map(d => d.consumed || 0));
+  const completionRate = Math.round((allDays.filter(d => d.completed).length / allDays.length) * 100);
   
   document.getElementById('totalConsumed').textContent = Math.round(totalConsumed / 1000).toLocaleString() + 'L';
   document.getElementById('avgDaily').textContent = avgDaily.toLocaleString() + 'ml';
@@ -2855,33 +2917,57 @@ function confirmDrink() {
 }
 
 // ============================================
-// NOTIFICATIONS & REMINDERS
+// NOTIFICATIONS & REMINDERS (ACTUAL SYSTEM NOTIFICATIONS)
 // ============================================
 
 function setupReminders() {
   if (!appState.settings.reminders?.enabled) return;
   
-  const [hours, minutes] = appState.settings.reminders.time.split(':').map(Number);
-  const now = new Date();
-  const reminderTime = new Date();
-  reminderTime.setHours(hours, minutes, 0, 0);
-  
-  if (reminderTime < now) {
-    reminderTime.setDate(reminderTime.getDate() + 1);
+  // Request notification permission
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        console.log("Notification permission granted");
+      }
+    });
   }
   
-  const timeUntil = reminderTime.getTime() - now.getTime();
-  
-  setTimeout(() => {
-    sendReminder();
-    setInterval(sendReminder, appState.settings.reminders.frequency * 60 * 60 * 1000);
-  }, timeUntil);
+  // Schedule reminders using setInterval for in-app notifications
+  // For system notifications, we'll use a different approach
+  scheduleSystemNotifications();
 }
 
-function sendReminder() {
+function scheduleSystemNotifications() {
   if (!appState.settings.reminders?.enabled) return;
   
-  const progress = (appState.todayData.consumed / appState.todayData.goal) * 100;
+  // Clear existing intervals
+  if (window.reminderInterval) {
+    clearInterval(window.reminderInterval);
+  }
+  
+  const frequencyHours = appState.settings.reminders.frequency;
+  
+  // Convert reminder time to minutes
+  const [hours, minutes] = appState.settings.reminders.time.split(':').map(Number);
+  const reminderMinutes = hours * 60 + minutes;
+  
+  // Calculate next reminder time
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const minutesUntilReminder = (reminderMinutes - currentMinutes + 24 * 60) % (24 * 60);
+  
+  // Schedule first reminder
+  setTimeout(() => {
+    sendSystemReminder();
+    // Set up recurring reminders
+    window.reminderInterval = setInterval(sendSystemReminder, frequencyHours * 60 * 60 * 1000);
+  }, minutesUntilReminder * 60 * 1000);
+}
+
+function sendSystemReminder() {
+  if (!appState.settings.reminders?.enabled) return;
+  
+  const progress = appState.todayData ? (appState.todayData.consumed / appState.todayData.goal) * 100 : 0;
   let message = "💧 Time to hydrate!";
   
   if (progress < 25) {
@@ -2896,11 +2982,31 @@ function sendReminder() {
     message = "🎉 Goal achieved! Maintain your hydration.";
   }
   
+  // Show in-app notification
   showNotification(message, "reminder");
+  
+  // Show system notification if permission granted
+  if ("Notification" in window && Notification.permission === "granted") {
+    const notification = new Notification("HydroTrack Pro Reminder", {
+      body: message,
+      icon: "https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f4a7.png",
+      tag: "hydration-reminder",
+      requireInteraction: false
+    });
+    
+    // Close notification after 5 seconds
+    setTimeout(() => notification.close(), 5000);
+  }
+  
+  // Vibrate if supported
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100]);
+  }
 }
 
 function testReminder() {
-  sendReminder();
+  sendSystemReminder();
+  showNotification("Test reminder sent!", "success");
 }
 
 // ============================================
