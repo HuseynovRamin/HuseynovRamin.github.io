@@ -1845,20 +1845,20 @@ body::before {
 
 <script>
 // ============================================
-// FIXED: updateTimeProgress function - Correct 24-hour coverage with proper labels
+// FIXED: updateTimeProgress function - Combined 12 AM - 6 AM slot
 // ============================================
 
 function updateTimeProgress() {
   const container = document.getElementById('timeProgress');
+  // Combined 12AM-6AM into one slot, keeping 8 total slots
   const timeSlots = [
-    { label: "12-3AM", hour: 0, isNight: true },
-    { label: "3-6AM", hour: 3, isNight: true },
-    { label: "6-9AM", hour: 6, isNight: true },
-    { label: "9AM-12PM", hour: 9, isNight: true },
-    { label: "12-3PM", hour: 12, isNight: true },
-    { label: "3-6PM", hour: 15, isNight: true },
-    { label: "6-9PM", hour: 18, isNight: true },
-    { label: "9PM-12AM", hour: 21, isNight: true }
+    { label: "12-6AM", hour: 0, duration: 6, isNight: true },
+    { label: "6-9AM", hour: 6, duration: 3, isNight: true },
+    { label: "9AM-12PM", hour: 9, duration: 3, isNight: false },
+    { label: "12-3PM", hour: 12, duration: 3, isNight: false },
+    { label: "3-6PM", hour: 15, duration: 3, isNight: false },
+    { label: "6-9PM", hour: 18, duration: 3, isNight: true },
+    { label: "9PM-12AM", hour: 21, duration: 3, isNight: true }
   ];
   
   const currentHour = new Date().getHours();
@@ -1874,16 +1874,9 @@ function updateTimeProgress() {
     }
     
     // Check if current hour is in this time slot
-    let isActive = false;
     const slotStart = slot.hour;
-    const slotEnd = slot.hour + 3;
-    
-    if (slot.label === "9-12PM") {
-      // Special case: 9 PM to midnight (21:00 to 24:00)
-      isActive = currentHour >= 21 && currentHour < 24;
-    } else {
-      isActive = currentHour >= slotStart && currentHour < slotEnd;
-    }
+    const slotEnd = slot.hour + slot.duration;
+    const isActive = currentHour >= slotStart && currentHour < slotEnd;
     
     if (isActive) {
       div.classList.add('active');
@@ -1892,13 +1885,7 @@ function updateTimeProgress() {
     // Calculate drinks in this time slot
     const drinksInSlot = appState.todayData?.drinks?.filter(drink => {
       const drinkHour = new Date(drink.timestamp).getHours();
-      
-      if (slot.label === "9-12PM") {
-        // 9 PM to midnight (21:00 to 24:00)
-        return drinkHour >= 21 && drinkHour < 24;
-      } else {
-        return drinkHour >= slotStart && drinkHour < slotEnd;
-      }
+      return drinkHour >= slotStart && drinkHour < slotEnd;
     }) || [];
     
     const totalInSlot = drinksInSlot.reduce((sum, drink) => sum + drink.amount, 0);
@@ -2681,10 +2668,15 @@ function addDrink(type, amount) {
   showNotification(`Added ${amount}ml of ${drink.name} (${waterContent}ml water)`, "success");
 }
 
+// ============================================
+// FIXED: initializeApp function - Only show welcome modal for truly new users
+// ============================================
+
 function initializeApp() {
   loadAllData();
   
-  const isNewUser = !appState.profile || !appState.profile.name || appState.profile.name === "User";
+  // Check if user has completed profile setup
+  const isNewUser = !appState.profile || !appState.profile.profileCompleted;
   
   if (!appState.profile) {
     appState.profile = {
@@ -2699,7 +2691,8 @@ function initializeApp() {
       currentStreak: 0,
       bestStreak: 0,
       unitSystem: 'metric',
-      achievements: {}
+      achievements: {},
+      profileCompleted: false // Track if user completed setup
     };
   }
   
@@ -2757,6 +2750,7 @@ function initializeApp() {
   createWaterDrops();
   checkAndUpdateAchievements();
   
+  // Only show welcome modal for truly new users who haven't completed setup
   if (isNewUser) {
     setTimeout(() => {
       openModal('welcomeModal');
@@ -3329,6 +3323,10 @@ function updateRuler(containerId, value) {
   });
 }
 
+// ============================================
+// UPDATED: saveProfile function - Sets profileCompleted flag to true
+// ============================================
+
 function saveProfile() {
   appState.profile.name = document.getElementById('userNameInput').value || 'User';
   appState.profile.weight = parseInt(document.getElementById('weightInput').value);
@@ -3336,6 +3334,8 @@ function saveProfile() {
   appState.profile.age = parseInt(document.getElementById('ageManualInput').value);
   appState.profile.dailyGoal = parseInt(document.getElementById('dailyGoalInput').value);
   appState.profile.unitSystem = appState.unitSystem;
+  // Mark profile as completed when user saves it
+  appState.profile.profileCompleted = true;
   
   const activeGender = document.querySelector('.gender-option.active');
   if (activeGender) {
