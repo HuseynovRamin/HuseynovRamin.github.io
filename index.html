@@ -663,7 +663,7 @@ body::before {
 
 .amount-btn.active {
   background: var(--accent);
-  color: #000;
+  color: #fff; /* Changed from #000 to #fff for better visibility */
   border-color: var(--accent);
   box-shadow: 0 0 20px rgba(79, 209, 255, 0.3);
 }
@@ -745,7 +745,7 @@ body::before {
 
 .chart-btn.active {
   background: var(--accent);
-  color: #000;
+  color: #fff; /* Changed from #000 to #fff */
   border-color: var(--accent);
 }
 
@@ -1091,6 +1091,67 @@ body::before {
 .welcome-modal .modal-content {
   max-width: 400px;
 }
+
+/* Achievements Grid */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.achievement-item {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.achievement-item.locked {
+  opacity: 0.5;
+  filter: grayscale(0.8);
+}
+
+.achievement-item.unlocked {
+  border-color: var(--accent);
+  box-shadow: 0 0 15px rgba(79, 209, 255, 0.2);
+}
+
+.achievement-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #000;
+  margin-bottom: 8px;
+}
+
+.achievement-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.achievement-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.achievement-date {
+  font-size: 10px;
+  color: var(--accent);
+  font-style: italic;
+}
 </style>
 </head>
 
@@ -1099,7 +1160,7 @@ body::before {
 <div id="waterDropsContainer"></div>
 
 <!-- Achievement Badge -->
-<div class="achievement-badge" onclick="showAchievements()" title="View Achievements">
+<div class="achievement-badge" onclick="showAchievementsModal()" title="View Achievements">
   <i class="fas fa-trophy"></i>
 </div>
 
@@ -1523,10 +1584,6 @@ body::before {
     </div>
 
     <div class="drink-grid" id="drinkGrid"></div>
-
-    <button class="btn-secondary" onclick="closeModal('drinkModal')" style="margin-top: 20px;">
-      Cancel
-    </button>
   </div>
 </div>
 
@@ -1549,10 +1606,6 @@ body::before {
     <button class="btn" onclick="confirmDrink()" style="margin-top: 20px;">
       <i class="fas fa-check"></i> Add Drink
     </button>
-
-    <button class="btn-secondary" onclick="closeModal('amountModal')" style="margin-top: 10px;">
-      Cancel
-    </button>
   </div>
 </div>
 
@@ -1567,6 +1620,22 @@ body::before {
       <!-- Content will be populated by JavaScript -->
     </div>
     <button class="btn-secondary" onclick="closeModal('dateDetailModal')" style="margin-top: 20px;">
+      Close
+    </button>
+  </div>
+</div>
+
+<!-- Achievements Modal -->
+<div class="modal" id="achievementsModal">
+  <div class="modal-content card">
+    <div class="modal-header">
+      <h3><i class="fas fa-trophy"></i> Achievements</h3>
+      <button class="close-btn" onclick="closeModal('achievementsModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="achievementsContent" style="margin: 20px 0;">
+      <!-- Achievements will be populated here -->
+    </div>
+    <button class="btn-secondary" onclick="closeModal('achievementsModal')" style="margin-top: 20px;">
       Close
     </button>
   </div>
@@ -1602,14 +1671,13 @@ body::before {
 // WATERIFY PRO - Enhanced Hydration Tracker
 // ============================================
 
-// Beverage database
+// Beverage database - FIXED: Removed hydrationFactor for consistency
 const BEVERAGES = {
   water: {
     name: "Water",
     icon: "fa-tint",
     color: "#4fd1ff",
     waterContent: 100,
-    hydrationFactor: 1.0,
     description: "Pure hydration - no additives"
   },
   sparkling_water: {
@@ -1617,7 +1685,6 @@ const BEVERAGES = {
     icon: "fa-glass-water",
     color: "#6b7cff",
     waterContent: 100,
-    hydrationFactor: 1.0,
     description: "Carbonated water - same hydration"
   },
   herbal_tea: {
@@ -1625,7 +1692,6 @@ const BEVERAGES = {
     icon: "fa-mug-hot",
     color: "#ffb84d",
     waterContent: 99,
-    hydrationFactor: 0.95,
     description: "No caffeine - excellent hydration"
   },
   green_tea: {
@@ -1633,7 +1699,6 @@ const BEVERAGES = {
     icon: "fa-leaf",
     color: "#4dff88",
     waterContent: 99,
-    hydrationFactor: 0.9,
     description: "Antioxidants - minimal caffeine"
   },
   black_coffee: {
@@ -1641,7 +1706,6 @@ const BEVERAGES = {
     icon: "fa-coffee",
     color: "#8B4513",
     waterContent: 98,
-    hydrationFactor: 0.85,
     description: "Caffeine reduces hydration by 15%"
   },
   milk: {
@@ -1649,7 +1713,6 @@ const BEVERAGES = {
     icon: "fa-cow",
     color: "#ffffff",
     waterContent: 87,
-    hydrationFactor: 0.95,
     description: "Contains nutrients - good hydration"
   },
   fruit_juice: {
@@ -1657,7 +1720,6 @@ const BEVERAGES = {
     icon: "fa-apple-alt",
     color: "#ff6b6b",
     waterContent: 88,
-    hydrationFactor: 0.8,
     description: "Natural sugars - moderate hydration"
   },
   sports_drink: {
@@ -1665,7 +1727,6 @@ const BEVERAGES = {
     icon: "fa-bolt",
     color: "#ff4d6d",
     waterContent: 94,
-    hydrationFactor: 0.9,
     description: "Electrolytes - good for exercise"
   },
   soda: {
@@ -1673,7 +1734,6 @@ const BEVERAGES = {
     icon: "fa-glass-whiskey",
     color: "#ff4757",
     waterContent: 90,
-    hydrationFactor: 0.7,
     description: "High sugar - poor hydration"
   },
   smoothie: {
@@ -1681,10 +1741,117 @@ const BEVERAGES = {
     icon: "fa-blender",
     color: "#9d4edd",
     waterContent: 85,
-    hydrationFactor: 0.85,
     description: "Nutrient-rich - good hydration"
   }
 };
+
+// Achievements database
+const ACHIEVEMENTS = [
+  {
+    id: 'first_drink',
+    name: 'First Sip',
+    description: 'Added your first drink',
+    icon: 'fa-tint',
+    condition: (profile, todayData, historicalData) => {
+      const totalDrinks = (todayData?.drinks?.length || 0) + 
+                         Object.values(historicalData).reduce((sum, day) => sum + (day.drinks?.length || 0), 0);
+      return totalDrinks >= 1;
+    }
+  },
+  {
+    id: 'first_streak',
+    name: 'Streak Starter',
+    description: 'Achieved a 3-day streak',
+    icon: 'fa-fire',
+    condition: (profile) => profile.currentStreak >= 3
+  },
+  {
+    id: 'hydrated_beginner',
+    name: 'Hydration Beginner',
+    description: 'Reached daily goal for first time',
+    icon: 'fa-star',
+    condition: (profile, todayData, historicalData) => {
+      const completedDays = Object.values(historicalData).filter(d => d.completed).length;
+      return completedDays >= 1;
+    }
+  },
+  {
+    id: 'week_warrior',
+    name: 'Week Warrior',
+    description: 'Completed a full week of hydration',
+    icon: 'fa-calendar-week',
+    condition: (profile, todayData, historicalData) => {
+      const last7Days = getLastNDaysData(7);
+      const completedDays = last7Days.filter(d => d?.completed).length;
+      return completedDays >= 7;
+    }
+  },
+  {
+    id: 'month_master',
+    name: 'Month Master',
+    description: 'Completed 30 days of hydration',
+    icon: 'fa-calendar-alt',
+    condition: (profile, todayData, historicalData) => {
+      const completedDays = Object.values(historicalData).filter(d => d.completed).length;
+      return completedDays >= 30;
+    }
+  },
+  {
+    id: 'water_expert',
+    name: 'Water Expert',
+    description: 'Drank 3L in a single day',
+    icon: 'fa-water',
+    condition: (profile, todayData, historicalData) => {
+      const allDays = [todayData, ...Object.values(historicalData)];
+      return allDays.some(d => d && d.consumed >= 3000);
+    }
+  },
+  {
+    id: 'consistency_king',
+    name: 'Consistency King',
+    description: 'Maintained a 7-day streak',
+    icon: 'fa-crown',
+    condition: (profile) => profile.bestStreak >= 7
+  },
+  {
+    id: 'legendary_hydrator',
+    name: 'Legendary Hydrator',
+    description: 'Maintained a 30-day streak',
+    icon: 'fa-trophy',
+    condition: (profile) => profile.bestStreak >= 30
+  },
+  {
+    id: 'variety_seeker',
+    name: 'Variety Seeker',
+    description: 'Tried 5 different drink types',
+    icon: 'fa-glass-whiskey',
+    condition: (profile, todayData, historicalData) => {
+      const allDrinks = [...(todayData?.drinks || []), 
+                        ...Object.values(historicalData).flatMap(d => d.drinks || [])];
+      const uniqueTypes = new Set(allDrinks.map(d => d.type));
+      return uniqueTypes.size >= 5;
+    }
+  },
+  {
+    id: 'early_bird',
+    name: 'Early Bird',
+    description: 'Drank before 8 AM for 5 days',
+    icon: 'fa-sun',
+    condition: (profile, todayData, historicalData) => {
+      const earlyDrinks = [...(todayData?.drinks || []), 
+                          ...Object.values(historicalData).flatMap(d => d.drinks || [])];
+      const earlyDays = new Set();
+      earlyDrinks.forEach(drink => {
+        const hour = new Date(drink.timestamp).getHours();
+        if (hour < 8) {
+          const date = new Date(drink.timestamp).toDateString();
+          earlyDays.add(date);
+        }
+      });
+      return earlyDays.size >= 5;
+    }
+  }
+];
 
 // Hydration tips
 const HYDRATION_TIPS = [
@@ -1721,13 +1888,125 @@ let appState = {
   currentPieType: 'today',
   currentMonth: new Date().getMonth(),
   currentYear: new Date().getFullYear(),
-  dataVersion: 4,
-  unitSystem: 'metric' // 'metric' or 'imperial'
+  dataVersion: 5,
+  unitSystem: 'metric'
 };
 
 // Charts
 let trendChart = null;
 let distributionChart = null;
+
+// ============================================
+// ACHIEVEMENTS SYSTEM
+// ============================================
+
+function checkAndUpdateAchievements() {
+  if (!appState.profile) return;
+  
+  const achievements = appState.profile.achievements || {};
+  let newAchievements = [];
+  
+  ACHIEVEMENTS.forEach(achievement => {
+    if (!achievements[achievement.id] || !achievements[achievement.id].unlocked) {
+      if (achievement.condition(appState.profile, appState.todayData, appState.historicalData)) {
+        if (!achievements[achievement.id]) {
+          achievements[achievement.id] = {
+            unlocked: true,
+            unlockedAt: new Date().toISOString()
+          };
+          newAchievements.push(achievement);
+        }
+      }
+    }
+  });
+  
+  appState.profile.achievements = achievements;
+  
+  // Show notification for new achievements
+  if (newAchievements.length > 0) {
+    newAchievements.forEach(achievement => {
+      showNotification(`🎉 Achievement Unlocked: ${achievement.name}!`, "success");
+    });
+    saveAllData();
+  }
+}
+
+function showAchievementsModal() {
+  const content = document.getElementById('achievementsContent');
+  content.innerHTML = '';
+  
+  if (!appState.profile || !appState.profile.achievements) {
+    content.innerHTML = '<p style="text-align: center; color: var(--muted);">No achievements yet. Keep hydrating!</p>';
+    openModal('achievementsModal');
+    return;
+  }
+  
+  const achievementsGrid = document.createElement('div');
+  achievementsGrid.className = 'achievements-grid';
+  
+  ACHIEVEMENTS.forEach(achievement => {
+    const achievementData = appState.profile.achievements[achievement.id];
+    const isUnlocked = achievementData && achievementData.unlocked;
+    
+    const item = document.createElement('div');
+    item.className = `achievement-item ${isUnlocked ? 'unlocked' : 'locked'}`;
+    
+    item.innerHTML = `
+      <div class="achievement-icon" style="background: ${isUnlocked ? 'var(--accent)' : 'var(--glass)'};">
+        <i class="fas ${achievement.icon}" style="color: ${isUnlocked ? '#000' : 'var(--muted)'};"></i>
+      </div>
+      <div class="achievement-name">${achievement.name}</div>
+      <div class="achievement-desc">${achievement.description}</div>
+      ${isUnlocked && achievementData.unlockedAt ? 
+        `<div class="achievement-date">Unlocked: ${new Date(achievementData.unlockedAt).toLocaleDateString()}</div>` : 
+        '<div class="achievement-date" style="color: var(--muted);">Locked</div>'}
+    `;
+    
+    achievementsGrid.appendChild(item);
+  });
+  
+  content.appendChild(achievementsGrid);
+  openModal('achievementsModal');
+}
+
+// ============================================
+// FIXED DRINK CALCULATION
+// ============================================
+
+function addDrink(type, amount) {
+  const drink = BEVERAGES[type];
+  if (!drink) return;
+  
+  // FIXED: Now adds the full water content amount, not reduced by hydration factor
+  const waterContent = Math.round(amount * drink.waterContent / 100);
+  
+  const drinkRecord = {
+    type,
+    amount,
+    waterContent,
+    timestamp: new Date().toISOString(),
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+  
+  // FIXED: Add waterContent to consumed, not effectiveHydration
+  appState.todayData.consumed += waterContent;
+  if (!appState.todayData.drinks) appState.todayData.drinks = [];
+  appState.todayData.drinks.push(drinkRecord);
+  
+  if (!appState.todayData.completed && appState.todayData.consumed >= appState.todayData.goal) {
+    appState.todayData.completed = true;
+    showNotification("🎉 Daily goal achieved! Great work!", "success");
+  }
+  
+  // Check for achievements
+  checkAndUpdateAchievements();
+  
+  saveAllData();
+  updateDashboard();
+  updateStatistics();
+  updateTimeProgress();
+  showNotification(`Added ${amount}ml of ${drink.name} (${waterContent}ml water)`, "success");
+}
 
 // ============================================
 // INITIALIZATION WITH NEW USER CHECK
@@ -1753,7 +2032,8 @@ function initializeApp() {
       createdAt: new Date().toISOString(),
       currentStreak: 0,
       bestStreak: 0,
-      unitSystem: 'metric'
+      unitSystem: 'metric',
+      achievements: {}
     };
   }
   
@@ -1816,6 +2096,9 @@ function initializeApp() {
   // Create water drop animations
   createWaterDrops();
   
+  // Check achievements on startup
+  checkAndUpdateAchievements();
+  
   // Show welcome modal for new users
   if (isNewUser) {
     setTimeout(() => {
@@ -1853,7 +2136,7 @@ function saveAllData() {
     localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
     localStorage.setItem('waterify_history', JSON.stringify(appState.historicalData));
     localStorage.setItem('waterify_settings', JSON.stringify(appState.settings));
-    localStorage.setItem('waterify_version', '4');
+    localStorage.setItem('waterify_version', '5');
   } catch (e) {
     console.error('Error saving data:', e);
   }
@@ -1893,7 +2176,7 @@ function setWeightUnit(system) {
     document.getElementById('weightInput').value = appState.profile.weight;
     document.getElementById('heightInput').value = appState.profile.height;
     
-    // Update rulers
+    // Update rulers - FIXED: Start at 100 cm, not 250 cm
     initRuler('weightRuler', 30, 200, appState.profile.weight, 'kg', (value) => {
       appState.profile.weight = value;
       document.getElementById('weightValue').textContent = value;
@@ -1922,7 +2205,7 @@ function setWeightUnit(system) {
     document.getElementById('weightInput').value = weightLbs;
     document.getElementById('heightInput').value = heightIn;
     
-    // Update rulers for imperial
+    // Update rulers for imperial - FIXED: Adjusted ranges
     initRuler('weightRuler', 66, 440, weightLbs, 'lbs', (value) => {
       appState.profile.weight = Math.round(value / 2.20462);
       document.getElementById('weightValue').textContent = value;
@@ -2396,38 +2679,6 @@ function checkAndUpdateStreak() {
   }
 }
 
-function addDrink(type, amount) {
-  const drink = BEVERAGES[type];
-  if (!drink) return;
-  
-  const waterContent = Math.round(amount * drink.waterContent / 100);
-  const effectiveHydration = Math.round(waterContent * drink.hydrationFactor);
-  
-  const drinkRecord = {
-    type,
-    amount,
-    waterContent,
-    effectiveHydration,
-    timestamp: new Date().toISOString(),
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  };
-  
-  appState.todayData.consumed += effectiveHydration;
-  if (!appState.todayData.drinks) appState.todayData.drinks = [];
-  appState.todayData.drinks.push(drinkRecord);
-  
-  if (!appState.todayData.completed && appState.todayData.consumed >= appState.todayData.goal) {
-    appState.todayData.completed = true;
-    showNotification("🎉 Daily goal achieved! Great work!", "success");
-  }
-  
-  saveAllData();
-  updateDashboard();
-  updateStatistics();
-  updateTimeProgress();
-  showNotification(`Added ${amount}ml of ${drink.name}`, "success");
-}
-
 // ============================================
 // UI UPDATES
 // ============================================
@@ -2447,7 +2698,7 @@ function updateDashboard() {
   document.getElementById('drinksCount').textContent = appState.todayData.drinks?.length || 0;
   document.getElementById('streakCount').textContent = appState.profile?.currentStreak || 0;
   
-  // Today's best drink
+  // Today's best drink - FIXED: Now shows the largest drink amount (not water content)
   const todayDrinks = appState.todayData.drinks || [];
   const todayBest = todayDrinks.length > 0 ? Math.max(...todayDrinks.map(d => d.amount)) : 0;
   document.getElementById('todayBest').textContent = `${todayBest}ml`;
@@ -2492,6 +2743,17 @@ function updateQuickStats() {
 }
 
 function getLastNDays(n) {
+  const days = [];
+  for (let i = 0; i < n; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toDateString();
+    days.push(appState.historicalData[dateStr]);
+  }
+  return days;
+}
+
+function getLastNDaysData(n) {
   const days = [];
   for (let i = 0; i < n; i++) {
     const date = new Date();
@@ -3016,7 +3278,7 @@ function selectDrink(type) {
   
   document.getElementById('waterContentInfo').innerHTML = `
     <div style="font-weight: 600; margin-bottom: 5px;">${drink.description}</div>
-    <div style="font-size: 14px; color: var(--accent);">Contains ${drink.waterContent}% water • ${Math.round(drink.hydrationFactor * 100)}% hydration efficiency</div>
+    <div style="font-size: 14px; color: var(--accent);">Contains ${drink.waterContent}% water</div>
   `;
   
   const amounts = [100, 200, 250, 300, 400, 500, 750, 1000];
@@ -3150,7 +3412,7 @@ function exportData() {
     historicalData: appState.historicalData,
     settings: appState.settings,
     exportDate: new Date().toISOString(),
-    version: 4
+    version: 5
   };
   
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -3260,10 +3522,13 @@ function showNotification(message, type = 'success') {
   
   if (type === 'error') {
     notification.style.background = 'linear-gradient(135deg, var(--danger), #ff6b6b)';
+    notification.style.color = '#000';
   } else if (type === 'reminder') {
     notification.style.background = 'linear-gradient(135deg, var(--secondary), #8b5cf6)';
+    notification.style.color = '#000';
   } else {
     notification.style.background = 'linear-gradient(135deg, var(--accent), var(--accent2))';
+    notification.style.color = '#000';
   }
   
   notification.style.display = 'block';
@@ -3275,10 +3540,6 @@ function showNotification(message, type = 'success') {
       notification.style.display = 'none';
     }, 500);
   }, 3000);
-}
-
-function showAchievements() {
-  showNotification("Achievements system coming soon!", "success");
 }
 
 // ============================================
