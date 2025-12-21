@@ -363,6 +363,7 @@ body::before {
   scroll-behavior: smooth;
   padding: 0 50%;
   -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
 }
 
 .ruler-scroll::-webkit-scrollbar {
@@ -370,13 +371,14 @@ body::before {
 }
 
 .ruler-tick {
-  width: 20px;
+  width: 40px;
   flex-shrink: 0;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  scroll-snap-align: center;
   padding-bottom: 30px;
   cursor: pointer;
 }
@@ -390,7 +392,7 @@ body::before {
 .tick-label {
   position: absolute;
   bottom: 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   font-weight: 500;
   opacity: 0.5;
@@ -409,7 +411,7 @@ body::before {
   color: var(--accent);
   opacity: 1;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .center-indicator {
@@ -1041,32 +1043,6 @@ body::before {
   color: var(--muted);
 }
 
-/* Unit System Toggle */
-.unit-system-toggle {
-  display: flex;
-  gap: 10px;
-  margin: 15px 0;
-}
-
-.unit-system-btn {
-  flex: 1;
-  padding: 12px;
-  text-align: center;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.unit-system-btn.active {
-  background: rgba(79, 209, 255, 0.1);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
 /* Chart Fixes */
 .chart-grid-white {
   background: rgba(255, 255, 255, 0.1) !important;
@@ -1075,6 +1051,45 @@ body::before {
 
 .chart-text-white {
   color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Unit Conversion Buttons */
+.unit-conversion {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.unit-conversion-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  font-size: 14px;
+}
+
+.unit-conversion-btn.active {
+  background: rgba(79, 209, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.unit-conversion-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Welcome Modal */
+.welcome-modal {
+  z-index: 2000;
+}
+
+.welcome-modal .modal-content {
+  max-width: 400px;
 }
 </style>
 </head>
@@ -1163,8 +1178,8 @@ body::before {
             <div style="font-size: 12px; color: var(--muted);">Day Streak</div>
           </div>
           <div style="text-align: center;">
-            <div style="font-size: 24px; font-weight: 700; color: var(--accent);" id="todayAvg">0ml</div>
-            <div style="font-size: 12px; color: var(--muted);">Today's Avg</div>
+            <div style="font-size: 24px; font-weight: 700; color: var(--accent);" id="todayBest">0</div>
+            <div style="font-size: 12px; color: var(--muted);">Today's Best</div>
           </div>
         </div>
       </div>
@@ -1204,10 +1219,6 @@ body::before {
       <h3 style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600;"><i class="fas fa-chart-bar" style="color: var(--accent); margin-right: 10px;"></i>Quick Stats</h3>
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-value" id="todayBest">0</div>
-          <div class="stat-label">Today's Best</div>
-        </div>
-        <div class="stat-card">
           <div class="stat-value" id="weekAvg">0</div>
           <div class="stat-label">Weekly Avg</div>
         </div>
@@ -1218,6 +1229,10 @@ body::before {
         <div class="stat-card">
           <div class="stat-value" id="goalDays">0%</div>
           <div class="stat-label">Goal Days</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="bestStreak">0</div>
+          <div class="stat-label">Best Streak</div>
         </div>
       </div>
     </div>
@@ -1316,35 +1331,30 @@ body::before {
       <div class="input-group">
         <label class="input-label">Gender</label>
         <div class="gender-selector">
-          <div class="gender-option active" onclick="selectGender('male')">
+          <div class="gender-option" data-gender="male" onclick="selectGender('male')">
             <i class="fas fa-mars"></i> Male
           </div>
-          <div class="gender-option" onclick="selectGender('female')">
+          <div class="gender-option" data-gender="female" onclick="selectGender('female')">
             <i class="fas fa-venus"></i> Female
           </div>
-          <div class="gender-option" onclick="selectGender('other')">
+          <div class="gender-option" data-gender="other" onclick="selectGender('other')">
             <i class="fas fa-genderless"></i> Other
           </div>
         </div>
       </div>
 
-      <!-- Unit System Toggle -->
-      <div class="input-group">
-        <label class="input-label">Unit System</label>
-        <div class="unit-system-toggle">
-          <div class="unit-system-btn active" onclick="setUnitSystem('metric')">
-            Metric (kg/cm)
-          </div>
-          <div class="unit-system-btn" onclick="setUnitSystem('imperial')">
-            Imperial (lbs/ft)
-          </div>
-        </div>
-      </div>
-
-      <!-- Weight Section -->
       <div class="ruler-section">
-        <label class="input-label" id="weightLabel">Weight (kg)</label>
-        <div class="ruler-value-display" id="weightValue">70</div>
+        <label class="input-label">
+          <span id="weightLabel">Weight (kg)</span>
+          <div class="unit-conversion">
+            <button class="unit-conversion-btn active" data-unit="metric" onclick="setWeightUnit('metric')">kg/cm</button>
+            <button class="unit-conversion-btn" data-unit="imperial" onclick="setWeightUnit('imperial')">lbs/ft</button>
+          </div>
+        </label>
+        <div class="ruler-value-display">
+          <span id="weightValue">70</span>
+          <span id="weightUnit">kg</span>
+        </div>
         <div class="input-with-controls">
           <input type="number" class="manual-input" id="weightInput" min="30" max="200" step="1" value="70" onchange="updateWeightFromInput()">
           <button class="unit-btn" onclick="adjustWeight(-1)">-1</button>
@@ -1357,10 +1367,14 @@ body::before {
         </div>
       </div>
 
-      <!-- Height Section -->
       <div class="ruler-section">
-        <label class="input-label" id="heightLabel">Height (cm)</label>
-        <div class="ruler-value-display" id="heightValue">170</div>
+        <label class="input-label">
+          <span id="heightLabel">Height (cm)</span>
+        </label>
+        <div class="ruler-value-display">
+          <span id="heightValue">170</span>
+          <span id="heightUnit">cm</span>
+        </div>
         <div class="input-with-controls">
           <input type="number" class="manual-input" id="heightInput" min="100" max="250" step="1" value="170" onchange="updateHeightFromInput()">
           <button class="unit-btn" onclick="adjustHeight(-1)">-1</button>
@@ -1393,23 +1407,23 @@ body::before {
       <div class="input-group">
         <label class="input-label">Activity Level</label>
         <div class="activity-levels">
-          <div class="activity-level active" onclick="selectActivityLevel('sedentary')">
+          <div class="activity-level" data-level="sedentary" onclick="selectActivityLevel('sedentary')">
             <span>Sedentary</span>
             <span class="activity-info">Little or no exercise</span>
           </div>
-          <div class="activity-level" onclick="selectActivityLevel('light')">
+          <div class="activity-level" data-level="light" onclick="selectActivityLevel('light')">
             <span>Lightly Active</span>
             <span class="activity-info">Light exercise 1-3 days/week</span>
           </div>
-          <div class="activity-level" onclick="selectActivityLevel('moderate')">
+          <div class="activity-level active" data-level="moderate" onclick="selectActivityLevel('moderate')">
             <span>Moderately Active</span>
             <span class="activity-info">Moderate exercise 3-5 days/week</span>
           </div>
-          <div class="activity-level" onclick="selectActivityLevel('active')">
+          <div class="activity-level" data-level="active" onclick="selectActivityLevel('active')">
             <span>Very Active</span>
             <span class="activity-info">Hard exercise 6-7 days/week</span>
           </div>
-          <div class="activity-level" onclick="selectActivityLevel('athlete')">
+          <div class="activity-level" data-level="athlete" onclick="selectActivityLevel('athlete')">
             <span>Extremely Active</span>
             <span class="activity-info">Very hard exercise & physical job</span>
           </div>
@@ -1542,21 +1556,36 @@ body::before {
   </div>
 </div>
 
-<!-- Day Details Modal -->
-<div class="modal" id="dayDetailsModal">
+<!-- Date Detail Modal -->
+<div class="modal" id="dateDetailModal">
   <div class="modal-content card">
     <div class="modal-header">
-      <h3><i class="fas fa-calendar-day"></i> Day Details</h3>
-      <button class="close-btn" onclick="closeModal('dayDetailsModal')"><i class="fas fa-times"></i></button>
+      <h3><i class="fas fa-calendar-day"></i> Daily Details</h3>
+      <button class="close-btn" onclick="closeModal('dateDetailModal')"><i class="fas fa-times"></i></button>
     </div>
-    
-    <div id="dayDetailsContent" style="max-height: 400px; overflow-y: auto;">
+    <div id="dateDetailContent">
       <!-- Content will be populated by JavaScript -->
     </div>
-    
-    <button class="btn-secondary" onclick="closeModal('dayDetailsModal')" style="margin-top: 20px;">
+    <button class="btn-secondary" onclick="closeModal('dateDetailModal')" style="margin-top: 20px;">
       Close
     </button>
+  </div>
+</div>
+
+<!-- Welcome Modal for New Users -->
+<div class="modal welcome-modal" id="welcomeModal">
+  <div class="modal-content card">
+    <div class="modal-header">
+      <h3><i class="fas fa-glass-water"></i> Welcome to Waterify Pro!</h3>
+    </div>
+    <div style="text-align: center; padding: 20px;">
+      <i class="fas fa-tint" style="font-size: 64px; color: var(--accent); margin-bottom: 20px;"></i>
+      <h3 style="margin: 0 0 10px 0;">Let's Set Up Your Profile</h3>
+      <p style="color: var(--muted); margin-bottom: 30px;">To provide accurate hydration recommendations, we need some information about you.</p>
+      <button class="btn" onclick="closeModal('welcomeModal'); openProfile();">
+        <i class="fas fa-user-cog"></i> Set Up Profile
+      </button>
+    </div>
   </div>
 </div>
 
@@ -1570,7 +1599,7 @@ body::before {
 
 <script>
 // ============================================
-// WATERIFY PRO - FIXED & ENHANCED
+// WATERIFY PRO - Enhanced Hydration Tracker
 // ============================================
 
 // Beverage database
@@ -1671,13 +1700,13 @@ const HYDRATION_TIPS = [
   "Proper hydration helps regulate body temperature"
 ];
 
-// Activity level multipliers (based on scientific research)
+// Activity level multipliers
 const ACTIVITY_LEVELS = {
-  sedentary: 1.0,    // Little or no exercise
-  light: 1.2,       // Light exercise 1-3 days/week
-  moderate: 1.4,    // Moderate exercise 3-5 days/week
-  active: 1.6,      // Hard exercise 6-7 days/week
-  athlete: 1.8      // Very hard exercise & physical job
+  sedentary: 1.0,
+  light: 1.2,
+  moderate: 1.4,
+  active: 1.6,
+  athlete: 1.8
 };
 
 // State management
@@ -1692,8 +1721,8 @@ let appState = {
   currentPieType: 'today',
   currentMonth: new Date().getMonth(),
   currentYear: new Date().getFullYear(),
-  unitSystem: 'metric', // 'metric' or 'imperial'
-  dataVersion: 4 // Current data version
+  dataVersion: 4,
+  unitSystem: 'metric' // 'metric' or 'imperial'
 };
 
 // Charts
@@ -1701,244 +1730,35 @@ let trendChart = null;
 let distributionChart = null;
 
 // ============================================
-// UNIT SYSTEM FUNCTIONS
-// ============================================
-
-function setUnitSystem(system) {
-  appState.unitSystem = system;
-  
-  // Update UI
-  document.querySelectorAll('.unit-system-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  event.target.classList.add('active');
-  
-  // Update labels
-  if (system === 'metric') {
-    document.getElementById('weightLabel').textContent = 'Weight (kg)';
-    document.getElementById('heightLabel').textContent = 'Height (cm)';
-    
-    // Convert weight from lbs to kg if needed
-    if (appState.profile && appState.profile.weight > 200) { // If weight looks like lbs
-      appState.profile.weight = Math.round(appState.profile.weight / 2.20462);
-    }
-    
-    // Convert height from ft/in to cm if needed
-    if (appState.profile && appState.profile.height < 100) { // If height looks like inches
-      appState.profile.height = Math.round(appState.profile.height * 2.54);
-    }
-  } else {
-    document.getElementById('weightLabel').textContent = 'Weight (lbs)';
-    document.getElementById('heightLabel').textContent = 'Height (ft/in)';
-    
-    // Convert weight from kg to lbs if needed
-    if (appState.profile && appState.profile.weight < 200) { // If weight looks like kg
-      appState.profile.weight = Math.round(appState.profile.weight * 2.20462);
-    }
-    
-    // Convert height from cm to ft/in if needed
-    if (appState.profile && appState.profile.height > 100) { // If height looks like cm
-      const totalInches = appState.profile.height / 2.54;
-      const feet = Math.floor(totalInches / 12);
-      const inches = Math.round(totalInches % 12);
-      // We'll store as inches for easier handling
-      appState.profile.height = Math.round(totalInches);
-    }
-  }
-  
-  // Update UI with new values
-  updateProfileUI();
-}
-
-function formatHeightForDisplay(heightInInches) {
-  if (appState.unitSystem === 'metric') {
-    // Convert inches to cm
-    const cm = Math.round(heightInInches * 2.54);
-    return cm;
-  } else {
-    // Convert inches to ft/in
-    const feet = Math.floor(heightInInches / 12);
-    const inches = Math.round(heightInInches % 12);
-    return `${feet}'${inches}"`;
-  }
-}
-
-function formatWeightForDisplay(weightInLbs) {
-  if (appState.unitSystem === 'metric') {
-    // Convert lbs to kg
-    const kg = Math.round(weightInLbs / 2.20462);
-    return kg;
-  } else {
-    return weightInLbs;
-  }
-}
-
-// ============================================
-// DATA MIGRATION SYSTEM
-// ============================================
-
-function migrateData() {
-  const version = localStorage.getItem('waterify_version') || 1;
-  const currentVersion = 4;
-  
-  if (parseInt(version) < currentVersion) {
-    console.log(`Migrating from version ${version} to ${currentVersion}`);
-    
-    // Migrate from version 1 to 4
-    if (version <= 3) {
-      // Check if old data exists
-      const oldProfile = JSON.parse(localStorage.getItem('waterify_profile') || localStorage.getItem('hydrotrack_profile'));
-      const oldHistory = JSON.parse(localStorage.getItem('waterify_history') || localStorage.getItem('hydrotrack_history') || {});
-      
-      if (oldProfile) {
-        // Add missing fields with default values
-        if (!oldProfile.gender) oldProfile.gender = 'male';
-        if (!oldProfile.activityLevel) oldProfile.activityLevel = 'moderate';
-        if (!oldProfile.currentStreak) oldProfile.currentStreak = 0;
-        if (!oldProfile.bestStreak) oldProfile.bestStreak = 0;
-        if (!oldProfile.unitSystem) oldProfile.unitSystem = 'metric';
-        
-        // Recalculate goal with new formula
-        oldProfile.dailyGoal = calculateRecommendedGoalValue(
-          oldProfile.weight || 70,
-          oldProfile.height || 170,
-          oldProfile.age || 25,
-          oldProfile.gender || 'male',
-          oldProfile.activityLevel || 'moderate'
-        );
-        
-        localStorage.setItem('waterify_profile', JSON.stringify(oldProfile));
-      }
-      
-      // Fix historical data structure
-      const today = new Date().toDateString();
-      const todayData = JSON.parse(localStorage.getItem('waterify_today') || localStorage.getItem('hydrotrack_today'));
-      
-      if (todayData && todayData.date !== today) {
-        // Save yesterday's data to history
-        oldHistory[todayData.date] = todayData;
-        localStorage.setItem('waterify_history', JSON.stringify(oldHistory));
-      }
-      
-      // Update version
-      localStorage.setItem('waterify_version', currentVersion);
-      
-      // Clean up old storage keys
-      localStorage.removeItem('hydrotrack_profile');
-      localStorage.removeItem('hydrotrack_today');
-      localStorage.removeItem('hydrotrack_history');
-      localStorage.removeItem('hydrotrack_settings');
-      localStorage.removeItem('hydrotrack_version');
-    }
-  }
-}
-
-// ============================================
-// SCIENTIFIC GOAL CALCULATION
-// ============================================
-
-function calculateRecommendedGoalValue(weight, height, age, gender, activityLevel = 'moderate') {
-  // Official formula based on medical research:
-  // Base water requirement = 30-40 ml per kg of body weight
-  // Adjust for gender, age, height, and activity level
-  
-  let baseGoal;
-  
-  // Convert weight to kg if in imperial
-  let weightInKg = weight;
-  if (appState.unitSystem === 'imperial') {
-    weightInKg = weight / 2.20462;
-  }
-  
-  // Convert height to cm if in imperial
-  let heightInCm = height;
-  if (appState.unitSystem === 'imperial') {
-    heightInCm = height * 2.54;
-  }
-  
-  // Base calculation (ml per kg)
-  if (gender === 'male') {
-    baseGoal = weightInKg * 35; // 35 ml/kg for men
-  } else if (gender === 'female') {
-    baseGoal = weightInKg * 31; // 31 ml/kg for women
-  } else {
-    baseGoal = weightInKg * 33; // Average for other
-  }
-  
-  // Adjust for height (taller = more water)
-  // Normalize to 170cm reference height
-  const heightFactor = heightInCm / 170;
-  baseGoal *= heightFactor;
-  
-  // Adjust for age (older = slightly less, children = more)
-  if (age < 18) {
-    // Children and teens need more relative to weight
-    baseGoal *= 1.1;
-  } else if (age > 50) {
-    // Elderly need slightly less
-    baseGoal *= 0.95;
-  }
-  
-  // Apply activity level multiplier
-  const activityMultiplier = ACTIVITY_LEVELS[activityLevel] || 1.0;
-  baseGoal *= activityMultiplier;
-  
-  // Round to nearest 50ml
-  const roundedGoal = Math.round(baseGoal / 50) * 50;
-  
-  // Ensure goal is within safe and reasonable bounds (1500-4000ml)
-  return Math.max(1500, Math.min(roundedGoal, 4000));
-}
-
-function calculateRecommendedGoal() {
-  if (!appState.profile) return;
-  
-  const goal = calculateRecommendedGoalValue(
-    appState.profile.weight,
-    appState.profile.height,
-    appState.profile.age,
-    appState.profile.gender,
-    appState.profile.activityLevel
-  );
-  
-  document.getElementById('dailyGoalInput').value = goal;
-  appState.profile.dailyGoal = goal;
-  appState.todayData.goal = goal;
-  
-  showNotification(`Recommended daily goal: ${goal}ml`, "success");
-}
-
-// ============================================
-// INITIALIZATION - WITH NEW USER FLOW
+// INITIALIZATION WITH NEW USER CHECK
 // ============================================
 
 function initializeApp() {
-  // Run data migration first
-  migrateData();
-  
   // Load all data
   loadAllData();
   
-  // Check if this is a new user (no profile exists)
-  const isNewUser = !appState.profile;
+  // Check if user is new (no profile exists)
+  const isNewUser = !appState.profile || !appState.profile.name || appState.profile.name === "User";
   
   // Initialize default profile if none exists
   if (!appState.profile) {
     appState.profile = {
       name: "User",
-      weight: 70, // kg
-      height: 170, // cm
+      weight: 70,
+      height: 170,
       age: 25,
       gender: "male",
       activityLevel: "moderate",
-      unitSystem: "metric",
-      dailyGoal: calculateRecommendedGoalValue(70, 170, 25, "male", "moderate"),
+      dailyGoal: 2000,
       createdAt: new Date().toISOString(),
       currentStreak: 0,
       bestStreak: 0,
-      profileComplete: false
+      unitSystem: 'metric'
     };
   }
+  
+  // Set unit system
+  appState.unitSystem = appState.profile.unitSystem || 'metric';
   
   // Initialize today's data
   const today = new Date().toDateString();
@@ -1983,7 +1803,7 @@ function initializeApp() {
   updateTimeProgress();
   setupReminders();
   
-  // Set greeting message based on time of day
+  // Set greeting message
   updateGreetingMessage();
   
   // Initialize charts
@@ -1996,11 +1816,10 @@ function initializeApp() {
   // Create water drop animations
   createWaterDrops();
   
-  // If new user or profile not complete, show profile screen first
-  if (isNewUser || !appState.profile.profileComplete) {
+  // Show welcome modal for new users
+  if (isNewUser) {
     setTimeout(() => {
-      showScreen('profileScreen');
-      showNotification("Welcome! Please complete your profile to get started.", "success");
+      openModal('welcomeModal');
     }, 500);
   }
 }
@@ -2021,7 +1840,6 @@ function loadAllData() {
     appState.settings = JSON.parse(localStorage.getItem('waterify_settings')) || {};
   } catch (e) {
     console.error('Error loading data:', e);
-    // Initialize fresh data on error
     appState.profile = null;
     appState.todayData = null;
     appState.historicalData = {};
@@ -2035,14 +1853,428 @@ function saveAllData() {
     localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
     localStorage.setItem('waterify_history', JSON.stringify(appState.historicalData));
     localStorage.setItem('waterify_settings', JSON.stringify(appState.settings));
-    localStorage.setItem('waterify_version', '4'); // Save current version
+    localStorage.setItem('waterify_version', '4');
   } catch (e) {
     console.error('Error saving data:', e);
   }
 }
 
 // ============================================
-// NEW FEATURES
+// UNIT CONVERSION FUNCTIONS
+// ============================================
+
+function setWeightUnit(system) {
+  appState.unitSystem = system;
+  appState.profile.unitSystem = system;
+  
+  // Update UI buttons
+  document.querySelectorAll('.unit-conversion-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.unit === system);
+  });
+  
+  // Update labels
+  if (system === 'metric') {
+    document.getElementById('weightLabel').textContent = 'Weight (kg)';
+    document.getElementById('heightLabel').textContent = 'Height (cm)';
+    document.getElementById('weightUnit').textContent = 'kg';
+    document.getElementById('heightUnit').textContent = 'cm';
+    
+    // Convert values back to metric if they're in imperial
+    if (appState.profile.weight > 200) { // Likely in lbs
+      appState.profile.weight = Math.round(appState.profile.weight / 2.20462);
+    }
+    if (appState.profile.height > 84) { // Likely in inches
+      appState.profile.height = Math.round(appState.profile.height * 2.54);
+    }
+    
+    // Update displays
+    document.getElementById('weightValue').textContent = appState.profile.weight;
+    document.getElementById('heightValue').textContent = appState.profile.height;
+    document.getElementById('weightInput').value = appState.profile.weight;
+    document.getElementById('heightInput').value = appState.profile.height;
+    
+    // Update rulers
+    initRuler('weightRuler', 30, 200, appState.profile.weight, 'kg', (value) => {
+      appState.profile.weight = value;
+      document.getElementById('weightValue').textContent = value;
+      document.getElementById('weightInput').value = value;
+    });
+    
+    initRuler('heightRuler', 100, 250, appState.profile.height, 'cm', (value) => {
+      appState.profile.height = value;
+      document.getElementById('heightValue').textContent = value;
+      document.getElementById('heightInput').value = value;
+    });
+    
+  } else { // imperial
+    document.getElementById('weightLabel').textContent = 'Weight (lbs)';
+    document.getElementById('heightLabel').textContent = 'Height (in)';
+    document.getElementById('weightUnit').textContent = 'lbs';
+    document.getElementById('heightUnit').textContent = 'in';
+    
+    // Convert values to imperial
+    const weightLbs = Math.round(appState.profile.weight * 2.20462);
+    const heightIn = Math.round(appState.profile.height / 2.54);
+    
+    // Update displays
+    document.getElementById('weightValue').textContent = weightLbs;
+    document.getElementById('heightValue').textContent = heightIn;
+    document.getElementById('weightInput').value = weightLbs;
+    document.getElementById('heightInput').value = heightIn;
+    
+    // Update rulers for imperial
+    initRuler('weightRuler', 66, 440, weightLbs, 'lbs', (value) => {
+      appState.profile.weight = Math.round(value / 2.20462);
+      document.getElementById('weightValue').textContent = value;
+      document.getElementById('weightInput').value = value;
+    });
+    
+    initRuler('heightRuler', 39, 98, heightIn, 'in', (value) => {
+      appState.profile.height = Math.round(value * 2.54);
+      document.getElementById('heightValue').textContent = value;
+      document.getElementById('heightInput').value = value;
+    });
+  }
+  
+  // Update goal based on new units
+  calculateRecommendedGoal();
+}
+
+// ============================================
+// ENHANCED RULER SYSTEM (EVERY UNIT)
+// ============================================
+
+function initRuler(containerId, min, max, initial, unit, onChange) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  
+  // Create ticks for every unit
+  for (let i = min; i <= max; i++) {
+    const tick = document.createElement('div');
+    tick.className = 'ruler-tick';
+    tick.dataset.value = i;
+    
+    // Show every 5th unit with a label, others just tick marks
+    const isMajor = i % 5 === 0;
+    const lineHeight = isMajor ? 40 : 20;
+    
+    tick.innerHTML = `
+      <div class="tick-line" style="height: ${lineHeight}px;"></div>
+      ${isMajor ? `<div class="tick-label">${i}${unit}</div>` : ''}
+    `;
+    
+    if (i === initial) {
+      tick.classList.add('active');
+    }
+    
+    container.appendChild(tick);
+  }
+  
+  // Set up scroll event listener
+  let scrollTimeout;
+  container.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const center = container.scrollLeft + container.clientWidth / 2;
+      const ticks = Array.from(container.children);
+      let closestTick = null;
+      let closestDistance = Infinity;
+      
+      ticks.forEach(tick => {
+        const tickCenter = tick.offsetLeft + tick.offsetWidth / 2;
+        const distance = Math.abs(tickCenter - center);
+        
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestTick = tick;
+        }
+      });
+      
+      if (closestTick) {
+        const value = parseInt(closestTick.dataset.value);
+        onChange(value);
+        
+        ticks.forEach(t => t.classList.remove('active'));
+        closestTick.classList.add('active');
+        
+        if (navigator.vibrate) {
+          navigator.vibrate(10);
+        }
+      }
+    }, 150);
+  });
+  
+  // Scroll to initial value
+  setTimeout(() => {
+    const tickWidth = 40;
+    const centerOffset = container.clientWidth / 2;
+    const targetTick = Array.from(container.children).find(t => parseInt(t.dataset.value) === initial);
+    if (targetTick) {
+      const tickIndex = Array.from(container.children).indexOf(targetTick);
+      container.scrollLeft = (tickIndex * tickWidth) - centerOffset + (tickWidth / 2);
+    }
+  }, 100);
+}
+
+// ============================================
+// FIXED GENDER SELECTOR
+// ============================================
+
+function selectGender(gender) {
+  if (!appState.profile) return;
+  appState.profile.gender = gender;
+  
+  // Update UI - remove active from all, add to clicked
+  document.querySelectorAll('.gender-option').forEach(option => {
+    option.classList.remove('active');
+    if (option.dataset.gender === gender) {
+      option.classList.add('active');
+    }
+  });
+  
+  saveAllData();
+}
+
+function selectActivityLevel(level) {
+  if (!appState.profile) return;
+  appState.profile.activityLevel = level;
+  
+  document.querySelectorAll('.activity-level').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.level === level) {
+      item.classList.add('active');
+    }
+  });
+}
+
+// ============================================
+// GOAL CALCULATION
+// ============================================
+
+function calculateRecommendedGoal() {
+  if (!appState.profile) return;
+  
+  // Get weight in kg regardless of unit system
+  let weightKg = appState.profile.weight;
+  if (appState.unitSystem === 'imperial') {
+    weightKg = weightKg / 2.20462;
+  }
+  
+  // Get height in cm regardless of unit system
+  let heightCm = appState.profile.height;
+  if (appState.unitSystem === 'imperial') {
+    heightCm = heightCm * 2.54;
+  }
+  
+  // Calculate base goal
+  let baseGoal;
+  if (appState.profile.gender === 'male') {
+    baseGoal = weightKg * 35;
+  } else if (appState.profile.gender === 'female') {
+    baseGoal = weightKg * 31;
+  } else {
+    baseGoal = weightKg * 33;
+  }
+  
+  // Adjust for height
+  const heightFactor = heightCm / 170;
+  baseGoal *= heightFactor;
+  
+  // Adjust for age
+  if (appState.profile.age < 18) {
+    baseGoal *= 1.1;
+  } else if (appState.profile.age > 50) {
+    baseGoal *= 0.95;
+  }
+  
+  // Apply activity level
+  const activityMultiplier = ACTIVITY_LEVELS[appState.profile.activityLevel] || 1.0;
+  baseGoal *= activityMultiplier;
+  
+  // Round to nearest 50ml
+  const roundedGoal = Math.round(baseGoal / 50) * 50;
+  
+  // Ensure within bounds
+  const finalGoal = Math.max(1500, Math.min(roundedGoal, 4000));
+  
+  document.getElementById('dailyGoalInput').value = finalGoal;
+  appState.profile.dailyGoal = finalGoal;
+  if (appState.todayData) {
+    appState.todayData.goal = finalGoal;
+  }
+  
+  showNotification(`Recommended daily goal: ${finalGoal}ml`, "success");
+}
+
+// ============================================
+// CALENDAR CLICK FUNCTIONALITY
+// ============================================
+
+function renderCalendar() {
+  const container = document.getElementById('calendarContainer');
+  const month = appState.currentMonth;
+  const year = appState.currentYear;
+  
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+  
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  container.innerHTML = '';
+  
+  // Day headers
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  dayNames.forEach(day => {
+    const dayElement = document.createElement('div');
+    dayElement.style.cssText = `
+      text-align: center;
+      padding: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    `;
+    dayElement.textContent = day;
+    container.appendChild(dayElement);
+  });
+  
+  // Empty cells
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    container.appendChild(empty);
+  }
+  
+  // Days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dateStr = date.toDateString();
+    const dayData = appState.historicalData[dateStr];
+    
+    const dayElement = document.createElement('div');
+    dayElement.style.cssText = `
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+    `;
+    
+    dayElement.textContent = day;
+    dayElement.dataset.date = dateStr;
+    
+    if (dayData) {
+      const goal = appState.profile?.dailyGoal || 2000;
+      const progress = Math.min((dayData.consumed / goal) * 100, 100);
+      
+      // Color coding
+      if (progress >= 100) {
+        dayElement.style.background = `linear-gradient(135deg, var(--success), rgba(77, 255, 184, 0.3))`;
+        dayElement.style.borderColor = 'var(--success)';
+      } else if (progress >= 75) {
+        dayElement.style.background = `linear-gradient(135deg, #a6ff4d, rgba(166, 255, 77, 0.3))`;
+      } else if (progress >= 50) {
+        dayElement.style.background = `linear-gradient(135deg, var(--warning), rgba(255, 184, 77, 0.3))`;
+      } else if (progress > 0) {
+        dayElement.style.background = `linear-gradient(135deg, #ff9966, rgba(255, 153, 102, 0.3))`;
+      }
+      
+      if (dayData.completed) {
+        dayElement.style.border = '2px solid var(--accent)';
+      }
+      
+      // Add click handler to show details
+      dayElement.onclick = () => showDateDetails(dateStr, dayData);
+    }
+    
+    // Highlight today
+    if (date.toDateString() === new Date().toDateString()) {
+      dayElement.style.boxShadow = '0 0 0 2px var(--accent)';
+      dayElement.style.fontWeight = '700';
+    }
+    
+    // Add tooltip
+    if (dayData) {
+      dayElement.title = `${dayData.consumed}ml (${Math.round((dayData.consumed / (appState.profile?.dailyGoal || 2000)) * 100)}%)`;
+    } else {
+      dayElement.title = 'No data';
+      dayElement.onclick = () => showDateDetails(dateStr, null);
+    }
+    
+    container.appendChild(dayElement);
+  }
+}
+
+function showDateDetails(dateStr, dayData) {
+  const modal = document.getElementById('dateDetailModal');
+  const content = document.getElementById('dateDetailContent');
+  
+  const date = new Date(dateStr);
+  const formattedDate = date.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  if (dayData) {
+    const goal = appState.profile?.dailyGoal || 2000;
+    const progress = Math.round((dayData.consumed / goal) * 100);
+    const drinksCount = dayData.drinks ? dayData.drinks.length : 0;
+    
+    let drinksHtml = '';
+    if (dayData.drinks && dayData.drinks.length > 0) {
+      drinksHtml = '<div style="margin-top: 15px;"><strong>Drinks:</strong><ul style="margin: 10px 0 0 0; padding-left: 20px;">';
+      dayData.drinks.forEach(drink => {
+        const beverage = BEVERAGES[drink.type];
+        drinksHtml += `<li>${drink.amount}ml ${beverage.name} at ${drink.time}</li>`;
+      });
+      drinksHtml += '</ul></div>';
+    }
+    
+    content.innerHTML = `
+      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${dayData.consumed}ml</div>
+          <div style="font-size: 12px; color: var(--muted);">Total Consumed</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: ${progress >= 100 ? 'var(--success)' : progress >= 75 ? '#a6ff4d' : progress >= 50 ? 'var(--warning)' : '#ff9966'};">${progress}%</div>
+          <div style="font-size: 12px; color: var(--muted);">Goal Progress</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${drinksCount}</div>
+          <div style="font-size: 12px; color: var(--muted);">Number of Drinks</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: ${dayData.completed ? 'var(--success)' : 'var(--danger)'};">${dayData.completed ? '✓' : '✗'}</div>
+          <div style="font-size: 12px; color: var(--muted);">Goal ${dayData.completed ? 'Achieved' : 'Not Met'}</div>
+        </div>
+      </div>
+      ${drinksHtml}
+    `;
+  } else {
+    content.innerHTML = `
+      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
+      <div style="text-align: center; padding: 40px 20px;">
+        <i class="fas fa-tint" style="font-size: 48px; color: var(--muted); opacity: 0.5; margin-bottom: 20px;"></i>
+        <p style="color: var(--muted);">No hydration data recorded for this day.</p>
+      </div>
+    `;
+  }
+  
+  openModal('dateDetailModal');
+}
+
+// ============================================
+// CORE FUNCTIONS
 // ============================================
 
 function updateGreetingMessage() {
@@ -2077,7 +2309,6 @@ function updateTimeProgress() {
       div.classList.add('active');
     }
     
-    // Calculate drinks in this time slot
     const drinksInSlot = appState.todayData?.drinks?.filter(drink => {
       const drinkHour = new Date(drink.timestamp).getHours();
       return drinkHour >= slot.hour && drinkHour < slot.hour + 3;
@@ -2109,7 +2340,6 @@ function setGoalPercentage(percentage) {
     }
   }
   
-  // Update active state on hydration levels
   document.querySelectorAll('.hydration-level').forEach((level, index) => {
     level.classList.toggle('active', 
       (percentage === 0 && index === 0) ||
@@ -2121,40 +2351,10 @@ function setGoalPercentage(percentage) {
   });
 }
 
-function selectGender(gender) {
-  if (!appState.profile) return;
-  appState.profile.gender = gender;
-  
-  // Update UI - FIXED: Only activate clicked gender
-  document.querySelectorAll('.gender-option').forEach(option => {
-    option.classList.remove('active');
-    if (option.textContent.toLowerCase().includes(gender)) {
-      option.classList.add('active');
-    }
-  });
-  
-  // Save immediately
-  saveAllData();
-}
-
-function selectActivityLevel(level) {
-  if (!appState.profile) return;
-  appState.profile.activityLevel = level;
-  
-  document.querySelectorAll('.activity-level').forEach(item => {
-    item.classList.remove('active');
-    const levelText = item.querySelector('span:first-child').textContent.toLowerCase();
-    if (levelText.includes(level)) {
-      item.classList.add('active');
-    }
-  });
-}
-
 function createWaterDrops() {
   const container = document.getElementById('waterDropsContainer');
   if (!container) return;
   
-  // Create animated water drops in background
   for (let i = 0; i < 15; i++) {
     setTimeout(() => {
       const drop = document.createElement('div');
@@ -2167,7 +2367,6 @@ function createWaterDrops() {
       
       container.appendChild(drop);
       
-      // Remove drop after animation
       setTimeout(() => {
         if (drop.parentNode) {
           drop.parentNode.removeChild(drop);
@@ -2176,13 +2375,8 @@ function createWaterDrops() {
     }, i * 300);
   }
   
-  // Repeat every 15 seconds
   setTimeout(createWaterDrops, 15000);
 }
-
-// ============================================
-// CORE FUNCTIONS
-// ============================================
 
 function checkAndUpdateStreak() {
   const today = new Date();
@@ -2190,7 +2384,6 @@ function checkAndUpdateStreak() {
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toDateString();
   
-  // Get yesterday's data from history
   const yesterdayData = appState.historicalData[yesterdayStr];
   
   if (yesterdayData) {
@@ -2232,11 +2425,11 @@ function addDrink(type, amount) {
   updateDashboard();
   updateStatistics();
   updateTimeProgress();
-  showNotification(`Added ${amount}ml of ${drink.name} (${waterContent}ml water)`, "success");
+  showNotification(`Added ${amount}ml of ${drink.name}`, "success");
 }
 
 // ============================================
-// UI UPDATES (FIXED)
+// UI UPDATES
 // ============================================
 
 function updateDashboard() {
@@ -2252,18 +2445,12 @@ function updateDashboard() {
   document.getElementById('consumedDisplay').textContent = `${consumed.toLocaleString()} ml`;
   document.getElementById('goalDisplay').textContent = `of ${goal.toLocaleString()} ml goal`;
   document.getElementById('drinksCount').textContent = appState.todayData.drinks?.length || 0;
-  
-  // Update streak from profile
   document.getElementById('streakCount').textContent = appState.profile?.currentStreak || 0;
   
-  // Calculate today's average drink size
+  // Today's best drink
   const todayDrinks = appState.todayData.drinks || [];
-  let todayAvg = 0;
-  if (todayDrinks.length > 0) {
-    const totalAmount = todayDrinks.reduce((sum, drink) => sum + drink.amount, 0);
-    todayAvg = Math.round(totalAmount / todayDrinks.length);
-  }
-  document.getElementById('todayAvg').textContent = `${todayAvg}ml`;
+  const todayBest = todayDrinks.length > 0 ? Math.max(...todayDrinks.map(d => d.amount)) : 0;
+  document.getElementById('todayBest').textContent = `${todayBest}ml`;
   
   // Update quick stats
   updateQuickStats();
@@ -2283,19 +2470,14 @@ function updateDashboard() {
 function updateQuickStats() {
   if (!appState.todayData || !appState.historicalData) return;
   
-  // Today's best drink
-  const todayDrinks = appState.todayData.drinks || [];
-  const todayBest = todayDrinks.length > 0 ? Math.max(...todayDrinks.map(d => d.amount)) : 0;
-  document.getElementById('todayBest').textContent = `${todayBest}ml`;
-  
-  // Weekly average - only count days with data
+  // Weekly average
   const last7Days = getLastNDays(7);
   const daysWithData = last7Days.filter(d => d && d.consumed > 0);
   const weeklyTotal = daysWithData.reduce((sum, day) => sum + (day?.consumed || 0), 0);
   const weekAvg = daysWithData.length > 0 ? Math.round(weeklyTotal / daysWithData.length) : 0;
   document.getElementById('weekAvg').textContent = `${weekAvg}ml`;
   
-  // Monthly total (last 30 days)
+  // Monthly total
   const last30Days = getLastNDays(30);
   const monthlyTotal = last30Days.reduce((sum, day) => sum + (day?.consumed || 0), 0);
   document.getElementById('monthTotal').textContent = `${Math.round(monthlyTotal / 1000)}L`;
@@ -2304,6 +2486,9 @@ function updateQuickStats() {
   const goalDays = last30Days.filter(d => d?.completed).length;
   const goalPercent = last30Days.length > 0 ? Math.round((goalDays / last30Days.length) * 100) : 0;
   document.getElementById('goalDays').textContent = `${goalPercent}%`;
+  
+  // Best streak
+  document.getElementById('bestStreak').textContent = appState.profile?.bestStreak || 0;
 }
 
 function getLastNDays(n) {
@@ -2375,7 +2560,7 @@ function updateHydrationTip() {
 }
 
 // ============================================
-// PROFILE MANAGEMENT (WITH IMPROVED RULERS)
+// PROFILE MANAGEMENT
 // ============================================
 
 function updateProfileUI() {
@@ -2385,17 +2570,6 @@ function updateProfileUI() {
   
   document.getElementById('userName').textContent = profile.name || 'Profile';
   document.getElementById('userNameInput').value = profile.name || '';
-  
-  // Update weight display based on unit system
-  const weightDisplay = formatWeightForDisplay(profile.weight);
-  document.getElementById('weightValue').textContent = weightDisplay;
-  document.getElementById('weightInput').value = weightDisplay;
-  
-  // Update height display based on unit system
-  const heightDisplay = formatHeightForDisplay(profile.height);
-  document.getElementById('heightValue').textContent = heightDisplay;
-  document.getElementById('heightInput').value = profile.height; // Store in inches internally
-  
   document.getElementById('ageValue').textContent = profile.age;
   document.getElementById('ageManualInput').value = profile.age;
   document.getElementById('dailyGoalInput').value = profile.dailyGoal || 2000;
@@ -2404,19 +2578,10 @@ function updateProfileUI() {
   document.getElementById('reminderTime').value = appState.settings.reminders?.time || "09:00";
   document.getElementById('reminderFrequency').value = appState.settings.reminders?.frequency || 2;
   
-  // Update unit system toggle
-  document.querySelectorAll('.unit-system-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if (btn.textContent.includes(appState.unitSystem === 'metric' ? 'Metric' : 'Imperial')) {
-      btn.classList.add('active');
-    }
-  });
-  
-  // Update gender selection - FIXED: Only activate correct gender
+  // Update gender selection
   document.querySelectorAll('.gender-option').forEach(option => {
     option.classList.remove('active');
-    const optionText = option.textContent.toLowerCase();
-    if (optionText.includes(profile.gender)) {
+    if (option.dataset.gender === profile.gender) {
       option.classList.add('active');
     }
   });
@@ -2424,203 +2589,13 @@ function updateProfileUI() {
   // Update activity level selection
   document.querySelectorAll('.activity-level').forEach(item => {
     item.classList.remove('active');
-    const levelText = item.querySelector('span:first-child').textContent.toLowerCase();
-    if (levelText.includes(profile.activityLevel)) {
+    if (item.dataset.level === profile.activityLevel) {
       item.classList.add('active');
     }
   });
   
-  // Initialize rulers with 1-unit increments
-  if (appState.unitSystem === 'metric') {
-    initRuler('weightRuler', 30, 200, weightDisplay, 'kg', (value) => {
-      appState.profile.weight = value;
-      document.getElementById('weightValue').textContent = value;
-      document.getElementById('weightInput').value = value;
-    });
-    
-    initRuler('heightRuler', 100, 250, heightDisplay, 'cm', (value) => {
-      appState.profile.height = value;
-      document.getElementById('heightValue').textContent = value;
-      document.getElementById('heightInput').value = value;
-    });
-  } else {
-    initRuler('weightRuler', 66, 440, weightDisplay, 'lbs', (value) => {
-      appState.profile.weight = value;
-      document.getElementById('weightValue').textContent = value;
-      document.getElementById('weightInput').value = value;
-    });
-    
-    // For height in imperial, we need special handling
-    initHeightRulerImperial();
-  }
-  
-  updateDrinkGrid();
-}
-
-function initRuler(containerId, min, max, initial, unit, onChange) {
-  const container = document.getElementById(containerId);
-  container.innerHTML = '';
-  
-  // Create ticks every 1 unit
-  for (let i = min; i <= max; i++) {
-    const tick = document.createElement('div');
-    tick.className = 'ruler-tick';
-    tick.dataset.value = i;
-    
-    // Show label for every 5 units
-    const showLabel = i % 5 === 0;
-    const lineHeight = showLabel ? 40 : (i % 2 === 0 ? 30 : 20);
-    
-    tick.innerHTML = `
-      <div class="tick-line" style="height: ${lineHeight}px;"></div>
-      ${showLabel ? `<div class="tick-label">${i}${unit}</div>` : ''}
-    `;
-    
-    if (i === initial) {
-      tick.classList.add('active');
-    }
-    
-    container.appendChild(tick);
-  }
-  
-  // Set up scroll event listener for auto-update
-  let scrollTimeout;
-  container.addEventListener('scroll', () => {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      const center = container.scrollLeft + container.clientWidth / 2;
-      const ticks = Array.from(container.children);
-      let closestTick = null;
-      let closestDistance = Infinity;
-      
-      ticks.forEach(tick => {
-        const tickCenter = tick.offsetLeft + tick.offsetWidth / 2;
-        const distance = Math.abs(tickCenter - center);
-        
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestTick = tick;
-        }
-      });
-      
-      if (closestTick) {
-        const value = parseInt(closestTick.dataset.value);
-        onChange(value);
-        
-        // Update active state
-        ticks.forEach(t => t.classList.remove('active'));
-        closestTick.classList.add('active');
-        
-        // Vibrate if supported
-        if (navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      }
-    }, 150);
-  });
-  
-  // Scroll to initial value
-  setTimeout(() => {
-    const tickWidth = 20;
-    const centerOffset = container.clientWidth / 2;
-    const targetTick = Array.from(container.children).find(t => parseInt(t.dataset.value) === initial);
-    if (targetTick) {
-      const tickIndex = Array.from(container.children).indexOf(targetTick);
-      container.scrollLeft = (tickIndex * tickWidth) - centerOffset + (tickWidth / 2);
-    }
-  }, 100);
-}
-
-function initHeightRulerImperial() {
-  const container = document.getElementById('heightRuler');
-  container.innerHTML = '';
-  
-  // For imperial height, we create ticks from 48 inches (4 feet) to 84 inches (7 feet)
-  for (let inches = 48; inches <= 84; inches++) {
-    const tick = document.createElement('div');
-    tick.className = 'ruler-tick';
-    tick.dataset.value = inches;
-    
-    const feet = Math.floor(inches / 12);
-    const remainingInches = inches % 12;
-    
-    // Show label for every inch, but format nicely
-    const showLabel = remainingInches === 0 || remainingInches === 6;
-    const lineHeight = showLabel ? 40 : (inches % 3 === 0 ? 30 : 20);
-    
-    let label = '';
-    if (showLabel) {
-      if (remainingInches === 0) {
-        label = `${feet}'`;
-      } else {
-        label = `${feet}'${remainingInches}"`;
-      }
-    }
-    
-    tick.innerHTML = `
-      <div class="tick-line" style="height: ${lineHeight}px;"></div>
-      ${showLabel ? `<div class="tick-label">${label}</div>` : ''}
-    `;
-    
-    if (inches === appState.profile.height) {
-      tick.classList.add('active');
-    }
-    
-    container.appendChild(tick);
-  }
-  
-  // Set up scroll event listener
-  let scrollTimeout;
-  container.addEventListener('scroll', () => {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = setTimeout(() => {
-      const center = container.scrollLeft + container.clientWidth / 2;
-      const ticks = Array.from(container.children);
-      let closestTick = null;
-      let closestDistance = Infinity;
-      
-      ticks.forEach(tick => {
-        const tickCenter = tick.offsetLeft + tick.offsetWidth / 2;
-        const distance = Math.abs(tickCenter - center);
-        
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestTick = tick;
-        }
-      });
-      
-      if (closestTick) {
-        const value = parseInt(closestTick.dataset.value);
-        appState.profile.height = value;
-        
-        // Update display
-        const feet = Math.floor(value / 12);
-        const inches = value % 12;
-        document.getElementById('heightValue').textContent = `${feet}'${inches}"`;
-        document.getElementById('heightInput').value = value;
-        
-        // Update active state
-        ticks.forEach(t => t.classList.remove('active'));
-        closestTick.classList.add('active');
-        
-        // Vibrate if supported
-        if (navigator.vibrate) {
-          navigator.vibrate(10);
-        }
-      }
-    }, 150);
-  });
-  
-  // Scroll to initial value
-  setTimeout(() => {
-    const tickWidth = 20;
-    const centerOffset = container.clientWidth / 2;
-    const targetTick = Array.from(container.children).find(t => parseInt(t.dataset.value) === appState.profile.height);
-    if (targetTick) {
-      const tickIndex = Array.from(container.children).indexOf(targetTick);
-      container.scrollLeft = (tickIndex * tickWidth) - centerOffset + (tickWidth / 2);
-    }
-  }, 100);
+  // Set unit system
+  setWeightUnit(profile.unitSystem || 'metric');
 }
 
 function adjustWeight(change) {
@@ -2645,19 +2620,14 @@ function adjustHeight(change) {
   
   if (appState.unitSystem === 'metric') {
     value = Math.max(100, Math.min(250, value));
-    appState.profile.height = value;
-    document.getElementById('heightValue').textContent = value;
-    updateRuler('heightRuler', value);
   } else {
-    value = Math.max(48, Math.min(84, value));
-    appState.profile.height = value;
-    const feet = Math.floor(value / 12);
-    const inches = value % 12;
-    document.getElementById('heightValue').textContent = `${feet}'${inches}"`;
-    updateRuler('heightRuler', value);
+    value = Math.max(39, Math.min(98, value));
   }
   
   input.value = value;
+  appState.profile.height = value;
+  document.getElementById('heightValue').textContent = value;
+  updateRuler('heightRuler', value);
 }
 
 function adjustAge(change) {
@@ -2698,19 +2668,14 @@ function updateHeightFromInput() {
   
   if (appState.unitSystem === 'metric') {
     value = Math.max(100, Math.min(250, value));
-    appState.profile.height = value;
-    document.getElementById('heightValue').textContent = value;
-    updateRuler('heightRuler', value);
   } else {
-    value = Math.max(48, Math.min(84, value));
-    appState.profile.height = value;
-    const feet = Math.floor(value / 12);
-    const inches = value % 12;
-    document.getElementById('heightValue').textContent = `${feet}'${inches}"`;
-    updateRuler('heightRuler', value);
+    value = Math.max(39, Math.min(98, value));
   }
   
   input.value = value;
+  appState.profile.height = value;
+  document.getElementById('heightValue').textContent = value;
+  updateRuler('heightRuler', value);
 }
 
 function updateAgeFromInput() {
@@ -2737,26 +2702,18 @@ function saveProfile() {
   appState.profile.height = parseInt(document.getElementById('heightInput').value);
   appState.profile.age = parseInt(document.getElementById('ageManualInput').value);
   appState.profile.dailyGoal = parseInt(document.getElementById('dailyGoalInput').value);
-  appState.profile.profileComplete = true;
+  appState.profile.unitSystem = appState.unitSystem;
   
   // Get gender from active button
   const activeGender = document.querySelector('.gender-option.active');
   if (activeGender) {
-    const genderText = activeGender.textContent.toLowerCase();
-    if (genderText.includes('male')) appState.profile.gender = 'male';
-    else if (genderText.includes('female')) appState.profile.gender = 'female';
-    else appState.profile.gender = 'other';
+    appState.profile.gender = activeGender.dataset.gender;
   }
   
   // Get activity level from active item
   const activeActivity = document.querySelector('.activity-level.active');
   if (activeActivity) {
-    const activityText = activeActivity.querySelector('span:first-child').textContent.toLowerCase();
-    if (activityText.includes('sedentary')) appState.profile.activityLevel = 'sedentary';
-    else if (activityText.includes('light')) appState.profile.activityLevel = 'light';
-    else if (activityText.includes('moderate')) appState.profile.activityLevel = 'moderate';
-    else if (activityText.includes('active')) appState.profile.activityLevel = 'active';
-    else if (activityText.includes('athlete')) appState.profile.activityLevel = 'athlete';
+    appState.profile.activityLevel = activeActivity.dataset.level;
   }
   
   appState.settings.reminders = {
@@ -2776,7 +2733,7 @@ function saveProfile() {
 }
 
 // ============================================
-// STATISTICS & CALENDAR - WITH DAY DETAILS
+// STATISTICS & CALENDAR
 // ============================================
 
 function openStats() {
@@ -2790,7 +2747,6 @@ function updateStatistics() {
   const history = appState.historicalData;
   const todayData = appState.todayData;
   
-  // Combine history with today's data
   let allDays = Object.values(history);
   if (todayData && todayData.consumed > 0) {
     allDays = [todayData, ...allDays];
@@ -2804,7 +2760,6 @@ function updateStatistics() {
     return;
   }
   
-  // Calculate statistics correctly
   const totalConsumed = allDays.reduce((sum, day) => sum + (day.consumed || 0), 0);
   const avgDaily = Math.round(totalConsumed / allDays.length);
   const bestDay = Math.max(...allDays.map(d => d.consumed || 0));
@@ -2816,183 +2771,10 @@ function updateStatistics() {
   document.getElementById('completionRate').textContent = `${completionRate}%`;
 }
 
-function renderCalendar() {
-  const container = document.getElementById('calendarContainer');
-  const month = appState.currentMonth;
-  const year = appState.currentYear;
-  
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
-  
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-  container.innerHTML = '';
-  
-  // Day headers
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  dayNames.forEach(day => {
-    const dayElement = document.createElement('div');
-    dayElement.style.cssText = `
-      text-align: center;
-      padding: 8px;
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 600;
-    `;
-    dayElement.textContent = day;
-    container.appendChild(dayElement);
-  });
-  
-  // Empty cells for days before first day
-  for (let i = 0; i < firstDay; i++) {
-    const empty = document.createElement('div');
-    empty.style.cssText = `
-      aspect-ratio: 1;
-      border-radius: 8px;
-      opacity: 0.3;
-    `;
-    container.appendChild(empty);
-  }
-  
-  // Days of the month
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dateStr = date.toDateString();
-    const dayData = appState.historicalData[dateStr];
-    
-    const dayElement = document.createElement('div');
-    dayElement.style.cssText = `
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-    `;
-    
-    dayElement.textContent = day;
-    
-    // Add click event to show day details
-    dayElement.onclick = () => showDayDetails(date, dayData);
-    
-    if (dayData) {
-      const goal = appState.profile?.dailyGoal || 2000;
-      const progress = Math.min((dayData.consumed / goal) * 100, 100);
-      
-      // Color coding based on progress
-      if (progress >= 100) {
-        dayElement.style.background = `linear-gradient(135deg, var(--success), rgba(77, 255, 184, 0.3))`;
-        dayElement.style.borderColor = 'var(--success)';
-      } else if (progress >= 75) {
-        dayElement.style.background = `linear-gradient(135deg, #a6ff4d, rgba(166, 255, 77, 0.3))`;
-      } else if (progress >= 50) {
-        dayElement.style.background = `linear-gradient(135deg, var(--warning), rgba(255, 184, 77, 0.3))`;
-      } else if (progress > 0) {
-        dayElement.style.background = `linear-gradient(135deg, #ff9966, rgba(255, 153, 102, 0.3))`;
-      }
-      
-      if (dayData.completed) {
-        dayElement.style.border = '2px solid var(--accent)';
-      }
-    }
-    
-    // Highlight today
-    if (date.toDateString() === new Date().toDateString()) {
-      dayElement.style.boxShadow = '0 0 0 2px var(--accent)';
-      dayElement.style.fontWeight = '700';
-    }
-    
-    // Add tooltip on hover
-    dayElement.title = dayData ? 
-      `${dayData.consumed}ml consumed (${Math.round((dayData.consumed / (appState.profile?.dailyGoal || 2000)) * 100)}%)` : 
-      'No data';
-    
-    container.appendChild(dayElement);
-  }
-}
-
-function showDayDetails(date, dayData) {
-  const container = document.getElementById('dayDetailsContent');
-  const dateStr = date.toDateString();
-  const formattedDate = date.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  
-  if (!dayData) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 40px 20px;">
-        <i class="fas fa-tint" style="font-size: 48px; color: var(--muted); margin-bottom: 20px; opacity: 0.5;"></i>
-        <h3 style="margin: 0 0 10px 0; color: var(--text);">${formattedDate}</h3>
-        <p style="color: var(--muted); margin: 0;">No hydration data recorded for this day.</p>
-      </div>
-    `;
-  } else {
-    const goal = appState.profile?.dailyGoal || 2000;
-    const progress = Math.min((dayData.consumed / goal) * 100, 100);
-    const drinks = dayData.drinks || [];
-    
-    let drinksHTML = '';
-    if (drinks.length > 0) {
-      drinksHTML = '<h4 style="margin: 20px 0 10px 0; color: var(--accent);">Drinks Consumed:</h4>';
-      drinks.forEach(drink => {
-        const beverage = BEVERAGES[drink.type] || { name: drink.type, icon: 'fa-question', color: '#9aa4bf' };
-        drinksHTML += `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 8px; background: var(--glass); border-radius: 8px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <i class="fas ${beverage.icon}" style="color: ${beverage.color};"></i>
-              <span>${beverage.name}</span>
-            </div>
-            <div style="text-align: right;">
-              <div style="font-weight: 600;">${drink.amount}ml</div>
-              <div style="font-size: 11px; color: var(--accent);">${drink.time}</div>
-            </div>
-          </div>
-        `;
-      });
-    } else {
-      drinksHTML = '<p style="color: var(--muted); text-align: center;">No drinks recorded for this day.</p>';
-    }
-    
-    container.innerHTML = `
-      <div style="text-align: center; margin-bottom: 20px;">
-        <h3 style="margin: 0 0 10px 0; color: var(--text);">${formattedDate}</h3>
-        <div style="font-size: 48px; font-weight: 800; color: var(--accent); margin: 10px 0;">${dayData.consumed}ml</div>
-        <div style="color: var(--muted);">of ${goal}ml goal</div>
-        <div style="margin: 20px 0;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span>Progress</span>
-            <span>${Math.round(progress)}%</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: ${progress}%;"></div>
-          </div>
-        </div>
-        ${dayData.completed ? 
-          '<div style="background: rgba(77, 255, 184, 0.1); color: var(--success); padding: 8px; border-radius: 8px; margin: 15px 0; border: 1px solid var(--success);"><i class="fas fa-check-circle"></i> Daily goal achieved!</div>' : 
-          ''}
-      </div>
-      ${drinksHTML}
-    `;
-  }
-  
-  openModal('dayDetailsModal');
-}
-
 function initializeCharts() {
   const trendCtx = document.getElementById('trendChart').getContext('2d');
   const distCtx = document.getElementById('distributionChart').getContext('2d');
   
-  // Fix chart colors for better visibility
   Chart.defaults.color = 'rgba(255, 255, 255, 0.8)';
   Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.2)';
   
@@ -3018,9 +2800,7 @@ function initializeCharts() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
           backgroundColor: 'rgba(18, 26, 47, 0.95)',
           titleColor: 'var(--accent)',
@@ -3034,27 +2814,15 @@ function initializeCharts() {
       scales: {
         y: {
           beginAtZero: true,
-          grid: {
-            color: 'rgba(255, 255, 255, 0.15)',
-            drawBorder: false
-          },
+          grid: { color: 'rgba(255, 255, 255, 0.15)' },
           ticks: {
             color: 'rgba(255, 255, 255, 0.8)',
-            callback: function(value) {
-              return value + 'ml';
-            },
-            padding: 8
+            callback: function(value) { return value + 'ml'; }
           }
         },
         x: {
-          grid: {
-            color: 'rgba(255, 255, 255, 0.1)',
-            drawBorder: false
-          },
-          ticks: {
-            color: 'rgba(255, 255, 255, 0.8)',
-            padding: 8
-          }
+          grid: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: { color: 'rgba(255, 255, 255, 0.8)' }
         }
       }
     }
@@ -3082,9 +2850,7 @@ function initializeCharts() {
             padding: 20,
             usePointStyle: true,
             pointStyle: 'circle',
-            font: {
-              size: 11
-            }
+            font: { size: 11 }
           }
         },
         tooltip: {
@@ -3107,7 +2873,6 @@ function initializeCharts() {
 function updateCharts() {
   if (!trendChart || !distributionChart) return;
   
-  // Update trend chart based on current type
   let labels = [];
   let data = [];
   
@@ -3132,12 +2897,10 @@ function updateCharts() {
       data.push(dayData ? dayData.consumed : 0);
     }
   } else if (appState.currentChartType === 'yearly') {
-    // Yearly view - monthly averages
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     labels = months;
     data = Array(12).fill(0);
     
-    // Calculate monthly averages
     Object.entries(appState.historicalData).forEach(([dateStr, dayData]) => {
       const date = new Date(dateStr);
       const month = date.getMonth();
@@ -3149,7 +2912,6 @@ function updateCharts() {
   trendChart.data.datasets[0].data = data;
   trendChart.update();
   
-  // Update distribution chart
   updateDistributionChart();
 }
 
@@ -3312,42 +3074,30 @@ function confirmDrink() {
 function setupReminders() {
   if (!appState.settings.reminders?.enabled) return;
   
-  // Request notification permission
   if ("Notification" in window && Notification.permission === "default") {
-    Notification.requestPermission().then(permission => {
-      if (permission === "granted") {
-        console.log("Notification permission granted");
-      }
-    });
+    Notification.requestPermission();
   }
   
-  // Schedule reminders
   scheduleSystemNotifications();
 }
 
 function scheduleSystemNotifications() {
   if (!appState.settings.reminders?.enabled) return;
   
-  // Clear existing intervals
   if (window.reminderInterval) {
     clearInterval(window.reminderInterval);
   }
   
   const frequencyHours = appState.settings.reminders.frequency;
-  
-  // Convert reminder time to minutes
   const [hours, minutes] = appState.settings.reminders.time.split(':').map(Number);
   const reminderMinutes = hours * 60 + minutes;
   
-  // Calculate next reminder time
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const minutesUntilReminder = (reminderMinutes - currentMinutes + 24 * 60) % (24 * 60);
   
-  // Schedule first reminder
   setTimeout(() => {
     sendSystemReminder();
-    // Set up recurring reminders
     window.reminderInterval = setInterval(sendSystemReminder, frequencyHours * 60 * 60 * 1000);
   }, minutesUntilReminder * 60 * 1000);
 }
@@ -3370,23 +3120,16 @@ function sendSystemReminder() {
     message = "🎉 Goal achieved! Maintain your hydration.";
   }
   
-  // Show in-app notification
   showNotification(message, "reminder");
   
-  // Show system notification if permission granted
   if ("Notification" in window && Notification.permission === "granted") {
-    const notification = new Notification("Waterify Pro Reminder", {
+    new Notification("Waterify Pro Reminder", {
       body: message,
       icon: "https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f4a7.png",
-      tag: "hydration-reminder",
-      requireInteraction: false
+      tag: "hydration-reminder"
     });
-    
-    // Close notification after 5 seconds
-    setTimeout(() => notification.close(), 5000);
   }
   
-  // Vibrate if supported
   if (navigator.vibrate) {
     navigator.vibrate([100, 50, 100]);
   }
@@ -3437,26 +3180,6 @@ document.getElementById('importFile').addEventListener('change', function(event)
       const data = JSON.parse(e.target.result);
       
       if (confirm("This will replace all your current data. Continue?")) {
-        // Migrate imported data if needed
-        if (data.version && data.version < 4) {
-          // Add missing fields
-          if (data.profile) {
-            data.profile.gender = data.profile.gender || 'male';
-            data.profile.activityLevel = data.profile.activityLevel || 'moderate';
-            data.profile.currentStreak = data.profile.currentStreak || 0;
-            data.profile.bestStreak = data.profile.bestStreak || 0;
-            data.profile.unitSystem = data.profile.unitSystem || 'metric';
-            data.profile.profileComplete = data.profile.profileComplete || true;
-            data.profile.dailyGoal = calculateRecommendedGoalValue(
-              data.profile.weight,
-              data.profile.height,
-              data.profile.age,
-              data.profile.gender,
-              data.profile.activityLevel
-            );
-          }
-        }
-        
         appState.profile = data.profile || appState.profile;
         appState.historicalData = data.historicalData || appState.historicalData;
         appState.settings = data.settings || appState.settings;
@@ -3573,6 +3296,7 @@ window.addEventListener('load', () => {
   if (typeof Chart !== 'undefined') {
     initializeApp();
   }
+  updateDrinkGrid();
 });
 
 // Service Worker Registration for PWA
