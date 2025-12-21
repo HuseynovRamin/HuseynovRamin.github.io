@@ -1853,12 +1853,12 @@ function updateTimeProgress() {
   const timeSlots = [
     { label: "12-3AM", hour: 0, isNight: true },
     { label: "3-6AM", hour: 3, isNight: true },
-    { label: "6-9AM", hour: 6 },
-    { label: "9-12", hour: 9 },
-    { label: "12-3PM", hour: 12 },
-    { label: "3-6PM", hour: 15 },
+    { label: "6-9AM", hour: 6, isNight: true },
+    { label: "9AM-12PM", hour: 9, isNight: true },
+    { label: "12-3PM", hour: 12, isNight: true },
+    { label: "3-6PM", hour: 15, isNight: true },
     { label: "6-9PM", hour: 18, isNight: true },
-    { label: "9-12PM", hour: 21, isNight: true }
+    { label: "9PM-12AM", hour: 21, isNight: true }
   ];
   
   const currentHour = new Date().getHours();
