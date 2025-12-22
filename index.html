@@ -1860,9 +1860,9 @@ function updateTimeProgress() {
   const timeSlots = [
     { label: "12-6AM", hour: 0, duration: 6, isNight: true },
     { label: "6-9AM", hour: 6, duration: 3, isNight: true },
-    { label: "9AM-12PM", hour: 9, duration: 3, isNight: false },
-    { label: "12-3PM", hour: 12, duration: 3, isNight: false },
-    { label: "3-6PM", hour: 15, duration: 3, isNight: false },
+    { label: "9AM-12PM", hour: 9, duration: 3, isNight: true },
+    { label: "12-3PM", hour: 12, duration: 3, isNight: true },
+    { label: "3-6PM", hour: 15, duration: 3, isNight: true },
     { label: "6-9PM", hour: 18, duration: 3, isNight: true },
     { label: "9PM-12AM", hour: 21, duration: 3, isNight: true }
   ];
@@ -1871,7 +1871,20 @@ function updateTimeProgress() {
   
   container.innerHTML = '';
   
-  timeSlots.forEach(slot => {
+  // CHANGED: Wrap time slots in 2 rows
+  const firstRow = document.createElement('div');
+  firstRow.style.display = 'grid';
+  firstRow.style.gridTemplateColumns = 'repeat(4, 1fr)';
+  firstRow.style.gap = '10px';
+  firstRow.style.marginBottom = '10px';
+  
+  const secondRow = document.createElement('div');
+  secondRow.style.display = 'grid';
+  secondRow.style.gridTemplateColumns = 'repeat(4, 1fr)';
+  secondRow.style.gap = '10px';
+  
+  // Split into 2 rows (4 in first row, 3 in second)
+  timeSlots.forEach((slot, index) => {
     const div = document.createElement('div');
     div.className = 'time-slot';
     
@@ -1901,8 +1914,16 @@ function updateTimeProgress() {
       <div class="time-value">${totalInSlot}ml</div>
     `;
     
-    container.appendChild(div);
+    // Add to first row (first 4 slots) or second row (remaining 3 slots)
+    if (index < 4) {
+      firstRow.appendChild(div);
+    } else {
+      secondRow.appendChild(div);
+    }
   });
+  
+  container.appendChild(firstRow);
+  container.appendChild(secondRow);
 }
 
 // ============================================
