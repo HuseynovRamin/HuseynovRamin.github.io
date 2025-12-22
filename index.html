@@ -687,7 +687,6 @@ body::before {
   border-color: var(--accent);
   transform: scale(1.1);
 }
-
 /* Enhanced Stats Grid */
 .stats-grid {
   display: grid;
@@ -1856,72 +1855,62 @@ body::before {
 
 function updateTimeProgress() {
   const container = document.getElementById('timeProgress');
-  // Combined 12AM-6AM into one slot, keeping 8 total slots
+
   const timeSlots = [
     { label: "12-6AM", hour: 0, duration: 6, isNight: true },
     { label: "6-9AM", hour: 6, duration: 3, isNight: true },
-    { label: "9AM-12PM", hour: 9, duration: 3, isNight: true },
-    { label: "12-3PM", hour: 12, duration: 3, isNight: true },
-    { label: "3-6PM", hour: 15, duration: 3, isNight: true },
+    { label: "9AM-12PM", hour: 9, duration: 3, isNight: false },
+    { label: "12-3PM", hour: 12, duration: 3, isNight: false },
+    { label: "3-6PM", hour: 15, duration: 3, isNight: false },
     { label: "6-9PM", hour: 18, duration: 3, isNight: true },
     { label: "9PM-12AM", hour: 21, duration: 3, isNight: true }
   ];
-  
+
   const currentHour = new Date().getHours();
-  
   container.innerHTML = '';
-  
-  // CHANGED: Wrap time slots in 2 rows
+
   const firstRow = document.createElement('div');
   firstRow.style.display = 'grid';
   firstRow.style.gridTemplateColumns = 'repeat(4, 1fr)';
   firstRow.style.gap = '10px';
   firstRow.style.marginBottom = '10px';
-  
+
   const secondRow = document.createElement('div');
   secondRow.style.display = 'grid';
   secondRow.style.gridTemplateColumns = 'repeat(4, 1fr)';
   secondRow.style.gap = '10px';
-  
-  // Split into 2 rows (4 in first row, 3 in second)
+
   timeSlots.forEach((slot, index) => {
     const div = document.createElement('div');
     div.className = 'time-slot';
-    
-    if (slot.isNight) {
-      div.classList.add('night');
-    }
-    
-    // Check if current hour is in this time slot
+
+    if (slot.isNight) div.classList.add('night');
+
     const slotStart = slot.hour;
     const slotEnd = slot.hour + slot.duration;
-    const isActive = currentHour >= slotStart && currentHour < slotEnd;
-    
-    if (isActive) {
+    if (currentHour >= slotStart && currentHour < slotEnd) {
       div.classList.add('active');
     }
-    
-    // Calculate drinks in this time slot
+
     const drinksInSlot = appState.todayData?.drinks?.filter(drink => {
       const drinkHour = new Date(drink.timestamp).getHours();
       return drinkHour >= slotStart && drinkHour < slotEnd;
     }) || [];
-    
+
     const totalInSlot = drinksInSlot.reduce((sum, drink) => sum + drink.amount, 0);
-    
+
     div.innerHTML = `
       <div class="time-label">${slot.label}</div>
       <div class="time-value">${totalInSlot}ml</div>
     `;
-    
-    // Add to first row (first 4 slots) or second row (remaining 3 slots)
+
     if (index < 4) {
       firstRow.appendChild(div);
     } else {
       secondRow.appendChild(div);
     }
   });
-  
+
   container.appendChild(firstRow);
   container.appendChild(secondRow);
 }
@@ -2013,40 +2002,36 @@ function adjustHeight(change) {
   input.value = value;
   updateHeightFromInput();
 }
-  
+
 function updateHeightFromInput() {
   const input = document.getElementById('heightInput');
-  if (!input) return;
-
-  // Ensure profile exists
-  if (!appState.profile) {
-    appState.profile = {};
-  }
-
   let value = parseInt(input.value);
+  
   if (isNaN(value)) {
     value = appState.unitSystem === 'metric' ? 170 : 67;
   }
-
+  
   if (appState.unitSystem === 'metric') {
     value = Math.max(100, Math.min(250, value));
   } else {
     value = Math.max(39, Math.min(98, value));
   }
-
+  
   input.value = value;
+  
+  // Update the display value
   document.getElementById('heightValue').textContent = value;
+  
+  // Update the ruler position
   updateRuler('heightRuler', value);
-
-  // Store height in cm internally
+  
+  // Save to profile (converting if necessary)
   if (appState.unitSystem === 'metric') {
     appState.profile.height = value;
   } else {
+    // Convert inches to cm for storage
     appState.profile.height = Math.round(value * 2.54);
   }
-
-  // Persist
-  saveAllData();
 }
 
 // ============================================
@@ -2105,20 +2090,11 @@ function saveProfile() {
   updateWeightFromInput();
   
   // Update age
-
   const ageInput = document.getElementById('ageManualInput');
-  
-  if (!appState.profile) {
-    appState.profile = { age: 25 };
-  }
   let age = parseInt(ageInput.value);
-  age = isNaN(age) ? 25 : age;
-  age = Math.max(10, Math.min(100, age));
-  appState.profile.age = age;
+  age = Math.max(10, Math.min(100, isNaN(age) ? 25 : age));
   ageInput.value = age;
-  document.getElementById('ageValue').textContent = age;
-  saveAllData();
-
+  appState.profile.age = age;
   
   // Update daily goal
   const goalInput = document.getElementById('dailyGoalInput');
@@ -3357,12 +3333,22 @@ function updateProfileUI() {
   setWeightUnit(profile.unitSystem || 'metric');
 }
 
+function adjustAge(change) {
+  const input = document.getElementById('ageManualInput');
+  let value = parseInt(input.value) + change;
+  value = Math.max(10, Math.min(100, value));
+  input.value = value;
+  appState.profile.age = value;
+  document.getElementById('ageValue').textContent = value;
+}
+
 function setAge(age) {
   const input = document.getElementById('ageManualInput');
   input.value = age;
   appState.profile.age = age;
   document.getElementById('ageValue').textContent = age;
 }
+
 
 function updateAgeFromInput() {
   const input = document.getElementById('ageManualInput');
