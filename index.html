@@ -624,7 +624,7 @@ body::before {
 
 /* Manual Input Controls */
 .input-group {
-  margin-bottom: 20px;
+  margin: 20px 0;
 }
 
 .input-label {
@@ -1870,12 +1870,12 @@ body::before {
 
 <script>
 // ============================================
-// FIXED: updateTimeProgress function - Proper night combination for 12-6AM
+// FIXED: updateTimeProgress function - Combined 12-6AM as night
 // ============================================
 
 function updateTimeProgress() {
   const container = document.getElementById('timeProgress');
-  // Updated time slots: Combined 12-6AM as night
+  // Combined 12-6AM into one night slot
   const timeSlots = [
     { label: "12-6AM", hour: 0, duration: 6, isNight: true },
     { label: "6-9AM", hour: 6, duration: 3, isNight: false },
@@ -1991,44 +1991,10 @@ function saveProfile() {
   saveAllData();
   
   // Update UI with correct values for current unit system
-  updateProfileUI();
+  setWeightUnit(appState.unitSystem);
   
   showNotification("Profile saved successfully!", "success");
   closeProfile();
-}
-
-// FIXED: Improved updateProfileUI to handle height correctly
-function updateProfileUI() {
-  if (!appState.profile) return;
-  
-  const profile = appState.profile;
-  
-  document.getElementById('userName').textContent = profile.name || 'Profile';
-  document.getElementById('userNameInput').value = profile.name || '';
-  document.getElementById('ageValue').textContent = profile.age;
-  document.getElementById('ageManualInput').value = profile.age;
-  document.getElementById('dailyGoalInput').value = profile.dailyGoal || 2000;
-  
-  document.getElementById('remindersEnabled').checked = appState.settings.reminders?.enabled || true;
-  document.getElementById('reminderTime').value = appState.settings.reminders?.time || "09:00";
-  document.getElementById('reminderFrequency').value = appState.settings.reminders?.frequency || 2;
-  
-  document.querySelectorAll('.gender-option').forEach(option => {
-    option.classList.remove('active');
-    if (option.dataset.gender === profile.gender) {
-      option.classList.add('active');
-    }
-  });
-  
-  document.querySelectorAll('.activity-level').forEach(item => {
-    item.classList.remove('active');
-    if (item.dataset.level === profile.activityLevel) {
-      item.classList.add('active');
-    }
-  });
-  
-  // Initialize rulers with current values based on unit system
-  setWeightUnit(profile.unitSystem || 'metric');
 }
 
 // FIXED: setWeightUnit function to properly handle height conversion
@@ -2038,6 +2004,7 @@ function setWeightUnit(system) {
   // Update profile unit system
   if (appState.profile) {
     appState.profile.unitSystem = system;
+    saveAllData();
   }
   
   document.querySelectorAll('.unit-conversion-btn').forEach(btn => {
@@ -2713,6 +2680,39 @@ function updateHydrationTip() {
   document.getElementById('hydrationTip').textContent = tip;
 }
 
+function updateProfileUI() {
+  if (!appState.profile) return;
+  
+  const profile = appState.profile;
+  
+  document.getElementById('userName').textContent = profile.name || 'Profile';
+  document.getElementById('userNameInput').value = profile.name || '';
+  document.getElementById('ageValue').textContent = profile.age;
+  document.getElementById('ageManualInput').value = profile.age;
+  document.getElementById('dailyGoalInput').value = profile.dailyGoal || 2000;
+  
+  document.getElementById('remindersEnabled').checked = appState.settings.reminders?.enabled || true;
+  document.getElementById('reminderTime').value = appState.settings.reminders?.time || "09:00";
+  document.getElementById('reminderFrequency').value = appState.settings.reminders?.frequency || 2;
+  
+  document.querySelectorAll('.gender-option').forEach(option => {
+    option.classList.remove('active');
+    if (option.dataset.gender === profile.gender) {
+      option.classList.add('active');
+    }
+  });
+  
+  document.querySelectorAll('.activity-level').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.level === profile.activityLevel) {
+      item.classList.add('active');
+    }
+  });
+  
+  // Initialize rulers with current values based on unit system
+  setWeightUnit(profile.unitSystem || 'metric');
+}
+
 function adjustWeight(change) {
   const input = document.getElementById('weightInput');
   let value = parseInt(input.value) + change;
@@ -2732,6 +2732,7 @@ function adjustWeight(change) {
   updateRuler('weightRuler', value);
 }
 
+// FIXED: adjustHeight function to store correct unit
 function adjustHeight(change) {
   const input = document.getElementById('heightInput');
   let value = parseInt(input.value) + change;
@@ -2743,10 +2744,18 @@ function adjustHeight(change) {
   }
   
   input.value = value;
+  
+  // FIX: Store in correct unit (metric in profile)
   if (appState.profile) {
-    appState.profile.height = value;
+    if (appState.unitSystem === 'metric') {
+      appState.profile.height = value;
+    } else {
+      // Convert inches to cm for storage
+      appState.profile.height = Math.round(value * 2.54);
+    }
     saveAllData();
   }
+  
   document.getElementById('heightValue').textContent = value;
   updateRuler('heightRuler', value);
 }
@@ -2792,6 +2801,7 @@ function updateWeightFromInput() {
   updateRuler('weightRuler', value);
 }
 
+// FIXED: updateHeightFromInput function to store correct unit
 function updateHeightFromInput() {
   const input = document.getElementById('heightInput');
   let value = parseInt(input.value);
@@ -2803,10 +2813,18 @@ function updateHeightFromInput() {
   }
   
   input.value = value;
+  
+  // FIX: Store in correct unit (metric in profile)
   if (appState.profile) {
-    appState.profile.height = value;
+    if (appState.unitSystem === 'metric') {
+      appState.profile.height = value;
+    } else {
+      // Convert inches to cm for storage
+      appState.profile.height = Math.round(value * 2.54);
+    }
     saveAllData();
   }
+  
   document.getElementById('heightValue').textContent = value;
   updateRuler('heightRuler', value);
 }
