@@ -2013,36 +2013,40 @@ function adjustHeight(change) {
   input.value = value;
   updateHeightFromInput();
 }
-
+  
 function updateHeightFromInput() {
   const input = document.getElementById('heightInput');
+  if (!input) return;
+
+  // Ensure profile exists
+  if (!appState.profile) {
+    appState.profile = {};
+  }
+
   let value = parseInt(input.value);
-  
   if (isNaN(value)) {
     value = appState.unitSystem === 'metric' ? 170 : 67;
   }
-  
+
   if (appState.unitSystem === 'metric') {
     value = Math.max(100, Math.min(250, value));
   } else {
     value = Math.max(39, Math.min(98, value));
   }
-  
+
   input.value = value;
-  
-  // Update the display value
   document.getElementById('heightValue').textContent = value;
-  
-  // Update the ruler position
   updateRuler('heightRuler', value);
-  
-  // Save to profile (converting if necessary)
+
+  // Store height in cm internally
   if (appState.unitSystem === 'metric') {
     appState.profile.height = value;
   } else {
-    // Convert inches to cm for storage
     appState.profile.height = Math.round(value * 2.54);
   }
+
+  // Persist
+  saveAllData();
 }
 
 // ============================================
@@ -2101,11 +2105,20 @@ function saveProfile() {
   updateWeightFromInput();
   
   // Update age
+
   const ageInput = document.getElementById('ageManualInput');
+  
+  if (!appState.profile) {
+    appState.profile = { age: 25 };
+  }
   let age = parseInt(ageInput.value);
-  age = Math.max(10, Math.min(100, isNaN(age) ? 25 : age));
-  ageInput.value = age;
+  age = isNaN(age) ? 25 : age;
+  age = Math.max(10, Math.min(100, age));
   appState.profile.age = age;
+  ageInput.value = age;
+  document.getElementById('ageValue').textContent = age;
+  saveAllData();
+
   
   // Update daily goal
   const goalInput = document.getElementById('dailyGoalInput');
