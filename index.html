@@ -147,16 +147,14 @@
 
 /* Update time progress for 24-hour coverage */
 .time-progress {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin: 20px 0;
 }
 
-@media (min-width: 480px) {
-  .time-progress {
-    grid-template-columns: repeat(8, 1fr);
-  }
+.time-slot-container {
+  display: contents;
 }
 
 .time-slot.night {
@@ -975,6 +973,11 @@ body::before {
   .nav-item span {
     font-size: 10px;
   }
+  
+  /* Fix for time slots on mobile */
+  .time-progress {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 
 /* Scrollbar Styling */
@@ -1039,7 +1042,7 @@ body::before {
 
 @media (min-width: 480px) {
   .time-progress {
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -1050,6 +1053,10 @@ body::before {
   border-radius: 12px;
   border: 1px solid var(--glass-border);
   transition: all 0.3s ease;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .time-slot.active {
@@ -1071,25 +1078,16 @@ body::before {
 .time-label {
   font-size: 11px;
   color: var(--muted);
-  margin-bottom: 5px;
+  margin-bottom: 2px;
   line-height: 1.2;
-  display: flex;
-  flex-direction: column;
-}
-
-.time-start {
-  font-weight: 600;
-}
-
-.time-end {
-  font-size: 10px;
-  opacity: 0.8;
+  display: block;
 }
 
 .time-value {
   font-weight: 600;
   font-size: 14px;
   color: var(--accent);
+  margin-top: 2px;
 }
 
 /* Achievement Badges */
@@ -1373,7 +1371,7 @@ body::before {
         </div>
       </div>
 
-      <!-- Time-based Progress - FIXED: Times now display on two lines -->
+      <!-- Time-based Progress - FIXED: Now properly formatted in two lines -->
       <div class="time-progress" id="timeProgress">
         <!-- Will be populated by JavaScript -->
       </div>
@@ -1862,20 +1860,21 @@ body::before {
 
 <script>
 // ============================================
-// FIXED: updateTimeProgress function - Times now display on two lines
+// FIXED: updateTimeProgress function - Fixed time display with proper line breaks
 // ============================================
 
 function updateTimeProgress() {
   const container = document.getElementById('timeProgress');
-
+  
+  // Updated time slots with proper line breaks
   const timeSlots = [
-    { label: "12-6AM", start: "12", end: "6AM", hour: 0, duration: 6, isNight: true },
-    { label: "6-9AM", start: "6", end: "9AM", hour: 6, duration: 3, isNight: true },
-    { label: "9AM-12PM", start: "9AM", end: "12PM", hour: 9, duration: 3, isNight: true },
-    { label: "12-3PM", start: "12", end: "3PM", hour: 12, duration: 3, isNight: true },
-    { label: "3-6PM", start: "3", end: "6PM", hour: 15, duration: 3, isNight: true },
-    { label: "6-9PM", start: "6", end: "9PM", hour: 18, duration: 3, isNight: true },
-    { label: "9PM-12AM", start: "9PM", end: "12AM", hour: 21, duration: 3, isNight: true }
+    { label: ["12", "6 AM"], hour: 0, duration: 6, isNight: true },
+    { label: ["6", "9 AM"], hour: 6, duration: 3, isNight: true },
+    { label: ["9 AM", "12 PM"], hour: 9, duration: 3, isNight: false },
+    { label: ["12", "3 PM"], hour: 12, duration: 3, isNight: false },
+    { label: ["3", "6 PM"], hour: 15, duration: 3, isNight: false },
+    { label: ["6", "9 PM"], hour: 18, duration: 3, isNight: true },
+    { label: ["9 PM", "12 AM"], hour: 21, duration: 3, isNight: true }
   ];
 
   const currentHour = new Date().getHours();
@@ -1902,8 +1901,8 @@ function updateTimeProgress() {
 
     div.innerHTML = `
       <div class="time-label">
-        <div class="time-start">${slot.start}</div>
-        <div class="time-end">${slot.end}</div>
+        <span>${slot.label[0]}</span>
+        <span>${slot.label[1]}</span>
       </div>
       <div class="time-value">${totalInSlot}ml</div>
     `;
@@ -1913,63 +1912,18 @@ function updateTimeProgress() {
 }
 
 // ============================================
-// FIXED: Settings persistence - Data now properly saves and loads
+// FIXED: initializeApp function - Fixed data loading to prevent reset on reload
 // ============================================
 
-// Enhanced data loading to ensure all settings are loaded
-function loadAllData() {
-  try {
-    // Load profile with defaults
-    const savedProfile = localStorage.getItem('waterify_profile');
-    if (savedProfile) {
-      appState.profile = JSON.parse(savedProfile);
-      // Ensure all profile fields exist
-      appState.profile = {
-        name: appState.profile.name || "User",
-        weight: appState.profile.weight || 70,
-        height: appState.profile.height || 170,
-        age: appState.profile.age || 25,
-        gender: appState.profile.gender || "male",
-        activityLevel: appState.profile.activityLevel || "moderate",
-        dailyGoal: appState.profile.dailyGoal || 2000,
-        createdAt: appState.profile.createdAt || new Date().toISOString(),
-        currentStreak: appState.profile.currentStreak || 0,
-        bestStreak: appState.profile.bestStreak || 0,
-        unitSystem: appState.profile.unitSystem || 'metric',
-        achievements: appState.profile.achievements || {},
-        profileCompleted: appState.profile.profileCompleted || false
-      };
-    }
-    
-    // Load today's data
-    const todayData = localStorage.getItem('waterify_today');
-    const today = new Date().toDateString();
-    
-    if (todayData) {
-      const parsedData = JSON.parse(todayData);
-      if (parsedData.date === today) {
-        appState.todayData = parsedData;
-      }
-    }
-    
-    // Load historical data
-    const savedHistory = localStorage.getItem('waterify_history');
-    if (savedHistory) {
-      appState.historicalData = JSON.parse(savedHistory);
-    }
-    
-    // Load settings
-    const savedSettings = localStorage.getItem('waterify_settings');
-    if (savedSettings) {
-      appState.settings = JSON.parse(savedSettings);
-    }
-    
-    // Set unit system from profile
-    appState.unitSystem = appState.profile?.unitSystem || 'metric';
-    
-  } catch (e) {
-    console.error('Error loading data:', e);
-    // Initialize with defaults if there's an error
+function initializeApp() {
+  // Load all data first
+  loadAllData();
+  
+  // Check if this is a completely new user (no profile at all)
+  const isNewUser = !appState.profile || !appState.profile.name || appState.profile.name === "User";
+  
+  // Initialize profile if doesn't exist
+  if (!appState.profile) {
     appState.profile = {
       name: "User",
       weight: 70,
@@ -1985,61 +1939,29 @@ function loadAllData() {
       achievements: {},
       profileCompleted: false
     };
-    appState.todayData = null;
-    appState.historicalData = {};
-    appState.settings = {};
-    appState.unitSystem = 'metric';
   }
-}
-
-// Enhanced save function
-function saveAllData() {
-  try {
-    // Ensure profile has all required fields before saving
-    if (appState.profile) {
-      appState.profile.unitSystem = appState.unitSystem;
-      localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
-    }
-    
-    if (appState.todayData) {
-      localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
-    }
-    
-    localStorage.setItem('waterify_history', JSON.stringify(appState.historicalData));
-    localStorage.setItem('waterify_settings', JSON.stringify(appState.settings));
-    
-    // Save a version marker
-    localStorage.setItem('waterify_data_version', '2.0');
-    
-  } catch (e) {
-    console.error('Error saving data:', e);
-    // Try to save individual items if bulk save fails
-    try {
-      if (appState.profile) {
-        localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
-      }
-    } catch (e2) {
-      console.error('Failed to save profile:', e2);
-    }
-  }
-}
-
-// Enhanced initialization to properly load and set data
-function initializeApp() {
-  loadAllData();
   
-  // Initialize today's data if needed
+  // Ensure unit system is set
+  appState.unitSystem = appState.profile.unitSystem || 'metric';
+  
+  // Handle today's data
   const today = new Date().toDateString();
-  const todayData = JSON.parse(localStorage.getItem('waterify_today'));
+  const savedTodayData = JSON.parse(localStorage.getItem('waterify_today'));
   
-  if (!todayData || todayData.date !== today) {
+  // If we have saved today data and it's for today, use it
+  if (savedTodayData && savedTodayData.date === today) {
+    appState.todayData = savedTodayData;
+  } else {
+    // Check streak and save yesterday's data if it exists
     checkAndUpdateStreak();
     
-    if (todayData && todayData.date !== today) {
-      appState.historicalData[todayData.date] = todayData;
+    // Save yesterday's data to history if it exists
+    if (savedTodayData && savedTodayData.date !== today) {
+      appState.historicalData[savedTodayData.date] = savedTodayData;
       saveAllData();
     }
     
+    // Create fresh data for today
     appState.todayData = {
       date: today,
       consumed: 0,
@@ -2047,11 +1969,9 @@ function initializeApp() {
       goal: appState.profile.dailyGoal || 2000,
       completed: false
     };
-  } else {
-    appState.todayData = todayData;
   }
   
-  // Initialize settings if not present
+  // Initialize settings if not exists
   if (!appState.settings.reminders) {
     appState.settings = {
       reminders: {
@@ -2062,29 +1982,32 @@ function initializeApp() {
     };
   }
   
-  // Set current month/year
+  // Ensure current month/year are set correctly
   const now = new Date();
   appState.currentMonth = now.getMonth();
   appState.currentYear = now.getFullYear();
   
-  // Update all UI components
+  // Update UI
   updateDashboard();
   updateProfileUI();
   updateTimeProgress();
   setupReminders();
   updateGreetingMessage();
   
+  // Initialize charts with delay
   setTimeout(() => {
     if (typeof Chart !== 'undefined') {
       initializeCharts();
     }
   }, 100);
   
+  // Create water drops animation
   createWaterDrops();
+  
+  // Check achievements
   checkAndUpdateAchievements();
   
   // Only show welcome modal for truly new users
-  const isNewUser = !appState.profile || !appState.profile.profileCompleted;
   if (isNewUser) {
     setTimeout(() => {
       openModal('welcomeModal');
@@ -2093,98 +2016,184 @@ function initializeApp() {
 }
 
 // ============================================
-// REST OF THE CODE REMAINS THE SAME (with minor fixes for consistency)
+// FIXED: loadAllData function - Fixed to properly load all data
 // ============================================
 
-// Height saving functions
-function adjustHeight(change) {
-  const input = document.getElementById('heightInput');
-  let value = parseInt(input.value) + change;
-  
-  if (appState.unitSystem === 'metric') {
-    value = Math.max(100, Math.min(250, value));
-  } else {
-    value = Math.max(39, Math.min(98, value));
+function loadAllData() {
+  try {
+    // Load profile
+    const savedProfile = localStorage.getItem('waterify_profile');
+    if (savedProfile) {
+      appState.profile = JSON.parse(savedProfile);
+    }
+    
+    // Load today's data
+    const savedToday = localStorage.getItem('waterify_today');
+    if (savedToday) {
+      appState.todayData = JSON.parse(savedToday);
+    }
+    
+    // Load historical data
+    const savedHistory = localStorage.getItem('waterify_history');
+    if (savedHistory) {
+      appState.historicalData = JSON.parse(savedHistory);
+    }
+    
+    // Load settings
+    const savedSettings = localStorage.getItem('waterify_settings');
+    if (savedSettings) {
+      appState.settings = JSON.parse(savedSettings);
+    }
+    
+    // Load unit system
+    const savedUnitSystem = localStorage.getItem('waterify_unitSystem');
+    if (savedUnitSystem) {
+      appState.unitSystem = savedUnitSystem;
+    }
+  } catch (e) {
+    console.error('Error loading data:', e);
+    // Initialize with defaults if there's an error
+    appState.profile = appState.profile || {
+      name: "User",
+      weight: 70,
+      height: 170,
+      age: 25,
+      gender: "male",
+      activityLevel: "moderate",
+      dailyGoal: 2000,
+      createdAt: new Date().toISOString(),
+      currentStreak: 0,
+      bestStreak: 0,
+      unitSystem: 'metric',
+      achievements: {},
+      profileCompleted: false
+    };
+    appState.todayData = appState.todayData || {
+      date: new Date().toDateString(),
+      consumed: 0,
+      drinks: [],
+      goal: 2000,
+      completed: false
+    };
+    appState.historicalData = appState.historicalData || {};
+    appState.settings = appState.settings || {
+      reminders: {
+        enabled: true,
+        frequency: 2,
+        time: "09:00"
+      }
+    };
+    appState.unitSystem = appState.unitSystem || 'metric';
   }
-  
-  input.value = value;
-  updateHeightFromInput();
 }
 
-function updateHeightFromInput() {
-  const input = document.getElementById('heightInput');
-  let value = parseInt(input.value);
-  
-  if (isNaN(value)) {
-    value = appState.unitSystem === 'metric' ? 170 : 67;
+// ============================================
+// FIXED: saveAllData function - Fixed to save all data properly
+// ============================================
+
+function saveAllData() {
+  try {
+    // Save all data to localStorage
+    localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
+    localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
+    localStorage.setItem('waterify_history', JSON.stringify(appState.historicalData));
+    localStorage.setItem('waterify_settings', JSON.stringify(appState.settings));
+    localStorage.setItem('waterify_unitSystem', appState.unitSystem);
+    localStorage.setItem('waterify_version', '5');
+    
+    // Also save profile completed flag separately for easy checking
+    if (appState.profile.profileCompleted) {
+      localStorage.setItem('waterify_profileCompleted', 'true');
+    }
+  } catch (e) {
+    console.error('Error saving data:', e);
+    // Try to save with fallback method if localStorage is full
+    try {
+      // Clear some old data if localStorage is full
+      localStorage.removeItem('waterify_history_old');
+      // Try again
+      localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
+      localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
+    } catch (e2) {
+      console.error('Failed to save data even after cleanup:', e2);
+    }
   }
-  
-  if (appState.unitSystem === 'metric') {
-    value = Math.max(100, Math.min(250, value));
-  } else {
-    value = Math.max(39, Math.min(98, value));
-  }
-  
-  input.value = value;
-  document.getElementById('heightValue').textContent = value;
-  updateRuler('heightRuler', value);
-  
-  if (appState.unitSystem === 'metric') {
-    appState.profile.height = value;
-  } else {
-    appState.profile.height = Math.round(value * 2.54);
-  }
-  
-  saveAllData();
 }
 
-// Weight saving functions
-function adjustWeight(change) {
-  const input = document.getElementById('weightInput');
-  let value = parseInt(input.value) + change;
+// ============================================
+// FIXED: updateProfileUI function - Fixed to properly load saved settings
+// ============================================
+
+function updateProfileUI() {
+  if (!appState.profile) return;
   
-  if (appState.unitSystem === 'metric') {
-    value = Math.max(30, Math.min(200, value));
-  } else {
-    value = Math.max(66, Math.min(440, value));
+  const profile = appState.profile;
+  
+  // Update name
+  document.getElementById('userName').textContent = profile.name || 'Profile';
+  document.getElementById('userNameInput').value = profile.name || '';
+  
+  // Update age
+  document.getElementById('ageValue').textContent = profile.age || 25;
+  document.getElementById('ageManualInput').value = profile.age || 25;
+  
+  // Update daily goal
+  document.getElementById('dailyGoalInput').value = profile.dailyGoal || 2000;
+  
+  // Update reminders
+  if (appState.settings.reminders) {
+    document.getElementById('remindersEnabled').checked = appState.settings.reminders.enabled || true;
+    document.getElementById('reminderTime').value = appState.settings.reminders.time || "09:00";
+    document.getElementById('reminderFrequency').value = appState.settings.reminders.frequency || 2;
   }
   
-  input.value = value;
-  updateWeightFromInput();
+  // Update gender selection
+  document.querySelectorAll('.gender-option').forEach(option => {
+    option.classList.remove('active');
+    if (option.dataset.gender === profile.gender) {
+      option.classList.add('active');
+    }
+  });
+  
+  // Update activity level selection
+  document.querySelectorAll('.activity-level').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.level === profile.activityLevel) {
+      item.classList.add('active');
+    }
+  });
+  
+  // Set weight unit system
+  setWeightUnit(profile.unitSystem || 'metric');
+  
+  // Initialize rulers with saved values
+  setTimeout(() => {
+    if (appState.unitSystem === 'metric') {
+      document.getElementById('weightInput').value = profile.weight || 70;
+      document.getElementById('heightInput').value = profile.height || 170;
+      document.getElementById('weightValue').textContent = profile.weight || 70;
+      document.getElementById('heightValue').textContent = profile.height || 170;
+    } else {
+      // Convert to imperial for display
+      const weightLbs = Math.round((profile.weight || 70) * 2.20462);
+      const heightIn = Math.round((profile.height || 170) / 2.54);
+      document.getElementById('weightInput').value = weightLbs;
+      document.getElementById('heightInput').value = heightIn;
+      document.getElementById('weightValue').textContent = weightLbs;
+      document.getElementById('heightValue').textContent = heightIn;
+    }
+  }, 100);
 }
 
-function updateWeightFromInput() {
-  const input = document.getElementById('weightInput');
-  let value = parseInt(input.value);
-  
-  if (isNaN(value)) {
-    value = appState.unitSystem === 'metric' ? 70 : 154;
-  }
-  
-  if (appState.unitSystem === 'metric') {
-    value = Math.max(30, Math.min(200, value));
-  } else {
-    value = Math.max(66, Math.min(440, value));
-  }
-  
-  input.value = value;
-  document.getElementById('weightValue').textContent = value;
-  updateRuler('weightRuler', value);
-  
-  if (appState.unitSystem === 'metric') {
-    appState.profile.weight = value;
-  } else {
-    appState.profile.weight = Math.round(value / 2.20462);
-  }
-  
-  saveAllData();
-}
+// ============================================
+// FIXED: setWeightUnit function - Fixed unit persistence
+// ============================================
 
-// Unit system function
 function setWeightUnit(system) {
   appState.unitSystem = system;
   appState.profile.unitSystem = system;
   
+  // Update button states
   document.querySelectorAll('.unit-conversion-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.unit === system);
   });
@@ -2195,20 +2204,21 @@ function setWeightUnit(system) {
     document.getElementById('weightUnit').textContent = 'kg';
     document.getElementById('heightUnit').textContent = 'cm';
     
-    // Convert from stored metric values (cm) to display
-    document.getElementById('weightValue').textContent = appState.profile.weight;
-    document.getElementById('heightValue').textContent = appState.profile.height;
-    document.getElementById('weightInput').value = appState.profile.weight;
-    document.getElementById('heightInput').value = appState.profile.height;
+    // Convert from stored metric values
+    document.getElementById('weightValue').textContent = appState.profile.weight || 70;
+    document.getElementById('heightValue').textContent = appState.profile.height || 170;
+    document.getElementById('weightInput').value = appState.profile.weight || 70;
+    document.getElementById('heightInput').value = appState.profile.height || 170;
     
-    initRuler('weightRuler', 30, 200, appState.profile.weight, 'kg', (value) => {
+    // Initialize rulers
+    initRuler('weightRuler', 30, 200, appState.profile.weight || 70, 'kg', (value) => {
       appState.profile.weight = value;
       document.getElementById('weightValue').textContent = value;
       document.getElementById('weightInput').value = value;
       saveAllData();
     });
     
-    initRuler('heightRuler', 100, 250, appState.profile.height, 'cm', (value) => {
+    initRuler('heightRuler', 100, 250, appState.profile.height || 170, 'cm', (value) => {
       appState.profile.height = value;
       document.getElementById('heightValue').textContent = value;
       document.getElementById('heightInput').value = value;
@@ -2222,14 +2232,15 @@ function setWeightUnit(system) {
     document.getElementById('heightUnit').textContent = 'in';
     
     // Convert from stored metric to imperial for display
-    const weightLbs = Math.round(appState.profile.weight * 2.20462);
-    const heightIn = Math.round(appState.profile.height / 2.54);
+    const weightLbs = Math.round((appState.profile.weight || 70) * 2.20462);
+    const heightIn = Math.round((appState.profile.height || 170) / 2.54);
     
     document.getElementById('weightValue').textContent = weightLbs;
     document.getElementById('heightValue').textContent = heightIn;
     document.getElementById('weightInput').value = weightLbs;
     document.getElementById('heightInput').value = heightIn;
     
+    // Initialize rulers with imperial units
     initRuler('weightRuler', 66, 440, weightLbs, 'lbs', (value) => {
       // Store in metric, convert from lbs to kg
       appState.profile.weight = Math.round(value / 2.20462);
@@ -2251,144 +2262,9 @@ function setWeightUnit(system) {
   calculateRecommendedGoal();
 }
 
-// Profile saving function
-function saveProfile() {
-  // Get and validate name
-  appState.profile.name = document.getElementById('userNameInput').value.trim() || 'User';
-  
-  // Update height and weight from current input values
-  updateHeightFromInput();
-  updateWeightFromInput();
-  
-  // Update age
-  const ageInput = document.getElementById('ageManualInput');
-  let age = parseInt(ageInput.value);
-  age = Math.max(10, Math.min(100, isNaN(age) ? 25 : age));
-  ageInput.value = age;
-  appState.profile.age = age;
-  
-  // Update daily goal
-  const goalInput = document.getElementById('dailyGoalInput');
-  let dailyGoal = parseInt(goalInput.value);
-  dailyGoal = Math.max(1000, Math.min(5000, isNaN(dailyGoal) ? 2000 : dailyGoal));
-  goalInput.value = dailyGoal;
-  appState.profile.dailyGoal = dailyGoal;
-  
-  // Update gender
-  const activeGender = document.querySelector('.gender-option.active');
-  if (activeGender) {
-    appState.profile.gender = activeGender.dataset.gender;
-  }
-  
-  // Update activity level
-  const activeActivity = document.querySelector('.activity-level.active');
-  if (activeActivity) {
-    appState.profile.activityLevel = activeActivity.dataset.level;
-  }
-  
-  // Update reminders
-  appState.settings.reminders = {
-    enabled: document.getElementById('remindersEnabled').checked,
-    frequency: parseInt(document.getElementById('reminderFrequency').value),
-    time: document.getElementById('reminderTime').value
-  };
-  
-  // Update today's goal
-  if (appState.todayData) {
-    appState.todayData.goal = dailyGoal;
-  }
-  
-  // Mark profile as completed
-  appState.profile.profileCompleted = true;
-  
-  // Save all data
-  saveAllData();
-  
-  // Update UI
-  updateDashboard();
-  setupReminders();
-  
-  // Show notification and close profile
-  showNotification("Profile saved successfully!", "success");
-  closeProfile();
-}
-
 // ============================================
-// ORIGINAL CODE CONTINUES BELOW (unchanged except for the fixes above)
+// FIXED: ACHIEVEMENTS array - Fixed hydrated_beginner condition
 // ============================================
-
-const BEVERAGES = {
-  water: {
-    name: "Water",
-    icon: "fa-tint",
-    color: "#4fd1ff",
-    waterContent: 100,
-    description: "Pure hydration - no additives"
-  },
-  sparkling_water: {
-    name: "Sparkling Water",
-    icon: "fa-glass-water",
-    color: "#6b7cff",
-    waterContent: 100,
-    description: "Carbonated water - same hydration"
-  },
-  herbal_tea: {
-    name: "Herbal Tea",
-    icon: "fa-mug-hot",
-    color: "#ffb84d",
-    waterContent: 99,
-    description: "No caffeine - excellent hydration"
-  },
-  green_tea: {
-    name: "Green Tea",
-    icon: "fa-leaf",
-    color: "#4dff88",
-    waterContent: 99,
-    description: "Antioxidants - minimal caffeine"
-  },
-  black_coffee: {
-    name: "Black Coffee",
-    icon: "fa-coffee",
-    color: "#8B4513",
-    waterContent: 98,
-    description: "Caffeine reduces hydration by 15%"
-  },
-  milk: {
-    name: "Milk",
-    icon: "fa-cow",
-    color: "#ffffff",
-    waterContent: 87,
-    description: "Contains nutrients - good hydration"
-  },
-  fruit_juice: {
-    name: "Fruit Juice",
-    icon: "fa-apple-alt",
-    color: "#ff6b6b",
-    waterContent: 88,
-    description: "Natural sugars - moderate hydration"
-  },
-  sports_drink: {
-    name: "Sports Drink",
-    icon: "fa-bolt",
-    color: "#ff4d6d",
-    waterContent: 94,
-    description: "Electrolytes - good for exercise"
-  },
-  soda: {
-    name: "Soda",
-    icon: "fa-glass-whiskey",
-    color: "#ff4757",
-    waterContent: 90,
-    description: "High sugar - poor hydration"
-  },
-  smoothie: {
-    name: "Smoothie",
-    icon: "fa-blender",
-    color: "#9d4edd",
-    waterContent: 85,
-    description: "Nutrient-rich - good hydration"
-  }
-};
 
 const ACHIEVEMENTS = [
   {
@@ -2412,9 +2288,15 @@ const ACHIEVEMENTS = [
   {
     id: 'hydrated_beginner',
     name: 'Hydration Beginner',
-    description: 'Reached daily goal for first time',
+    description: 'Reached daily goal for the first time',
     icon: 'fa-star',
+    // FIXED: Now triggers when goal is reached, not after 1 day
     condition: (profile, todayData, historicalData) => {
+      // Check if today's goal is reached
+      if (todayData && todayData.completed) {
+        return true;
+      }
+      // Check historical data for any completed day
       const completedDays = Object.values(historicalData).filter(d => d.completed).length;
       return completedDays >= 1;
     }
@@ -2497,6 +2379,264 @@ const ACHIEVEMENTS = [
   }
 ];
 
+// ============================================
+// FIXED: checkAndUpdateAchievements function - Fixed achievement checking
+// ============================================
+
+function checkAndUpdateAchievements() {
+  if (!appState.profile) return;
+  
+  const achievements = appState.profile.achievements || {};
+  let newAchievements = [];
+  
+  ACHIEVEMENTS.forEach(achievement => {
+    if (!achievements[achievement.id] || !achievements[achievement.id].unlocked) {
+      if (achievement.condition(appState.profile, appState.todayData, appState.historicalData)) {
+        if (!achievements[achievement.id]) {
+          achievements[achievement.id] = {
+            unlocked: true,
+            unlockedAt: new Date().toISOString()
+          };
+          newAchievements.push(achievement);
+        }
+      }
+    }
+  });
+  
+  appState.profile.achievements = achievements;
+  
+  // Show animations for new achievements
+  if (newAchievements.length > 0) {
+    // Show first achievement immediately
+    showAchievementUnlock(newAchievements[0]);
+    
+    // Show remaining achievements with delay
+    for (let i = 1; i < newAchievements.length; i++) {
+      setTimeout(() => {
+        showAchievementUnlock(newAchievements[i]);
+      }, i * 4500);
+    }
+    
+    saveAllData();
+  }
+}
+
+// ============================================
+// FIXED: addDrink function - Fixed to properly trigger achievements
+// ============================================
+
+function addDrink(type, amount) {
+  const drink = BEVERAGES[type];
+  if (!drink) return;
+  
+  const waterContent = Math.round(amount * drink.waterContent / 100);
+  
+  const drinkRecord = {
+    type,
+    amount,
+    waterContent,
+    timestamp: new Date().toISOString(),
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+  
+  appState.todayData.consumed += waterContent;
+  if (!appState.todayData.drinks) appState.todayData.drinks = [];
+  appState.todayData.drinks.push(drinkRecord);
+  
+  // Check if goal is reached
+  const goalReached = !appState.todayData.completed && appState.todayData.consumed >= appState.todayData.goal;
+  if (goalReached) {
+    appState.todayData.completed = true;
+    showNotification("🎉 Daily goal achieved! Great work!", "success");
+  }
+  
+  // Save data immediately
+  saveAllData();
+  
+  // Update UI
+  updateDashboard();
+  updateStatistics();
+  updateTimeProgress();
+  showNotification(`Added ${amount}ml of ${drink.name} (${waterContent}ml water)`, "success");
+  
+  // Check achievements AFTER updating UI and saving data
+  // This ensures the hydrated_beginner achievement triggers when goal is reached
+  checkAndUpdateAchievements();
+}
+
+// ============================================
+// FIXED: adjustHeight and adjustWeight functions - Fixed to save data
+// ============================================
+
+function adjustHeight(change) {
+  const input = document.getElementById('heightInput');
+  let value = parseInt(input.value) + change;
+  
+  if (appState.unitSystem === 'metric') {
+    value = Math.max(100, Math.min(250, value));
+  } else {
+    value = Math.max(39, Math.min(98, value));
+  }
+  
+  input.value = value;
+  updateHeightFromInput();
+}
+
+function adjustWeight(change) {
+  const input = document.getElementById('weightInput');
+  let value = parseInt(input.value) + change;
+  
+  if (appState.unitSystem === 'metric') {
+    value = Math.max(30, Math.min(200, value));
+  } else {
+    value = Math.max(66, Math.min(440, value));
+  }
+  
+  input.value = value;
+  updateWeightFromInput();
+}
+
+// ============================================
+// FIXED: updateHeightFromInput and updateWeightFromInput - Fixed to save data
+// ============================================
+
+function updateHeightFromInput() {
+  const input = document.getElementById('heightInput');
+  let value = parseInt(input.value);
+  
+  if (isNaN(value)) {
+    value = appState.unitSystem === 'metric' ? 170 : 67;
+  }
+  
+  if (appState.unitSystem === 'metric') {
+    value = Math.max(100, Math.min(250, value));
+  } else {
+    value = Math.max(39, Math.min(98, value));
+  }
+  
+  input.value = value;
+  document.getElementById('heightValue').textContent = value;
+  
+  // Update the ruler position
+  updateRuler('heightRuler', value);
+  
+  // Save to profile (converting if necessary)
+  if (appState.unitSystem === 'metric') {
+    appState.profile.height = value;
+  } else {
+    // Convert inches to cm for storage
+    appState.profile.height = Math.round(value * 2.54);
+  }
+  
+  // Save data
+  saveAllData();
+}
+
+function updateWeightFromInput() {
+  const input = document.getElementById('weightInput');
+  let value = parseInt(input.value);
+  
+  if (isNaN(value)) {
+    value = appState.unitSystem === 'metric' ? 70 : 154;
+  }
+  
+  if (appState.unitSystem === 'metric') {
+    value = Math.max(30, Math.min(200, value));
+  } else {
+    value = Math.max(66, Math.min(440, value));
+  }
+  
+  input.value = value;
+  document.getElementById('weightValue').textContent = value;
+  updateRuler('weightRuler', value);
+  
+  if (appState.unitSystem === 'metric') {
+    appState.profile.weight = value;
+  } else {
+    appState.profile.weight = Math.round(value / 2.20462);
+  }
+  
+  // Save data
+  saveAllData();
+}
+
+// ============================================
+// REST OF THE CODE REMAINS THE SAME (unchanged parts)
+// ============================================
+
+const BEVERAGES = {
+  water: {
+    name: "Water",
+    icon: "fa-tint",
+    color: "#4fd1ff",
+    waterContent: 100,
+    description: "Pure hydration - no additives"
+  },
+  sparkling_water: {
+    name: "Sparkling Water",
+    icon: "fa-glass-water",
+    color: "#6b7cff",
+    waterContent: 100,
+    description: "Carbonated water - same hydration"
+  },
+  herbal_tea: {
+    name: "Herbal Tea",
+    icon: "fa-mug-hot",
+    color: "#ffb84d",
+    waterContent: 99,
+    description: "No caffeine - excellent hydration"
+  },
+  green_tea: {
+    name: "Green Tea",
+    icon: "fa-leaf",
+    color: "#4dff88",
+    waterContent: 99,
+    description: "Antioxidants - minimal caffeine"
+  },
+  black_coffee: {
+    name: "Black Coffee",
+    icon: "fa-coffee",
+    color: "#8B4513",
+    waterContent: 98,
+    description: "Caffeine reduces hydration by 15%"
+  },
+  milk: {
+    name: "Milk",
+    icon: "fa-cow",
+    color: "#ffffff",
+    waterContent: 87,
+    description: "Contains nutrients - good hydration"
+  },
+  fruit_juice: {
+    name: "Fruit Juice",
+    icon: "fa-apple-alt",
+    color: "#ff6b6b",
+    waterContent: 88,
+    description: "Natural sugars - moderate hydration"
+  },
+  sports_drink: {
+    name: "Sports Drink",
+    icon: "fa-bolt",
+    color: "#ff4d6d",
+    waterContent: 94,
+    description: "Electrolytes - good for exercise"
+  },
+  soda: {
+    name: "Soda",
+    icon: "fa-glass-whiskey",
+    color: "#ff4757",
+    waterContent: 90,
+    description: "High sugar - poor hydration"
+  },
+  smoothie: {
+    name: "Smoothie",
+    icon: "fa-blender",
+    color: "#9d4edd",
+    waterContent: 85,
+    description: "Nutrient-rich - good hydration"
+  }
+};
+
 const HYDRATION_TIPS = [
   "Start your day with a glass of water to kickstart metabolism",
   "Drink water 30 minutes before meals for better digestion",
@@ -2536,36 +2676,8 @@ let appState = {
 let trendChart = null;
 let distributionChart = null;
 
-function addDrink(type, amount) {
-  const drink = BEVERAGES[type];
-  if (!drink) return;
-  
-  const waterContent = Math.round(amount * drink.waterContent / 100);
-  
-  const drinkRecord = {
-    type,
-    amount,
-    waterContent,
-    timestamp: new Date().toISOString(),
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  };
-  
-  appState.todayData.consumed += waterContent;
-  if (!appState.todayData.drinks) appState.todayData.drinks = [];
-  appState.todayData.drinks.push(drinkRecord);
-  
-  if (!appState.todayData.completed && appState.todayData.consumed >= appState.todayData.goal) {
-    appState.todayData.completed = true;
-    showNotification("🎉 Daily goal achieved! Great work!", "success");
-  }
-  
-  checkAndUpdateAchievements();
-  
-  saveAllData();
-  updateDashboard();
-  updateStatistics();
-  updateTimeProgress();
-  showNotification(`Added ${amount}ml of ${drink.name} (${waterContent}ml water)`, "success");
+function quickAddDrink(type, amount) {
+  addDrink(type, amount);
 }
 
 function setGoalPercentage(percentage) {
@@ -2699,36 +2811,115 @@ function updateHydrationTip() {
   document.getElementById('hydrationTip').textContent = tip;
 }
 
-function updateProfileUI() {
+function selectGender(gender) {
   if (!appState.profile) return;
-  
-  const profile = appState.profile;
-  
-  document.getElementById('userName').textContent = profile.name || 'Profile';
-  document.getElementById('userNameInput').value = profile.name || '';
-  document.getElementById('ageValue').textContent = profile.age;
-  document.getElementById('ageManualInput').value = profile.age;
-  document.getElementById('dailyGoalInput').value = profile.dailyGoal || 2000;
-  
-  document.getElementById('remindersEnabled').checked = appState.settings.reminders?.enabled || true;
-  document.getElementById('reminderTime').value = appState.settings.reminders?.time || "09:00";
-  document.getElementById('reminderFrequency').value = appState.settings.reminders?.frequency || 2;
+  appState.profile.gender = gender;
   
   document.querySelectorAll('.gender-option').forEach(option => {
     option.classList.remove('active');
-    if (option.dataset.gender === profile.gender) {
+    if (option.dataset.gender === gender) {
       option.classList.add('active');
     }
   });
   
+  saveAllData();
+}
+
+function selectActivityLevel(level) {
+  if (!appState.profile) return;
+  appState.profile.activityLevel = level;
+  
   document.querySelectorAll('.activity-level').forEach(item => {
     item.classList.remove('active');
-    if (item.dataset.level === profile.activityLevel) {
+    if (item.dataset.level === level) {
       item.classList.add('active');
     }
   });
+}
+
+function calculateRecommendedGoal() {
+  if (!appState.profile) return;
   
-  setWeightUnit(profile.unitSystem || 'metric');
+  let weightKg = appState.profile.weight;
+  if (appState.unitSystem === 'imperial') {
+    weightKg = weightKg / 2.20462;
+  }
+  
+  let heightCm = appState.profile.height;
+  if (appState.unitSystem === 'imperial') {
+    heightCm = heightCm * 2.54;
+  }
+  
+  let baseGoal;
+  if (appState.profile.gender === 'male') {
+    baseGoal = weightKg * 35;
+  } else if (appState.profile.gender === 'female') {
+    baseGoal = weightKg * 31;
+  } else {
+    baseGoal = weightKg * 33;
+  }
+  
+  const heightFactor = heightCm / 170;
+  baseGoal *= heightFactor;
+  
+  if (appState.profile.age < 18) {
+    baseGoal *= 1.1;
+  } else if (appState.profile.age > 50) {
+    baseGoal *= 0.95;
+  }
+  
+  const activityMultiplier = ACTIVITY_LEVELS[appState.profile.activityLevel] || 1.0;
+  baseGoal *= activityMultiplier;
+  
+  const roundedGoal = Math.round(baseGoal / 50) * 50;
+  const finalGoal = Math.max(1500, Math.min(roundedGoal, 4000));
+  
+  document.getElementById('dailyGoalInput').value = finalGoal;
+  appState.profile.dailyGoal = finalGoal;
+  if (appState.todayData) {
+    appState.todayData.goal = finalGoal;
+  }
+  
+  showNotification(`Recommended daily goal: ${finalGoal}ml`, "success");
+  saveAllData();
+}
+
+function updateGreetingMessage() {
+  const hour = new Date().getHours();
+  let greeting = "Stay Hydrated, Stay Healthy";
+  
+  if (hour < 12) greeting = "Good morning! Stay hydrated today";
+  else if (hour < 18) greeting = "Good afternoon! Keep drinking water";
+  else greeting = "Good evening! Finish your hydration goal";
+  
+  document.getElementById('greetingMessage').textContent = greeting;
+}
+
+function createWaterDrops() {
+  const container = document.getElementById('waterDropsContainer');
+  if (!container) return;
+  
+  for (let i = 0; i < 15; i++) {
+    setTimeout(() => {
+      const drop = document.createElement('div');
+      drop.className = 'water-drop';
+      drop.style.left = `${Math.random() * 100}%`;
+      drop.style.animationDelay = `${Math.random() * 2}s`;
+      drop.style.width = `${Math.random() * 10 + 5}px`;
+      drop.style.height = `${Math.random() * 20 + 10}px`;
+      drop.style.opacity = Math.random() * 0.3 + 0.1;
+      
+      container.appendChild(drop);
+      
+      setTimeout(() => {
+        if (drop.parentNode) {
+          drop.parentNode.removeChild(drop);
+        }
+      }, 1500);
+    }, i * 300);
+  }
+  
+  setTimeout(createWaterDrops, 15000);
 }
 
 function adjustAge(change) {
@@ -2738,6 +2929,7 @@ function adjustAge(change) {
   input.value = value;
   appState.profile.age = value;
   document.getElementById('ageValue').textContent = value;
+  saveAllData();
 }
 
 function setAge(age) {
@@ -2745,6 +2937,7 @@ function setAge(age) {
   input.value = age;
   appState.profile.age = age;
   document.getElementById('ageValue').textContent = age;
+  saveAllData();
 }
 
 function updateAgeFromInput() {
@@ -2754,6 +2947,7 @@ function updateAgeFromInput() {
   input.value = value;
   appState.profile.age = value;
   document.getElementById('ageValue').textContent = value;
+  saveAllData();
 }
 
 function updateRuler(containerId, value) {
@@ -2830,120 +3024,6 @@ function initRuler(containerId, min, max, initial, unit, onChange) {
       container.scrollLeft = (tickIndex * tickWidth) - centerOffset + (tickWidth / 2);
     }
   }, 100);
-}
-
-function calculateRecommendedGoal() {
-  if (!appState.profile) return;
-  
-  let weightKg = appState.profile.weight;
-  if (appState.unitSystem === 'imperial') {
-    weightKg = weightKg / 2.20462;
-  }
-  
-  let heightCm = appState.profile.height;
-  if (appState.unitSystem === 'imperial') {
-    heightCm = heightCm * 2.54;
-  }
-  
-  let baseGoal;
-  if (appState.profile.gender === 'male') {
-    baseGoal = weightKg * 35;
-  } else if (appState.profile.gender === 'female') {
-    baseGoal = weightKg * 31;
-  } else {
-    baseGoal = weightKg * 33;
-  }
-  
-  const heightFactor = heightCm / 170;
-  baseGoal *= heightFactor;
-  
-  if (appState.profile.age < 18) {
-    baseGoal *= 1.1;
-  } else if (appState.profile.age > 50) {
-    baseGoal *= 0.95;
-  }
-  
-  const activityMultiplier = ACTIVITY_LEVELS[appState.profile.activityLevel] || 1.0;
-  baseGoal *= activityMultiplier;
-  
-  const roundedGoal = Math.round(baseGoal / 50) * 50;
-  const finalGoal = Math.max(1500, Math.min(roundedGoal, 4000));
-  
-  document.getElementById('dailyGoalInput').value = finalGoal;
-  appState.profile.dailyGoal = finalGoal;
-  if (appState.todayData) {
-    appState.todayData.goal = finalGoal;
-  }
-  
-  showNotification(`Recommended daily goal: ${finalGoal}ml`, "success");
-}
-
-function updateGreetingMessage() {
-  const hour = new Date().getHours();
-  let greeting = "Stay Hydrated, Stay Healthy";
-  
-  if (hour < 12) greeting = "Good morning! Stay hydrated today";
-  else if (hour < 18) greeting = "Good afternoon! Keep drinking water";
-  else greeting = "Good evening! Finish your hydration goal";
-  
-  document.getElementById('greetingMessage').textContent = greeting;
-}
-
-function createWaterDrops() {
-  const container = document.getElementById('waterDropsContainer');
-  if (!container) return;
-  
-  for (let i = 0; i < 15; i++) {
-    setTimeout(() => {
-      const drop = document.createElement('div');
-      drop.className = 'water-drop';
-      drop.style.left = `${Math.random() * 100}%`;
-      drop.style.animationDelay = `${Math.random() * 2}s`;
-      drop.style.width = `${Math.random() * 10 + 5}px`;
-      drop.style.height = `${Math.random() * 20 + 10}px`;
-      drop.style.opacity = Math.random() * 0.3 + 0.1;
-      
-      container.appendChild(drop);
-      
-      setTimeout(() => {
-        if (drop.parentNode) {
-          drop.parentNode.removeChild(drop);
-        }
-      }, 1500);
-    }, i * 300);
-  }
-  
-  setTimeout(createWaterDrops, 15000);
-}
-
-function quickAddDrink(type, amount) {
-  addDrink(type, amount);
-}
-
-function selectGender(gender) {
-  if (!appState.profile) return;
-  appState.profile.gender = gender;
-  
-  document.querySelectorAll('.gender-option').forEach(option => {
-    option.classList.remove('active');
-    if (option.dataset.gender === gender) {
-      option.classList.add('active');
-    }
-  });
-  
-  saveAllData();
-}
-
-function selectActivityLevel(level) {
-  if (!appState.profile) return;
-  appState.profile.activityLevel = level;
-  
-  document.querySelectorAll('.activity-level').forEach(item => {
-    item.classList.remove('active');
-    if (item.dataset.level === level) {
-      item.classList.add('active');
-    }
-  });
 }
 
 function updateStatistics() {
@@ -3120,6 +3200,20 @@ function updateCharts() {
   updateDistributionChart();
 }
 
+function changeChartType(type) {
+  appState.currentChartType = type;
+  document.querySelectorAll('.chart-actions .chart-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  updateCharts();
+}
+
+function changePieType(type) {
+  appState.currentPieType = type;
+  document.querySelectorAll('.chart-actions .chart-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  updateDistributionChart();
+}
+
 function updateDistributionChart() {
   if (!distributionChart) return;
   
@@ -3166,18 +3260,20 @@ function updateDistributionChart() {
   distributionChart.update();
 }
 
-function changeChartType(type) {
-  appState.currentChartType = type;
-  document.querySelectorAll('.chart-actions .chart-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
-  updateCharts();
-}
-
-function changePieType(type) {
-  appState.currentPieType = type;
-  document.querySelectorAll('.chart-actions .chart-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
-  updateDistributionChart();
+function openStats() {
+  showScreen('statsScreen');
+  updateStatistics();
+  renderCalendar();
+  
+  if (!trendChart || !distributionChart) {
+    initializeCharts();
+  } else {
+    updateCharts();
+  }
+  
+  setTimeout(() => {
+    updateDistributionChart();
+  }, 50);
 }
 
 function renderCalendar() {
@@ -3280,6 +3376,175 @@ function renderCalendar() {
     
     container.appendChild(dayElement);
   }
+}
+
+function showAchievementUnlock(achievement) {
+  createConfetti();
+  
+  const notification = document.createElement('div');
+  notification.className = 'achievement-notification';
+  notification.innerHTML = `
+    <i class="fas ${achievement.icon}"></i>
+    <div style="font-size: 18px; font-weight: 700; margin-bottom: 5px;">Achievement Unlocked!</div>
+    <div style="font-size: 16px; margin-bottom: 5px;">${achievement.name}</div>
+    <div style="font-size: 12px; opacity: 0.9;">${achievement.description}</div>
+    <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">${new Date().toLocaleDateString()}</div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.transition = 'transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s';
+    notification.style.transform = 'translateX(-50%) translateY(-100px)';
+    notification.style.opacity = '0';
+    
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 500);
+  }, 4000);
+}
+
+function createConfetti() {
+  const colors = ['#4fd1ff', '#6b7cff', '#8b5cf6', '#ffb84d', '#4dffb8'];
+  
+  for (let i = 0; i < 50; i++) {
+    setTimeout(() => {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = `${Math.random() * 100}%`;
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.width = `${Math.random() * 10 + 5}px`;
+      confetti.style.height = `${Math.random() * 10 + 5}px`;
+      confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+      confetti.style.animation = `confettiRain ${Math.random() * 2 + 1}s linear forwards`;
+      
+      document.body.appendChild(confetti);
+      
+      setTimeout(() => {
+        if (confetti.parentNode) {
+          confetti.parentNode.removeChild(confetti);
+        }
+      }, 2000);
+    }, i * 20);
+  }
+}
+
+function removeDrink(drinkIndex, fromHistory = false, date = null) {
+  if (!appState.todayData || !appState.todayData.drinks) return;
+  
+  const drinks = appState.todayData.drinks;
+  
+  if (drinkIndex >= 0 && drinkIndex < drinks.length) {
+    const removedDrink = drinks[drinkIndex];
+    const beverage = BEVERAGES[removedDrink.type];
+    
+    appState.todayData.consumed = Math.max(0, appState.todayData.consumed - removedDrink.waterContent);
+    
+    drinks.splice(drinkIndex, 1);
+    
+    appState.todayData.completed = appState.todayData.consumed >= appState.todayData.goal;
+    
+    saveAllData();
+    
+    updateDashboard();
+    updateRecentActivity();
+    updateTimeProgress();
+    updateStatistics();
+    
+    showNotification(`Removed ${removedDrink.amount}ml of ${beverage.name}`, "success");
+  }
+}
+
+function removeHistoricalDrink(dateStr, drinkIndex) {
+  if (!appState.historicalData[dateStr] || !appState.historicalData[dateStr].drinks) return;
+  
+  const dayData = appState.historicalData[dateStr];
+  const drinks = dayData.drinks;
+  
+  if (drinkIndex >= 0 && drinkIndex < drinks.length) {
+    const removedDrink = drinks[drinkIndex];
+    
+    dayData.consumed = Math.max(0, dayData.consumed - removedDrink.waterContent);
+    
+    const goal = appState.profile?.dailyGoal || 2000;
+    dayData.completed = dayData.consumed >= goal;
+    
+    drinks.splice(drinkIndex, 1);
+    
+    if (drinks.length === 0) {
+      delete dayData.drinks;
+    }
+    
+    saveAllData();
+    updateStatistics();
+    
+    if (document.getElementById('dateDetailModal').style.display === 'flex') {
+      showDateDetails(dateStr, dayData);
+    }
+    
+    showNotification("Drink removed from history", "success");
+  }
+}
+
+function updateRecentActivity() {
+  const container = document.getElementById('recentActivity');
+  if (!appState.todayData?.drinks) return;
+  
+  const recentDrinks = appState.todayData.drinks.slice(-5).reverse();
+  
+  if (recentDrinks.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--muted);">
+        <i class="fas fa-tint" style="font-size: 24px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
+        No drinks added yet today
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = '';
+  recentDrinks.forEach((drink, index) => {
+    const beverage = BEVERAGES[drink.type];
+    if (!beverage) return;
+    
+    const originalIndex = appState.todayData.drinks.length - 1 - index;
+    
+    const item = document.createElement('div');
+    item.className = 'drink-item-with-remove';
+    item.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      position: relative;
+    `;
+    
+    item.innerHTML = `
+      <button class="remove-drink-btn" onclick="removeDrink(${originalIndex})" title="Remove this drink">
+        <i class="fas fa-times"></i>
+      </button>
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+        <i class="fas ${beverage.icon}" style="color: ${beverage.color}; font-size: 20px;"></i>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px;">${beverage.name}</div>
+          <div style="font-size: 12px; color: var(--muted);">${drink.time}</div>
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-weight: 700; font-size: 16px; color: white;">${drink.amount}ml</div>
+        <div style="font-size: 11px; color: var(--accent);">${drink.waterContent}ml water</div>
+      </div>
+    `;
+    
+    container.appendChild(item);
+  });
 }
 
 function showDateDetails(dateStr, dayData) {
@@ -3634,208 +3899,53 @@ function showAchievementsModal() {
   openModal('achievementsModal');
 }
 
-function showAchievementUnlock(achievement) {
-  createConfetti();
+function saveProfile() {
+  appState.profile.name = document.getElementById('userNameInput').value.trim() || 'User';
   
-  const notification = document.createElement('div');
-  notification.className = 'achievement-notification';
-  notification.innerHTML = `
-    <i class="fas ${achievement.icon}"></i>
-    <div style="font-size: 18px; font-weight: 700; margin-bottom: 5px;">Achievement Unlocked!</div>
-    <div style="font-size: 16px; margin-bottom: 5px;">${achievement.name}</div>
-    <div style="font-size: 12px; opacity: 0.9;">${achievement.description}</div>
-    <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">${new Date().toLocaleDateString()}</div>
-  `;
+  updateHeightFromInput();
+  updateWeightFromInput();
   
-  document.body.appendChild(notification);
+  const ageInput = document.getElementById('ageManualInput');
+  let age = parseInt(ageInput.value);
+  age = Math.max(10, Math.min(100, isNaN(age) ? 25 : age));
+  ageInput.value = age;
+  appState.profile.age = age;
   
-  setTimeout(() => {
-    notification.style.transition = 'transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s';
-    notification.style.transform = 'translateX(-50%) translateY(-100px)';
-    notification.style.opacity = '0';
-    
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 500);
-  }, 4000);
-}
-
-function createConfetti() {
-  const colors = ['#4fd1ff', '#6b7cff', '#8b5cf6', '#ffb84d', '#4dffb8'];
+  const goalInput = document.getElementById('dailyGoalInput');
+  let dailyGoal = parseInt(goalInput.value);
+  dailyGoal = Math.max(1000, Math.min(5000, isNaN(dailyGoal) ? 2000 : dailyGoal));
+  goalInput.value = dailyGoal;
+  appState.profile.dailyGoal = dailyGoal;
   
-  for (let i = 0; i < 50; i++) {
-    setTimeout(() => {
-      const confetti = document.createElement('div');
-      confetti.className = 'confetti';
-      confetti.style.left = `${Math.random() * 100}%`;
-      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      confetti.style.width = `${Math.random() * 10 + 5}px`;
-      confetti.style.height = `${Math.random() * 10 + 5}px`;
-      confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-      confetti.style.animation = `confettiRain ${Math.random() * 2 + 1}s linear forwards`;
-      
-      document.body.appendChild(confetti);
-      
-      setTimeout(() => {
-        if (confetti.parentNode) {
-          confetti.parentNode.removeChild(confetti);
-        }
-      }, 2000);
-    }, i * 20);
-  }
-}
-
-function checkAndUpdateAchievements() {
-  if (!appState.profile) return;
-  
-  const achievements = appState.profile.achievements || {};
-  let newAchievements = [];
-  
-  ACHIEVEMENTS.forEach(achievement => {
-    if (!achievements[achievement.id] || !achievements[achievement.id].unlocked) {
-      if (achievement.condition(appState.profile, appState.todayData, appState.historicalData)) {
-        if (!achievements[achievement.id]) {
-          achievements[achievement.id] = {
-            unlocked: true,
-            unlockedAt: new Date().toISOString()
-          };
-          newAchievements.push(achievement);
-        }
-      }
-    }
-  });
-  
-  appState.profile.achievements = achievements;
-  
-  if (newAchievements.length > 0) {
-    showAchievementUnlock(newAchievements[0]);
-    
-    for (let i = 1; i < newAchievements.length; i++) {
-      setTimeout(() => {
-        showAchievementUnlock(newAchievements[i]);
-      }, i * 4500);
-    }
-    
-    saveAllData();
-  }
-}
-
-function removeDrink(drinkIndex, fromHistory = false, date = null) {
-  if (!appState.todayData || !appState.todayData.drinks) return;
-  
-  const drinks = appState.todayData.drinks;
-  
-  if (drinkIndex >= 0 && drinkIndex < drinks.length) {
-    const removedDrink = drinks[drinkIndex];
-    const beverage = BEVERAGES[removedDrink.type];
-    
-    appState.todayData.consumed = Math.max(0, appState.todayData.consumed - removedDrink.waterContent);
-    
-    drinks.splice(drinkIndex, 1);
-    
-    appState.todayData.completed = appState.todayData.consumed >= appState.todayData.goal;
-    
-    saveAllData();
-    
-    updateDashboard();
-    updateRecentActivity();
-    updateTimeProgress();
-    updateStatistics();
-    
-    showNotification(`Removed ${removedDrink.amount}ml of ${beverage.name}`, "success");
-  }
-}
-
-function removeHistoricalDrink(dateStr, drinkIndex) {
-  if (!appState.historicalData[dateStr] || !appState.historicalData[dateStr].drinks) return;
-  
-  const dayData = appState.historicalData[dateStr];
-  const drinks = dayData.drinks;
-  
-  if (drinkIndex >= 0 && drinkIndex < drinks.length) {
-    const removedDrink = drinks[drinkIndex];
-    
-    dayData.consumed = Math.max(0, dayData.consumed - removedDrink.waterContent);
-    
-    const goal = appState.profile?.dailyGoal || 2000;
-    dayData.completed = dayData.consumed >= goal;
-    
-    drinks.splice(drinkIndex, 1);
-    
-    if (drinks.length === 0) {
-      delete dayData.drinks;
-    }
-    
-    saveAllData();
-    updateStatistics();
-    
-    if (document.getElementById('dateDetailModal').style.display === 'flex') {
-      showDateDetails(dateStr, dayData);
-    }
-    
-    showNotification("Drink removed from history", "success");
-  }
-}
-
-function updateRecentActivity() {
-  const container = document.getElementById('recentActivity');
-  if (!appState.todayData?.drinks) return;
-  
-  const recentDrinks = appState.todayData.drinks.slice(-5).reverse();
-  
-  if (recentDrinks.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 20px; color: var(--muted);">
-        <i class="fas fa-tint" style="font-size: 24px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
-        No drinks added yet today
-      </div>
-    `;
-    return;
+  const activeGender = document.querySelector('.gender-option.active');
+  if (activeGender) {
+    appState.profile.gender = activeGender.dataset.gender;
   }
   
-  container.innerHTML = '';
-  recentDrinks.forEach((drink, index) => {
-    const beverage = BEVERAGES[drink.type];
-    if (!beverage) return;
-    
-    const originalIndex = appState.todayData.drinks.length - 1 - index;
-    
-    const item = document.createElement('div');
-    item.className = 'drink-item-with-remove';
-    item.style.cssText = `
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      margin-bottom: 8px;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      transition: all 0.3s ease;
-      position: relative;
-    `;
-    
-    item.innerHTML = `
-      <button class="remove-drink-btn" onclick="removeDrink(${originalIndex})" title="Remove this drink">
-        <i class="fas fa-times"></i>
-      </button>
-      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-        <i class="fas ${beverage.icon}" style="color: ${beverage.color}; font-size: 20px;"></i>
-        <div style="flex: 1;">
-          <div style="font-weight: 600; font-size: 14px;">${beverage.name}</div>
-          <div style="font-size: 12px; color: var(--muted);">${drink.time}</div>
-        </div>
-      </div>
-      <div style="text-align: right;">
-        <div style="font-weight: 700; font-size: 16px; color: white;">${drink.amount}ml</div>
-        <div style="font-size: 11px; color: var(--accent);">${drink.waterContent}ml water</div>
-      </div>
-    `;
-    
-    container.appendChild(item);
-  });
+  const activeActivity = document.querySelector('.activity-level.active');
+  if (activeActivity) {
+    appState.profile.activityLevel = activeActivity.dataset.level;
+  }
+  
+  appState.settings.reminders = {
+    enabled: document.getElementById('remindersEnabled').checked,
+    frequency: parseInt(document.getElementById('reminderFrequency').value),
+    time: document.getElementById('reminderTime').value
+  };
+  
+  if (appState.todayData) {
+    appState.todayData.goal = dailyGoal;
+  }
+  
+  appState.profile.profileCompleted = true;
+  
+  saveAllData();
+  
+  updateDashboard();
+  setupReminders();
+  
+  showNotification("Profile saved successfully!", "success");
+  closeProfile();
 }
 
 function showScreen(screenId) {
@@ -3864,22 +3974,6 @@ function openProfile() {
 
 function closeProfile() {
   showScreen('dashboard');
-}
-
-function openStats() {
-  showScreen('statsScreen');
-  updateStatistics();
-  renderCalendar();
-  
-  if (!trendChart || !distributionChart) {
-    initializeCharts();
-  } else {
-    updateCharts();
-  }
-  
-  setTimeout(() => {
-    updateDistributionChart();
-  }, 50);
 }
 
 function openDrinkModal() {
