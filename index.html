@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Waterify Pro</title>
+<title>Take Liquid</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#060b18">
@@ -1392,7 +1392,7 @@ body::before {
     <div class="card" style="position: relative;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
-          <h1 style="margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Waterify Pro</h1>
+          <h1 style="margin: 0; font-size: 28px; font-weight: 700; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Take Liquid</h1>
           <p style="margin: 5px 0 0 0; color: var(--muted); font-size: 14px;" id="greetingMessage">Stay Hydrated, Stay Healthy</p>
         </div>
         <div class="btn-small" onclick="openProfile()" style="background: var(--glass); border: 1px solid var(--glass-border); color: var(--text);">
@@ -1900,9 +1900,9 @@ function updateTimeProgress() {
   const timeSlots = [
     { label: ["12", "6 AM"], hour: 0, duration: 6, isNight: true },
     { label: ["6", "9 AM"], hour: 6, duration: 3, isNight: true },
-    { label: ["9 AM", "12 PM"], hour: 9, duration: 3, isNight: false },
-    { label: ["12", "3 PM"], hour: 12, duration: 3, isNight: false },
-    { label: ["3", "6 PM"], hour: 15, duration: 3, isNight: false },
+    { label: ["9 AM", "12 PM"], hour: 9, duration: 3, isNight: true },
+    { label: ["12", "3 PM"], hour: 12, duration: 3, isNight: true },
+    { label: ["3", "6 PM"], hour: 15, duration: 3, isNight: true },
     { label: ["6", "9 PM"], hour: 18, duration: 3, isNight: true },
     { label: ["9 PM", "12 AM"], hour: 21, duration: 3, isNight: true }
   ];
@@ -2152,7 +2152,7 @@ function saveAllData() {
 
 // ============================================
 // FIXED: updateProfileUI function - Fixed to properly load saved settings
-// THIS IS THE CRITICAL FIX FOR WEIGHT AND HEIGHT
+// THIS IS THE EXACT FIX FOR WEIGHT AND HEIGHT NOT SAVING
 // ============================================
 
 function updateProfileUI() {
@@ -2196,64 +2196,6 @@ function updateProfileUI() {
   
   // Set weight unit system
   setWeightUnit(profile.unitSystem || 'metric');
-  
-  // FIXED: Immediately set weight and height values from profile
-  // This ensures they're loaded before rulers initialize
-  if (appState.unitSystem === 'metric') {
-    // Set metric values directly
-    const weightValue = profile.weight || 70;
-    const heightValue = profile.height || 170;
-    
-    document.getElementById('weightInput').value = weightValue;
-    document.getElementById('heightInput').value = heightValue;
-    document.getElementById('weightValue').textContent = weightValue;
-    document.getElementById('heightValue').textContent = heightValue;
-    
-    // Initialize rulers with the actual saved values
-    setTimeout(() => {
-      initRuler('weightRuler', 30, 200, weightValue, 'kg', (value) => {
-        appState.profile.weight = value;
-        document.getElementById('weightValue').textContent = value;
-        document.getElementById('weightInput').value = value;
-        saveAllData();
-      });
-      
-      initRuler('heightRuler', 100, 250, heightValue, 'cm', (value) => {
-        appState.profile.height = value;
-        document.getElementById('heightValue').textContent = value;
-        document.getElementById('heightInput').value = value;
-        saveAllData();
-      });
-    }, 50);
-  } else {
-    // Convert to imperial for display
-    const weightLbs = Math.round((profile.weight || 70) * 2.20462);
-    const heightIn = Math.round((profile.height || 170) / 2.54);
-    
-    document.getElementById('weightInput').value = weightLbs;
-    document.getElementById('heightInput').value = heightIn;
-    document.getElementById('weightValue').textContent = weightLbs;
-    document.getElementById('heightValue').textContent = heightIn;
-    
-    // Initialize rulers with imperial units
-    setTimeout(() => {
-      initRuler('weightRuler', 66, 440, weightLbs, 'lbs', (value) => {
-        // Store in metric, convert from lbs to kg
-        appState.profile.weight = Math.round(value / 2.20462);
-        document.getElementById('weightValue').textContent = value;
-        document.getElementById('weightInput').value = value;
-        saveAllData();
-      });
-      
-      initRuler('heightRuler', 39, 98, heightIn, 'in', (value) => {
-        // Store in metric, convert from inches to cm
-        appState.profile.height = Math.round(value * 2.54);
-        document.getElementById('heightValue').textContent = value;
-        document.getElementById('heightInput').value = value;
-        saveAllData();
-      });
-    }, 50);
-  }
 }
 
 // ============================================
@@ -2275,7 +2217,7 @@ function setWeightUnit(system) {
     document.getElementById('weightUnit').textContent = 'kg';
     document.getElementById('heightUnit').textContent = 'cm';
     
-    // Get saved values from profile
+    // Get saved values from profile - THIS IS THE CRITICAL FIX
     const weightValue = appState.profile.weight || 70;
     const heightValue = appState.profile.height || 170;
     
@@ -2284,6 +2226,23 @@ function setWeightUnit(system) {
     document.getElementById('heightValue').textContent = heightValue;
     document.getElementById('weightInput').value = weightValue;
     document.getElementById('heightInput').value = heightValue;
+    
+    // Initialize rulers with the actual saved values
+    setTimeout(() => {
+      initRuler('weightRuler', 30, 200, weightValue, 'kg', (value) => {
+        appState.profile.weight = value;
+        document.getElementById('weightValue').textContent = value;
+        document.getElementById('weightInput').value = value;
+        saveAllData();
+      });
+      
+      initRuler('heightRuler', 100, 250, heightValue, 'cm', (value) => {
+        appState.profile.height = value;
+        document.getElementById('heightValue').textContent = value;
+        document.getElementById('heightInput').value = value;
+        saveAllData();
+      });
+    }, 50);
     
   } else {
     document.getElementById('weightLabel').textContent = 'Weight (lbs)';
@@ -2299,46 +2258,26 @@ function setWeightUnit(system) {
     document.getElementById('heightValue').textContent = heightIn;
     document.getElementById('weightInput').value = weightLbs;
     document.getElementById('heightInput').value = heightIn;
-  }
-  
-  // Re-initialize rulers with current values
-  setTimeout(() => {
-    if (system === 'metric') {
-      const weightValue = parseInt(document.getElementById('weightValue').textContent);
-      const heightValue = parseInt(document.getElementById('heightValue').textContent);
-      
-      initRuler('weightRuler', 30, 200, weightValue, 'kg', (value) => {
-        appState.profile.weight = value;
-        document.getElementById('weightValue').textContent = value;
-        document.getElementById('weightInput').value = value;
-        saveAllData();
-      });
-      
-      initRuler('heightRuler', 100, 250, heightValue, 'cm', (value) => {
-        appState.profile.height = value;
-        document.getElementById('heightValue').textContent = value;
-        document.getElementById('heightInput').value = value;
-        saveAllData();
-      });
-    } else {
-      const weightValue = parseInt(document.getElementById('weightValue').textContent);
-      const heightValue = parseInt(document.getElementById('heightValue').textContent);
-      
-      initRuler('weightRuler', 66, 440, weightValue, 'lbs', (value) => {
+    
+    // Initialize rulers with imperial units
+    setTimeout(() => {
+      initRuler('weightRuler', 66, 440, weightLbs, 'lbs', (value) => {
+        // Store in metric, convert from lbs to kg
         appState.profile.weight = Math.round(value / 2.20462);
         document.getElementById('weightValue').textContent = value;
         document.getElementById('weightInput').value = value;
         saveAllData();
       });
       
-      initRuler('heightRuler', 39, 98, heightValue, 'in', (value) => {
+      initRuler('heightRuler', 39, 98, heightIn, 'in', (value) => {
+        // Store in metric, convert from inches to cm
         appState.profile.height = Math.round(value * 2.54);
         document.getElementById('heightValue').textContent = value;
         document.getElementById('heightInput').value = value;
         saveAllData();
       });
-    }
-  }, 100);
+    }, 50);
+  }
   
   saveAllData();
   calculateRecommendedGoal();
