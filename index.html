@@ -1952,7 +1952,7 @@ function initializeApp() {
   // Check if this is a completely new user (no profile at all)
   const isNewUser = !appState.profile || !appState.profile.name || appState.profile.name === "User";
   
-  // Initialize profile if doesn't exist
+  // FIX: Initialize profile with proper defaults if doesn't exist
   if (!appState.profile) {
     appState.profile = {
       name: "User",
@@ -1970,6 +1970,24 @@ function initializeApp() {
       profileCompleted: false
     };
   }
+  
+  // FIX: Ensure all profile fields exist with defaults if they're missing
+  const profileDefaults = {
+    weight: 70,
+    height: 170,
+    age: 25,
+    gender: 'male',
+    activityLevel: 'moderate',
+    dailyGoal: 2000,
+    unitSystem: 'metric',
+    name: 'User'
+  };
+  
+  Object.keys(profileDefaults).forEach(key => {
+    if (appState.profile[key] === undefined || appState.profile[key] === null) {
+      appState.profile[key] = profileDefaults[key];
+    }
+  });
   
   // Ensure unit system is set
   appState.unitSystem = appState.profile.unitSystem || 'metric';
@@ -2017,9 +2035,12 @@ function initializeApp() {
   appState.currentMonth = now.getMonth();
   appState.currentYear = now.getFullYear();
   
+  // Save the initialized profile
+  saveAllData();
+  
   // Update UI
   updateDashboard();
-  updateProfileUI();
+  updateProfileUI(); // This will now properly load all values
   updateTimeProgress();
   setupReminders();
   updateGreetingMessage();
@@ -2164,38 +2185,51 @@ function updateProfileUI() {
   document.getElementById('userName').textContent = profile.name || 'Profile';
   document.getElementById('userNameInput').value = profile.name || '';
   
-  // Update age
-  document.getElementById('ageValue').textContent = profile.age || 25;
-  document.getElementById('ageManualInput').value = profile.age || 25;
+  // FIX: Ensure age is loaded properly
+  const savedAge = profile.age || 25;
+  document.getElementById('ageValue').textContent = savedAge;
+  document.getElementById('ageManualInput').value = savedAge;
+  appState.profile.age = savedAge; // Ensure it's stored back
   
-  // Update daily goal
-  document.getElementById('dailyGoalInput').value = profile.dailyGoal || 2000;
+  // FIX: Ensure daily goal is loaded properly
+  const savedGoal = profile.dailyGoal || 2000;
+  document.getElementById('dailyGoalInput').value = savedGoal;
+  appState.profile.dailyGoal = savedGoal;
   
   // Update reminders
   if (appState.settings.reminders) {
-    document.getElementById('remindersEnabled').checked = appState.settings.reminders.enabled || true;
+    document.getElementById('remindersEnabled').checked = appState.settings.reminders.enabled !== false; // Default to true
     document.getElementById('reminderTime').value = appState.settings.reminders.time || "09:00";
     document.getElementById('reminderFrequency').value = appState.settings.reminders.frequency || 2;
   }
   
-  // Update gender selection
+  // Update gender selection - FIX: Ensure gender is loaded
+  const savedGender = profile.gender || 'male';
   document.querySelectorAll('.gender-option').forEach(option => {
     option.classList.remove('active');
-    if (option.dataset.gender === profile.gender) {
+    if (option.dataset.gender === savedGender) {
       option.classList.add('active');
     }
   });
+  appState.profile.gender = savedGender;
   
-  // Update activity level selection
+  // Update activity level selection - FIX: Ensure activity level is loaded
+  const savedActivity = profile.activityLevel || 'moderate';
   document.querySelectorAll('.activity-level').forEach(item => {
     item.classList.remove('active');
-    if (item.dataset.level === profile.activityLevel) {
+    if (item.dataset.level === savedActivity) {
       item.classList.add('active');
     }
   });
+  appState.profile.activityLevel = savedActivity;
   
-  // Set weight unit system
-  setWeightUnit(profile.unitSystem || 'metric');
+  // FIX: Call setWeightUnit after a delay to ensure profile is fully loaded
+  setTimeout(() => {
+    setWeightUnit(profile.unitSystem || 'metric');
+  }, 200);
+  
+  // Save the updated profile
+  saveAllData();
 }
 
 // ============================================
@@ -2227,22 +2261,30 @@ function setWeightUnit(system) {
     document.getElementById('weightInput').value = weightValue;
     document.getElementById('heightInput').value = heightValue;
     
+    // Store values back to profile to ensure they're saved
+    appState.profile.weight = weightValue;
+    appState.profile.height = heightValue;
+    
     // Initialize rulers with the actual saved values
     setTimeout(() => {
-      initRuler('weightRuler', 30, 200, weightValue, 'kg', (value) => {
-        appState.profile.weight = value;
-        document.getElementById('weightValue').textContent = value;
-        document.getElementById('weightInput').value = value;
-        saveAllData();
-      });
+      if (document.getElementById('weightRuler')) {
+        initRuler('weightRuler', 30, 200, weightValue, 'kg', (value) => {
+          appState.profile.weight = value;
+          document.getElementById('weightValue').textContent = value;
+          document.getElementById('weightInput').value = value;
+          saveAllData();
+        });
+      }
       
-      initRuler('heightRuler', 100, 250, heightValue, 'cm', (value) => {
-        appState.profile.height = value;
-        document.getElementById('heightValue').textContent = value;
-        document.getElementById('heightInput').value = value;
-        saveAllData();
-      });
-    }, 50);
+      if (document.getElementById('heightRuler')) {
+        initRuler('heightRuler', 100, 250, heightValue, 'cm', (value) => {
+          appState.profile.height = value;
+          document.getElementById('heightValue').textContent = value;
+          document.getElementById('heightInput').value = value;
+          saveAllData();
+        });
+      }
+    }, 300); // Increased delay to ensure DOM is ready
     
   } else {
     document.getElementById('weightLabel').textContent = 'Weight (lbs)';
@@ -2251,8 +2293,11 @@ function setWeightUnit(system) {
     document.getElementById('heightUnit').textContent = 'in';
     
     // Convert from stored metric to imperial for display
-    const weightLbs = Math.round((appState.profile.weight || 70) * 2.20462);
-    const heightIn = Math.round((appState.profile.height || 170) / 2.54);
+    // FIX: Use saved values from profile
+    const weightKg = appState.profile.weight || 70;
+    const heightCm = appState.profile.height || 170;
+    const weightLbs = Math.round(weightKg * 2.20462);
+    const heightIn = Math.round(heightCm / 2.54);
     
     document.getElementById('weightValue').textContent = weightLbs;
     document.getElementById('heightValue').textContent = heightIn;
@@ -2261,22 +2306,26 @@ function setWeightUnit(system) {
     
     // Initialize rulers with imperial units
     setTimeout(() => {
-      initRuler('weightRuler', 66, 440, weightLbs, 'lbs', (value) => {
-        // Store in metric, convert from lbs to kg
-        appState.profile.weight = Math.round(value / 2.20462);
-        document.getElementById('weightValue').textContent = value;
-        document.getElementById('weightInput').value = value;
-        saveAllData();
-      });
+      if (document.getElementById('weightRuler')) {
+        initRuler('weightRuler', 66, 440, weightLbs, 'lbs', (value) => {
+          // Store in metric, convert from lbs to kg
+          appState.profile.weight = Math.round(value / 2.20462);
+          document.getElementById('weightValue').textContent = value;
+          document.getElementById('weightInput').value = value;
+          saveAllData();
+        });
+      }
       
-      initRuler('heightRuler', 39, 98, heightIn, 'in', (value) => {
-        // Store in metric, convert from inches to cm
-        appState.profile.height = Math.round(value * 2.54);
-        document.getElementById('heightValue').textContent = value;
-        document.getElementById('heightInput').value = value;
-        saveAllData();
-      });
-    }, 50);
+      if (document.getElementById('heightRuler')) {
+        initRuler('heightRuler', 39, 98, heightIn, 'in', (value) => {
+          // Store in metric, convert from inches to cm
+          appState.profile.height = Math.round(value * 2.54);
+          document.getElementById('heightValue').textContent = value;
+          document.getElementById('heightInput').value = value;
+          saveAllData();
+        });
+      }
+    }, 300); // Increased delay to ensure DOM is ready
   }
   
   saveAllData();
@@ -2657,9 +2706,11 @@ function updateWeightFromInput() {
   document.getElementById('weightValue').textContent = value;
   updateRuler('weightRuler', value);
   
+  // Save to profile (converting if necessary)
   if (appState.unitSystem === 'metric') {
     appState.profile.weight = value;
   } else {
+    // Convert lbs to kg for storage
     appState.profile.weight = Math.round(value / 2.20462);
   }
   
@@ -3012,6 +3063,8 @@ function updateAgeFromInput() {
 
 function updateRuler(containerId, value) {
   const container = document.getElementById(containerId);
+  if (!container) return;
+  
   Array.from(container.children).forEach(tick => {
     const tickValue = parseInt(tick.dataset.value);
     tick.classList.toggle('active', tickValue === value);
@@ -3020,6 +3073,8 @@ function updateRuler(containerId, value) {
 
 function initRuler(containerId, min, max, initial, unit, onChange) {
   const container = document.getElementById(containerId);
+  if (!container) return;
+  
   container.innerHTML = '';
   
   for (let i = min; i <= max; i++) {
@@ -3075,6 +3130,7 @@ function initRuler(containerId, min, max, initial, unit, onChange) {
     }, 150);
   });
   
+  // FIX: Scroll to the correct position
   setTimeout(() => {
     const tickWidth = 40;
     const centerOffset = container.clientWidth / 2;
@@ -3083,7 +3139,7 @@ function initRuler(containerId, min, max, initial, unit, onChange) {
       const tickIndex = Array.from(container.children).indexOf(targetTick);
       container.scrollLeft = (tickIndex * tickWidth) - centerOffset + (tickWidth / 2);
     }
-  }, 100);
+  }, 300); // Increased delay to ensure container is ready
 }
 
 function updateStatistics() {
@@ -3959,48 +4015,65 @@ function showAchievementsModal() {
   openModal('achievementsModal');
 }
 
+// ============================================
+// FIXED: saveProfile function - Ensure all values are saved
+// ============================================
+
 function saveProfile() {
-  appState.profile.name = document.getElementById('userNameInput').value.trim() || 'User';
+  // Get and save name
+  const nameInput = document.getElementById('userNameInput');
+  appState.profile.name = nameInput.value.trim() || 'User';
   
+  // FIX: Save height and weight from current display values
+  // This ensures the displayed values are saved, not just input fields
   updateHeightFromInput();
   updateWeightFromInput();
   
+  // Save age
   const ageInput = document.getElementById('ageManualInput');
   let age = parseInt(ageInput.value);
   age = Math.max(10, Math.min(100, isNaN(age) ? 25 : age));
   ageInput.value = age;
   appState.profile.age = age;
   
+  // Save daily goal
   const goalInput = document.getElementById('dailyGoalInput');
   let dailyGoal = parseInt(goalInput.value);
   dailyGoal = Math.max(1000, Math.min(5000, isNaN(dailyGoal) ? 2000 : dailyGoal));
   goalInput.value = dailyGoal;
   appState.profile.dailyGoal = dailyGoal;
   
+  // Save gender
   const activeGender = document.querySelector('.gender-option.active');
   if (activeGender) {
     appState.profile.gender = activeGender.dataset.gender;
   }
   
+  // Save activity level
   const activeActivity = document.querySelector('.activity-level.active');
   if (activeActivity) {
     appState.profile.activityLevel = activeActivity.dataset.level;
   }
   
+  // Save reminders
   appState.settings.reminders = {
     enabled: document.getElementById('remindersEnabled').checked,
     frequency: parseInt(document.getElementById('reminderFrequency').value),
     time: document.getElementById('reminderTime').value
   };
   
+  // Update today's goal
   if (appState.todayData) {
     appState.todayData.goal = dailyGoal;
   }
   
+  // Mark profile as completed
   appState.profile.profileCompleted = true;
   
+  // Save all data
   saveAllData();
   
+  // Update dashboard
   updateDashboard();
   setupReminders();
   
