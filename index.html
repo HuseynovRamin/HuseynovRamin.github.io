@@ -3578,9 +3578,6 @@ function showAchievementsModal() {
 // ============================================
 // FIXED: saveProfile function - Ensure all values are saved
 // ============================================
-function saveAppState() {
-  localStorage.setItem('appState', JSON.stringify(appState));
-}
 function saveProfile() {
   // Get and save name
   const nameInput = document.getElementById('userNameInput');
@@ -3610,7 +3607,6 @@ function saveProfile() {
   if (activeGender) {
     appState.profile.gender = activeGender.dataset.gender;
   }
-  saveAppState();
 
   
   // Save activity level
