@@ -1898,13 +1898,13 @@ function updateTimeProgress() {
   
   // Updated time slots with proper line breaks
   const timeSlots = [
-    { label: ["12", "6 AM"], hour: 0, duration: 6, isNight: true },
-    { label: ["6", "9 AM"], hour: 6, duration: 3, isNight: true },
-    { label: ["9 AM", "12 PM"], hour: 9, duration: 3, isNight: true },
-    { label: ["12", "3 PM"], hour: 12, duration: 3, isNight: true },
-    { label: ["3", "6 PM"], hour: 15, duration: 3, isNight: true },
-    { label: ["6", "9 PM"], hour: 18, duration: 3, isNight: true },
-    { label: ["9 PM", "12 AM"], hour: 21, duration: 3, isNight: true }
+    { label: ["12-6 AM"], hour: 0, duration: 6, isNight: true },
+    { label: ["6-9 AM"], hour: 6, duration: 3, isNight: true },
+    { label: ["9AM - 12PM"], hour: 9, duration: 3, isNight: true },
+    { label: ["12-3 PM"], hour: 12, duration: 3, isNight: true },
+    { label: ["3-6 PM"], hour: 15, duration: 3, isNight: true },
+    { label: ["6-9 PM"], hour: 18, duration: 3, isNight: true },
+    { label: ["9PM - 12AM"], hour: 21, duration: 3, isNight: true }
   ];
 
   const currentHour = new Date().getHours();
