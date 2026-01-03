@@ -1,6 +1,6 @@
 {
-  "name": "Waterify",
-  "short_name": "Waterify",
+  "name": "Take Liquid",
+  "short_name": "Take Liquid",
   "description": "Smart daily hydration tracker",
   "start_url": "./index.html",
   "display": "standalone",
