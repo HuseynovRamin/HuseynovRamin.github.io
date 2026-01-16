@@ -2246,9 +2246,9 @@ function setWeightUnit(system) {
     document.getElementById('weightUnit').textContent = 'kg';
     document.getElementById('heightUnit').textContent = 'cm';
     
-    // Get saved values from profile - THIS IS THE CRITICAL FIX
-    const weightValue = appState.profile.weight || 70;
-    const heightValue = appState.profile.height || 170;
+    // FIX: Get values from profile but DON'T overwrite with defaults if they exist
+    const weightValue = appState.profile.weight !== undefined ? appState.profile.weight : 70;
+    const heightValue = appState.profile.height !== undefined ? appState.profile.height : 170;
     
     // Update display values
     document.getElementById('weightValue').textContent = weightValue;
@@ -2256,9 +2256,10 @@ function setWeightUnit(system) {
     document.getElementById('weightInput').value = weightValue;
     document.getElementById('heightInput').value = heightValue;
     
-    // Store values back to profile to ensure they're saved
-    appState.profile.weight = weightValue;
-    appState.profile.height = heightValue;
+    // FIX: Only set defaults if values don't exist
+    if (appState.profile.weight === undefined) appState.profile.weight = weightValue;
+    if (appState.profile.height === undefined) appState.profile.height = heightValue;
+
     
     // Initialize rulers with the actual saved values
     setTimeout(() => {
@@ -2288,9 +2289,9 @@ function setWeightUnit(system) {
     document.getElementById('heightUnit').textContent = 'in';
     
     // Convert from stored metric to imperial for display
-    // FIX: Use saved values from profile
-    const weightKg = appState.profile.weight || 70;
-    const heightCm = appState.profile.height || 170;
+    // FIX: Check if values exist before using defaults
+    const weightKg = appState.profile.weight !== undefined ? appState.profile.weight : 70;
+    const heightCm = appState.profile.height !== undefined ? appState.profile.height : 170;
     const weightLbs = Math.round(weightKg * 2.20462);
     const heightIn = Math.round(heightCm / 2.54);
     
@@ -2298,6 +2299,10 @@ function setWeightUnit(system) {
     document.getElementById('heightValue').textContent = heightIn;
     document.getElementById('weightInput').value = weightLbs;
     document.getElementById('heightInput').value = heightIn;
+    
+    // FIX: Only set defaults if values don't exist
+    if (appState.profile.weight === undefined) appState.profile.weight = weightKg;
+    if (appState.profile.height === undefined) appState.profile.height = heightCm;
     
     // Initialize rulers with imperial units
     setTimeout(() => {
@@ -2310,16 +2315,7 @@ function setWeightUnit(system) {
           saveAllData();
         });
       }
-      
-      if (document.getElementById('heightRuler')) {
-        initRuler('heightRuler', 39, 98, heightIn, 'in', (value) => {
-          // Store in metric, convert from inches to cm
-          appState.profile.height = Math.round(value * 2.54);
-          document.getElementById('heightValue').textContent = value;
-          document.getElementById('heightInput').value = value;
-          saveAllData();
-        });
-      }
+
     }, 300); // Increased delay to ensure DOM is ready
   }
   
