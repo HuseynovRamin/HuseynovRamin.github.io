@@ -1551,7 +1551,7 @@ body::before {
       <div class="advanced-stats">
         <div class="chart-container">
           <div class="chart-header">
-            <div class="chart-title">Statistics</div>
+            <div class="chart-title">Statistics:</div>
             <div class="chart-actions">
               <button class="chart-btn active" onclick="changeChartType('weekly')">Week</button>
               <button class="chart-btn" onclick="changeChartType('monthly')">Month</button>
@@ -1586,7 +1586,7 @@ body::before {
       </div>
       <div style="display: flex; justify-content: space-between; margin-top: 20px;">
         <button class="btn-small" onclick="prevMonth()"><i class="fas fa-chevron-left"></i> Prev</button>
-        <span id="currentMonth" style="font-weight: 600; color: var(--accent);">January 2024</span>
+        <span id="currentMonth" style="font-weight: 600; color: var(--accent);">January 2026</span>
         <button class="btn-small" onclick="nextMonth()">Next <i class="fas fa-chevron-right"></i></button>
       </div>
     </div>
@@ -3183,7 +3183,7 @@ function initializeCharts() {
         fill: true,
         tension: 0.4,
         pointBackgroundColor: 'var(--accent)',
-        pointBorderColor: '#fff',
+        pointBorderColor: '#ffffff',
         pointBorderWidth: 2,
         pointRadius: 6
       }]
@@ -3195,7 +3195,7 @@ function initializeCharts() {
         legend: { display: false },
         tooltip: {
           backgroundColor: 'rgba(18, 26, 47, 0.95)',
-          titleColor: 'var(--accent)',
+          titleColor: '#ffffff',
           bodyColor: '#ffffff',
           borderColor: 'var(--accent)',
           borderWidth: 1,
