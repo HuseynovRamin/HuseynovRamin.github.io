@@ -781,7 +781,7 @@ body::before {
   font-size: 14px;
 }
 
-/* FIX: Changed drink percentage text from black to white for better visibility */
+/* FIX 3: Changed drink percentage text from black to white for better visibility */
 .drink-percentage {
   font-size: 12px;
   color: white !important; /* Changed from var(--muted) to white */
@@ -2218,10 +2218,18 @@ function updateProfileUI() {
   });
   appState.profile.activityLevel = savedActivity;
   
-  // FIX: Call setWeightUnit after a delay to ensure profile is fully loaded
-  setTimeout(() => {
-    setWeightUnit(profile.unitSystem || 'metric');
-  }, 200);
+  // FIX: Load weight and height values directly from profile BEFORE setting unit
+  // This ensures we use saved values, not defaults
+  const savedWeight = profile.weight !== undefined ? profile.weight : 70;
+  const savedHeight = profile.height !== undefined ? profile.height : 170;
+  
+  // Store these in appState immediately
+  appState.profile.weight = savedWeight;
+  appState.profile.height = savedHeight;
+  
+  // Now call setWeightUnit with the saved unit system
+  const savedUnitSystem = profile.unitSystem || 'metric';
+  setWeightUnit(savedUnitSystem);
   
   // Save the updated profile
   saveAllData();
@@ -2246,7 +2254,7 @@ function setWeightUnit(system) {
     document.getElementById('weightUnit').textContent = 'kg';
     document.getElementById('heightUnit').textContent = 'cm';
     
-    // FIX: Get values from profile but DON'T overwrite with defaults if they exist
+    // FIX: Get values from profile - use saved values, not defaults
     const weightValue = appState.profile.weight !== undefined ? appState.profile.weight : 70;
     const heightValue = appState.profile.height !== undefined ? appState.profile.height : 170;
     
@@ -2255,11 +2263,6 @@ function setWeightUnit(system) {
     document.getElementById('heightValue').textContent = heightValue;
     document.getElementById('weightInput').value = weightValue;
     document.getElementById('heightInput').value = heightValue;
-    
-    // FIX: Only set defaults if values don't exist
-    if (appState.profile.weight === undefined) appState.profile.weight = weightValue;
-    if (appState.profile.height === undefined) appState.profile.height = heightValue;
-
     
     // Initialize rulers with the actual saved values
     setTimeout(() => {
@@ -2289,7 +2292,7 @@ function setWeightUnit(system) {
     document.getElementById('heightUnit').textContent = 'in';
     
     // Convert from stored metric to imperial for display
-    // FIX: Check if values exist before using defaults
+    // FIX: Use saved values from profile
     const weightKg = appState.profile.weight !== undefined ? appState.profile.weight : 70;
     const heightCm = appState.profile.height !== undefined ? appState.profile.height : 170;
     const weightLbs = Math.round(weightKg * 2.20462);
@@ -2299,10 +2302,6 @@ function setWeightUnit(system) {
     document.getElementById('heightValue').textContent = heightIn;
     document.getElementById('weightInput').value = weightLbs;
     document.getElementById('heightInput').value = heightIn;
-    
-    // FIX: Only set defaults if values don't exist
-    if (appState.profile.weight === undefined) appState.profile.weight = weightKg;
-    if (appState.profile.height === undefined) appState.profile.height = heightCm;
     
     // Initialize rulers with imperial units
     setTimeout(() => {
@@ -2315,7 +2314,16 @@ function setWeightUnit(system) {
           saveAllData();
         });
       }
-
+      
+      if (document.getElementById('heightRuler')) {
+        initRuler('heightRuler', 39, 98, heightIn, 'in', (value) => {
+          // Store in metric, convert from inches to cm
+          appState.profile.height = Math.round(value * 2.54);
+          document.getElementById('heightValue').textContent = value;
+          document.getElementById('heightInput').value = value;
+          saveAllData();
+        });
+      }
     }, 300); // Increased delay to ensure DOM is ready
   }
   
@@ -2326,6 +2334,7 @@ function setWeightUnit(system) {
 // ============================================
 // FIXED: calculateRecommendedGoal function with gender-specific formula
 // Based on reliable medical research and formulas
+// FIXED: Correct calculation for low weight/height values
 // ============================================
 
 function calculateRecommendedGoal() {
@@ -2379,33 +2388,41 @@ function calculateRecommendedGoal() {
   
   let recommendedWater = baseWater * climateFactor;
   
-  // Ensure minimum and maximum reasonable values
-  // Based on medical guidelines: 
-  // Men: 3.7L (3700ml) average, Women: 2.7L (2700ml) average
-  const genderMinMax = {
-    male: { min: 2500, max: 4000 },
-    female: { min: 2000, max: 3500 },
-    other: { min: 2250, max: 3750 }
-  };
+  // FIX 2: Proper minimum and maximum values based on weight
+  // For low weight individuals (like 30kg), the formula gives around 1000ml
+  // For children or very low weight adults, we need reasonable limits
   
-  const limits = genderMinMax[gender] || genderMinMax.other;
+  // Calculate reasonable min/max based on weight
+  const weightBasedMin = weightKg * 30; // Minimum 30ml per kg
+  const weightBasedMax = weightKg * 50; // Maximum 50ml per kg
+  
+  // Set absolute minimum and maximum for safety
+  const absoluteMin = 1000; // 1L minimum for anyone
+  const absoluteMax = 4000; // 4L maximum for safety
+  
+  // Calculate final min/max
+  const minWater = Math.max(absoluteMin, weightBasedMin);
+  const maxWater = Math.min(absoluteMax, weightBasedMax);
   
   // Ensure within reasonable bounds
-  recommendedWater = Math.max(limits.min, Math.min(recommendedWater, limits.max));
+  recommendedWater = Math.max(minWater, Math.min(recommendedWater, maxWater));
   
   // Round to nearest 50ml
   const roundedGoal = Math.round(recommendedWater / 50) * 50;
   
-  document.getElementById('dailyGoalInput').value = roundedGoal;
-  appState.profile.dailyGoal = roundedGoal;
+  // Ensure it's not less than 1000ml
+  const finalGoal = Math.max(1000, roundedGoal);
+  
+  document.getElementById('dailyGoalInput').value = finalGoal;
+  appState.profile.dailyGoal = finalGoal;
   if (appState.todayData) {
-    appState.todayData.goal = roundedGoal;
+    appState.todayData.goal = finalGoal;
   }
   
   // Update display immediately
   updateDashboard();
   
-  showNotification(`Recommended daily goal: ${roundedGoal}ml`, "success");
+  showNotification(`Recommended daily goal: ${finalGoal}ml`, "success");
   saveAllData();
 }
 
@@ -2677,6 +2694,9 @@ function updateHeightFromInput() {
   
   // Save data
   saveAllData();
+  
+  // Recalculate recommended goal
+  calculateRecommendedGoal();
 }
 
 function updateWeightFromInput() {
@@ -2707,6 +2727,9 @@ function updateWeightFromInput() {
   
   // Save data
   saveAllData();
+  
+  // Recalculate recommended goal
+  calculateRecommendedGoal();
 }
 
 // ============================================
@@ -3247,7 +3270,7 @@ function initializeCharts() {
         },
         tooltip: {
           backgroundColor: 'rgba(18, 26, 47, 0.95)',
-          titleColor: '#ffffff)',
+          titleColor: '#ffffff',
           bodyColor: '#ffffff',
           borderColor: 'var(--accent)',
           borderWidth: 1,
