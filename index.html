@@ -1711,7 +1711,7 @@ body::before {
       <div class="input-group">
         <label class="input-label">Daily Goal (ml)</label>
         <div class="input-with-controls">
-          <!-- FIX 4: Changed min from 1000 to 500 to allow lower goals -->
+          <!-- FIX 4: Changed minimum to 500 to allow lower goals like 750 -->
           <input type="number" class="manual-input" id="dailyGoalInput" min="500" max="5000" step="50" value="2000">
           <button class="unit-btn" onclick="calculateRecommendedGoal()">Recommended</button>
         </div>
@@ -1938,54 +1938,53 @@ function updateTimeProgress() {
 }
 
 // ============================================
-// FIX 1: FIXED STREAK COUNTING FUNCTION
+// FIX 1 & 4: FIXED STREAK COUNTING AND DATA LOADING ISSUES
 // ============================================
 
 function checkAndUpdateStreak() {
+  console.log("Checking streak...");
+  
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toDateString();
   
-  const twoDaysAgo = new Date(today);
-  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-  const twoDaysAgoStr = twoDaysAgo.toDateString();
-
-  const yesterdayData = appState.historicalData[yesterdayStr];
-  const twoDaysAgoData = appState.historicalData[twoDaysAgoStr];
+  console.log("Yesterday date string:", yesterdayStr);
+  console.log("Historical data:", appState.historicalData);
   
-  // Initialize streak if not exists
-  if (!appState.profile.currentStreak) appState.profile.currentStreak = 0;
-  if (!appState.profile.bestStreak) appState.profile.bestStreak = 0;
-  
-  // If yesterday was completed, increment streak
-  if (yesterdayData && yesterdayData.completed) {
-    // Check if streak is already ongoing
-    if (twoDaysAgoData && twoDaysAgoData.completed) {
-      // Continue streak
+  // Check if we have data for yesterday
+  if (appState.historicalData[yesterdayStr]) {
+    const yesterdayData = appState.historyData[yesterdayStr];
+    console.log("Found yesterday data:", yesterdayData);
+    
+    if (yesterdayData.completed) {
+      // Yesterday was completed, increase streak
       appState.profile.currentStreak = (appState.profile.currentStreak || 0) + 1;
+      console.log("Increased streak to:", appState.profile.currentStreak);
     } else {
-      // Start new streak
-      appState.profile.currentStreak = 1;
+      // Yesterday wasn't completed, reset streak
+      appState.profile.currentStreak = 0;
+      console.log("Reset streak to 0");
     }
-  } else if (yesterdayData) {
-    // Yesterday exists but wasn't completed, reset streak
-    appState.profile.currentStreak = 0;
+    
+    // Update best streak
+    appState.profile.bestStreak = Math.max(appState.profile.bestStreak || 0, appState.profile.currentStreak);
+    console.log("Best streak updated to:", appState.profile.bestStreak);
+    
+    // Save immediately
+    saveAllData();
+  } else {
+    console.log("No yesterday data found, streak remains:", appState.profile.currentStreak);
   }
-  
-  // Update best streak
-  if (appState.profile.currentStreak > appState.profile.bestStreak) {
-    appState.profile.bestStreak = appState.profile.currentStreak;
-  }
-  
-  saveAllData();
 }
 
 // ============================================
-// FIX 2: FIXED initializeApp to update statistics on load
+// FIXED: initializeApp function - Fixed data loading to prevent reset on reload
 // ============================================
 
 function initializeApp() {
+  console.log("Initializing app...");
+  
   // Load all data first
   loadAllData();
   
@@ -1994,6 +1993,7 @@ function initializeApp() {
   
   // FIX: Initialize profile with proper defaults if doesn't exist
   if (!appState.profile) {
+    console.log("Creating new profile...");
     appState.profile = {
       name: "User",
       weight: 70,
@@ -2009,9 +2009,11 @@ function initializeApp() {
       achievements: {},
       profileCompleted: false
     };
+  } else {
+    console.log("Loaded existing profile:", appState.profile);
   }
   
-  // FIX: Ensure all profile fields exist with defaults if they're missing
+  // FIX 4: Ensure all profile fields exist with proper defaults
   const profileDefaults = {
     weight: 70,
     height: 170,
@@ -2020,33 +2022,42 @@ function initializeApp() {
     activityLevel: 'moderate',
     dailyGoal: 2000,
     unitSystem: 'metric',
-    name: 'User'
+    name: 'User',
+    currentStreak: 0,
+    bestStreak: 0
   };
   
   Object.keys(profileDefaults).forEach(key => {
     if (appState.profile[key] === undefined || appState.profile[key] === null) {
+      console.log(`Setting default for ${key}: ${profileDefaults[key]}`);
       appState.profile[key] = profileDefaults[key];
     }
   });
   
-  // Ensure unit system is set
+  // FIX 4: Ensure unit system is set
   appState.unitSystem = appState.profile.unitSystem || 'metric';
   
   // Handle today's data
   const today = new Date().toDateString();
   const savedTodayData = JSON.parse(localStorage.getItem('waterify_today'));
   
+  console.log("Today:", today);
+  console.log("Saved today data:", savedTodayData);
+  
   // If we have saved today data and it's for today, use it
   if (savedTodayData && savedTodayData.date === today) {
     appState.todayData = savedTodayData;
+    console.log("Using existing today data");
   } else {
+    console.log("Creating new day data");
+    
     // Check streak and save yesterday's data if it exists
     checkAndUpdateStreak();
     
     // Save yesterday's data to history if it exists
     if (savedTodayData && savedTodayData.date !== today) {
+      console.log("Saving yesterday's data to history");
       appState.historicalData[savedTodayData.date] = savedTodayData;
-      saveAllData();
     }
     
     // Create fresh data for today
@@ -2057,6 +2068,8 @@ function initializeApp() {
       goal: appState.profile.dailyGoal || 2000,
       completed: false
     };
+    
+    console.log("Created new today data:", appState.todayData);
   }
   
   // Initialize settings if not exists
@@ -2070,10 +2083,12 @@ function initializeApp() {
     };
   }
   
-  // Ensure current month/year are set correctly
+  // FIX 3: Ensure current month/year are set correctly for calendar
   const now = new Date();
   appState.currentMonth = now.getMonth();
   appState.currentYear = now.getFullYear();
+  
+  console.log("Current month/year:", appState.currentMonth, appState.currentYear);
   
   // Save the initialized profile
   saveAllData();
@@ -2085,7 +2100,7 @@ function initializeApp() {
   setupReminders();
   updateGreetingMessage();
   
-  // FIX 2: Update statistics on initial load
+  // FIX 2: Initialize statistics even without drinks
   updateStatistics();
   updateQuickStats();
   
@@ -2108,35 +2123,205 @@ function initializeApp() {
       openModal('welcomeModal');
     }, 500);
   }
+  
+  console.log("App initialization complete");
 }
 
 // ============================================
-// FIX 3: FIXED openStats function to render calendar immediately
+// FIX 4: FIXED loadAllData function - Properly loads all data with better error handling
 // ============================================
 
-function openStats() {
-  showScreen('statsScreen');
-  updateStatistics();
-  
-  // FIX 3: Render calendar immediately
-  renderCalendar();
-  
-  if (!trendChart || !distributionChart) {
-    initializeCharts();
-  } else {
-    updateCharts();
+function loadAllData() {
+  try {
+    console.log("Loading all data from localStorage...");
+    
+    // Load profile
+    const savedProfile = localStorage.getItem('waterify_profile');
+    if (savedProfile) {
+      appState.profile = JSON.parse(savedProfile);
+      console.log("Loaded profile:", appState.profile);
+    } else {
+      console.log("No profile found in localStorage");
+    }
+    
+    // Load today's data
+    const savedToday = localStorage.getItem('waterify_today');
+    if (savedToday) {
+      appState.todayData = JSON.parse(savedToday);
+      console.log("Loaded today data:", appState.todayData);
+    }
+    
+    // Load historical data
+    const savedHistory = localStorage.getItem('waterify_history');
+    if (savedHistory) {
+      appState.historicalData = JSON.parse(savedHistory);
+      console.log("Loaded historical data, entries:", Object.keys(appState.historicalData).length);
+    }
+    
+    // Load settings
+    const savedSettings = localStorage.getItem('waterify_settings');
+    if (savedSettings) {
+      appState.settings = JSON.parse(savedSettings);
+    }
+    
+    // Load unit system
+    const savedUnitSystem = localStorage.getItem('waterify_unitSystem');
+    if (savedUnitSystem) {
+      appState.unitSystem = savedUnitSystem;
+    }
+    
+  } catch (e) {
+    console.error('Error loading data:', e);
+    // Initialize with defaults if there's an error
+    appState.profile = appState.profile || {
+      name: "User",
+      weight: 70,
+      height: 170,
+      age: 25,
+      gender: "male",
+      activityLevel: "moderate",
+      dailyGoal: 2000,
+      createdAt: new Date().toISOString(),
+      currentStreak: 0,
+      bestStreak: 0,
+      unitSystem: 'metric',
+      achievements: {},
+      profileCompleted: false
+    };
+    appState.todayData = appState.todayData || {
+      date: new Date().toDateString(),
+      consumed: 0,
+      drinks: [],
+      goal: 2000,
+      completed: false
+    };
+    appState.historicalData = appState.historicalData || {};
+    appState.settings = appState.settings || {
+      reminders: {
+        enabled: true,
+        frequency: 2,
+        time: "09:00"
+      }
+    };
+    appState.unitSystem = appState.unitSystem || 'metric';
   }
-
-  setTimeout(() => {
-    updateDistributionChart();
-  }, 50);
 }
 
 // ============================================
-// FIX 4: FIXED setWeightUnit function to use saved values properly
+// FIXED: saveAllData function - Fixed to save all data properly
+// ============================================
+
+function saveAllData() {
+  try {
+    console.log("Saving all data...");
+    
+    // Save all data to localStorage
+    localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
+    localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
+    localStorage.setItem('waterify_history', JSON.stringify(appState.historicalData));
+    localStorage.setItem('waterify_settings', JSON.stringify(appState.settings));
+    localStorage.setItem('waterify_unitSystem', appState.unitSystem);
+    localStorage.setItem('waterify_version', '5');
+    
+    // Also save profile completed flag separately for easy checking
+    if (appState.profile.profileCompleted) {
+      localStorage.setItem('waterify_profileCompleted', 'true');
+    }
+    
+    console.log("Data saved successfully");
+  } catch (e) {
+    console.error('Error saving data:', e);
+    // Try to save with fallback method if localStorage is full
+    try {
+      // Clear some old data if localStorage is full
+      localStorage.removeItem('waterify_history_old');
+      // Try again
+      localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
+      localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
+    } catch (e2) {
+      console.error('Failed to save data even after cleanup:', e2);
+    }
+  }
+}
+
+// ============================================
+// FIX 4: FIXED updateProfileUI function - Properly loads saved settings
+// ============================================
+
+function updateProfileUI() {
+  if (!appState.profile) return;
+  
+  const profile = appState.profile;
+  
+  console.log("Updating profile UI with:", profile);
+  
+  // Update name
+  document.getElementById('userName').textContent = profile.name || 'Profile';
+  document.getElementById('userNameInput').value = profile.name || '';
+  
+  // FIX: Ensure age is loaded properly
+  const savedAge = profile.age || 25;
+  document.getElementById('ageValue').textContent = savedAge;
+  document.getElementById('ageManualInput').value = savedAge;
+  appState.profile.age = savedAge;
+  
+  // FIX: Ensure daily goal is loaded properly
+  const savedGoal = profile.dailyGoal || 2000;
+  document.getElementById('dailyGoalInput').value = savedGoal;
+  appState.profile.dailyGoal = savedGoal;
+  
+  // Update reminders
+  if (appState.settings.reminders) {
+    document.getElementById('remindersEnabled').checked = appState.settings.reminders.enabled !== false;
+    document.getElementById('reminderTime').value = appState.settings.reminders.time || "09:00";
+    document.getElementById('reminderFrequency').value = appState.settings.reminders.frequency || 2;
+  }
+  
+  // Update gender selection
+  const savedGender = profile.gender || 'male';
+  document.querySelectorAll('.gender-option').forEach(option => {
+    option.classList.remove('active');
+    if (option.dataset.gender === savedGender) {
+      option.classList.add('active');
+    }
+  });
+  appState.profile.gender = savedGender;
+  
+  // Update activity level selection
+  const savedActivity = profile.activityLevel || 'moderate';
+  document.querySelectorAll('.activity-level').forEach(item => {
+    item.classList.remove('active');
+    if (item.dataset.level === savedActivity) {
+      item.classList.add('active');
+    }
+  });
+  appState.profile.activityLevel = savedActivity;
+  
+  // FIX 4: Load weight and height values directly from profile
+  const savedWeight = profile.weight !== undefined ? profile.weight : 70;
+  const savedHeight = profile.height !== undefined ? profile.height : 170;
+  
+  console.log("Loading weight/height from profile:", savedWeight, savedHeight);
+  
+  // Store these in appState immediately
+  appState.profile.weight = savedWeight;
+  appState.profile.height = savedHeight;
+  
+  // Now call setWeightUnit with the saved unit system
+  const savedUnitSystem = profile.unitSystem || 'metric';
+  setWeightUnit(savedUnitSystem);
+  
+  // Save the updated profile
+  saveAllData();
+}
+
+// ============================================
+// FIX 4: FIXED setWeightUnit function - Fixed unit persistence
 // ============================================
 
 function setWeightUnit(system) {
+  console.log("Setting weight unit to:", system);
+  
   appState.unitSystem = system;
   appState.profile.unitSystem = system;
   
@@ -2151,9 +2336,11 @@ function setWeightUnit(system) {
     document.getElementById('weightUnit').textContent = 'kg';
     document.getElementById('heightUnit').textContent = 'cm';
     
-    // FIX 4: Use saved values from profile, not defaults
-    const weightValue = appState.profile.weight || 70;
-    const heightValue = appState.profile.height || 170;
+    // Get values from profile
+    const weightValue = appState.profile.weight !== undefined ? appState.profile.weight : 70;
+    const heightValue = appState.profile.height !== undefined ? appState.profile.height : 170;
+    
+    console.log("Setting metric values:", weightValue, heightValue);
     
     // Update display values
     document.getElementById('weightValue').textContent = weightValue;
@@ -2189,11 +2376,12 @@ function setWeightUnit(system) {
     document.getElementById('heightUnit').textContent = 'in';
     
     // Convert from stored metric to imperial for display
-    // FIX 4: Use saved values from profile
-    const weightKg = appState.profile.weight || 70;
-    const heightCm = appState.profile.height || 170;
+    const weightKg = appState.profile.weight !== undefined ? appState.profile.weight : 70;
+    const heightCm = appState.profile.height !== undefined ? appState.profile.height : 170;
     const weightLbs = Math.round(weightKg * 2.20462);
     const heightIn = Math.round(heightCm / 2.54);
+    
+    console.log("Setting imperial values:", weightLbs, heightIn);
     
     document.getElementById('weightValue').textContent = weightLbs;
     document.getElementById('heightValue').textContent = heightIn;
@@ -2229,7 +2417,7 @@ function setWeightUnit(system) {
 }
 
 // ============================================
-// FIX 4: FIXED calculateRecommendedGoal function with lower minimum
+// FIX 4: FIXED calculateRecommendedGoal function - Allow lower minimum goal
 // ============================================
 
 function calculateRecommendedGoal() {
@@ -2248,12 +2436,19 @@ function calculateRecommendedGoal() {
   const gender = appState.profile.gender;
   const activityLevel = appState.profile.activityLevel || 'moderate';
   
-  // Simple calculation: 30-40ml per kg of body weight
-  let baseWater = weightKg * 35; // Middle ground
+  // Base water calculation
+  let baseWater;
   
-  // Adjust slightly for age (older people may need less)
-  if (age > 60) baseWater *= 0.9;
-  if (age < 18) baseWater *= 1.1;
+  if (gender === 'male') {
+    // For men: Base water = (weight in kg × 35) - (age × 0.5) + (height in cm × 0.1)
+    baseWater = (weightKg * 35) - (age * 0.5) + (heightCm * 0.1);
+  } else if (gender === 'female') {
+    // For women: Base water = (weight in kg × 31) - (age × 0.4) + (height in cm × 0.08)
+    baseWater = (weightKg * 31) - (age * 0.4) + (heightCm * 0.08);
+  } else {
+    // For other: Use average of male and female formulas
+    baseWater = (weightKg * 33) - (age * 0.45) + (heightCm * 0.09);
+  }
   
   // Adjust for activity level
   const activityMultipliers = {
@@ -2267,15 +2462,18 @@ function calculateRecommendedGoal() {
   const activityMultiplier = activityMultipliers[activityLevel] || 1.2;
   baseWater *= activityMultiplier;
   
-  let recommendedWater = baseWater;
+  // Adjust for climate/environment
+  const climateFactor = 1.0;
   
-  // FIX 4: Lower minimum values
-  const weightBasedMin = weightKg * 30; 
-  const weightBasedMax = weightKg * 50; 
+  let recommendedWater = baseWater * climateFactor;
   
-  // Set reasonable minimum and maximum for safety
-  const absoluteMin = 750; // 750 ML minimum for anyone
-  const absoluteMax = 4000; // 4L maximum for safety
+  // FIX 4: Changed minimum to 500ml to allow lower goals
+  const absoluteMin = 500; // Changed from 1000 to 500
+  const absoluteMax = 4000;
+  
+  // Calculate reasonable min/max based on weight
+  const weightBasedMin = weightKg * 20; // Reduced from 30 to 20
+  const weightBasedMax = weightKg * 50;
   
   // Calculate final min/max
   const minWater = Math.max(absoluteMin, weightBasedMin);
@@ -2287,8 +2485,8 @@ function calculateRecommendedGoal() {
   // Round to nearest 50ml
   const roundedGoal = Math.round(recommendedWater / 50) * 50;
   
-  // FIX 4: Ensure it's not less than 800ml (absoluteMin)
-  const finalGoal = Math.max(750, roundedGoal);
+  // FIX 4: Ensure it's not less than 500ml (was 1000)
+  const finalGoal = Math.max(500, roundedGoal);
   
   document.getElementById('dailyGoalInput').value = finalGoal;
   appState.profile.dailyGoal = finalGoal;
@@ -2304,7 +2502,253 @@ function calculateRecommendedGoal() {
 }
 
 // ============================================
-// REST OF THE CODE (unchanged parts)
+// FIX 2: FIXED updateStatistics function - Show stats even without drinks
+// ============================================
+
+function updateStatistics() {
+  console.log("Updating statistics...");
+  
+  const history = appState.historicalData || {};
+  const todayData = appState.todayData || { consumed: 0, completed: false };
+  
+  // Combine all days including today
+  let allDays = Object.values(history);
+  if (todayData) {
+    allDays = [todayData, ...allDays];
+  }
+  
+  console.log("Total days for statistics:", allDays.length);
+  
+  if (allDays.length === 0) {
+    // Even with no data, show zeros
+    document.getElementById('totalConsumed').textContent = '0';
+    document.getElementById('avgDaily').textContent = '0';
+    document.getElementById('bestDay').textContent = '0';
+    document.getElementById('completionRate').textContent = '0%';
+    return;
+  }
+  
+  const totalConsumed = allDays.reduce((sum, day) => sum + (day.consumed || 0), 0);
+  const avgDaily = Math.round(totalConsumed / allDays.length);
+  const bestDay = allDays.length > 0 ? Math.max(...allDays.map(d => d.consumed || 0)) : 0;
+  const completedDays = allDays.filter(d => d.completed).length;
+  const completionRate = allDays.length > 0 ? Math.round((completedDays / allDays.length) * 100) : 0;
+  
+  console.log("Stats calculated:", { totalConsumed, avgDaily, bestDay, completionRate });
+  
+  document.getElementById('totalConsumed').textContent = Math.round(totalConsumed / 1000).toLocaleString() + 'L';
+  document.getElementById('avgDaily').textContent = avgDaily.toLocaleString() + 'ml';
+  document.getElementById('bestDay').textContent = bestDay.toLocaleString() + 'ml';
+  document.getElementById('completionRate').textContent = `${completionRate}%`;
+}
+
+// ============================================
+// FIX 3: FIXED openStats function - Initialize calendar properly
+// ============================================
+
+function openStats() {
+  showScreen('statsScreen');
+  
+  // FIX 3: Ensure current month/year are set to current date
+  const now = new Date();
+  appState.currentMonth = now.getMonth();
+  appState.currentYear = now.getFullYear();
+  
+  updateStatistics();
+  
+  // FIX 3: Render calendar immediately
+  renderCalendar();
+  
+  if (!trendChart || !distributionChart) {
+    initializeCharts();
+  } else {
+    updateCharts();
+  }
+  
+  setTimeout(() => {
+    updateDistributionChart();
+  }, 50);
+}
+
+// ============================================
+// FIX 3: FIXED renderCalendar function - Proper initialization
+// ============================================
+
+function renderCalendar() {
+  const container = document.getElementById('calendarContainer');
+  const month = appState.currentMonth;
+  const year = appState.currentYear;
+  
+  console.log("Rendering calendar for:", month, year);
+  
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
+  
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  container.innerHTML = '';
+  
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  dayNames.forEach(day => {
+    const dayElement = document.createElement('div');
+    dayElement.style.cssText = `
+      text-align: center;
+      padding: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    `;
+    dayElement.textContent = day;
+    container.appendChild(dayElement);
+  });
+  
+  for (let i = 0; i < firstDay; i++) {
+    const empty = document.createElement('div');
+    container.appendChild(empty);
+  }
+  
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dateStr = date.toDateString();
+    const todayStr = new Date().toDateString();
+    
+    let dayData = appState.historicalData[dateStr];
+    if (dateStr === todayStr && appState.todayData) {
+      dayData = appState.todayData;
+    }
+    
+    const dayElement = document.createElement('div');
+    dayElement.style.cssText = `
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+    `;
+    
+    dayElement.textContent = day;
+    dayElement.dataset.date = dateStr;
+    
+    if (dayData && (dayData.drinks || dayData.consumed > 0)) {
+      const goal = appState.profile?.dailyGoal || 2000;
+      const progress = Math.min((dayData.consumed / goal) * 100, 100);
+      
+      if (progress >= 100) {
+        dayElement.style.background = `linear-gradient(135deg, var(--success), rgba(77, 255, 184, 0.3))`;
+        dayElement.style.borderColor = 'var(--success)';
+      } else if (progress >= 75) {
+        dayElement.style.background = `linear-gradient(135deg, #a6ff4d, rgba(166, 255, 77, 0.3))`;
+      } else if (progress >= 50) {
+        dayElement.style.background = `linear-gradient(135deg, var(--warning), rgba(255, 184, 77, 0.3))`;
+      } else if (progress > 0) {
+        dayElement.style.background = `linear-gradient(135deg, #ff9966, rgba(255, 153, 102, 0.3))`;
+      }
+      
+      if (dayData.completed) {
+        dayElement.style.border = '2px solid var(--accent)';
+      }
+      
+      dayElement.onclick = () => showDateDetails(dateStr, dayData);
+    } else {
+      dayElement.onclick = () => showDateDetails(dateStr, null);
+    }
+    
+    if (date.toDateString() === new Date().toDateString()) {
+      dayElement.style.boxShadow = '0 0 0 2px var(--accent)';
+      dayElement.style.fontWeight = '700';
+    }
+    
+    if (dayData && (dayData.drinks || dayData.consumed > 0)) {
+      const goal = appState.profile?.dailyGoal || 2000;
+      const progress = Math.round((dayData.consumed / goal) * 100);
+      dayElement.title = `${dayData.consumed}ml (${progress}%)`;
+    } else {
+      dayElement.title = 'No data';
+    }
+    
+    container.appendChild(dayElement);
+  }
+  
+  console.log("Calendar rendered successfully");
+}
+
+// ============================================
+// FIX 4: FIXED saveProfile function - Ensure all values are saved properly
+// ============================================
+
+function saveProfile() {
+  console.log("Saving profile...");
+  
+  // Get and save name
+  const nameInput = document.getElementById('userNameInput');
+  appState.profile.name = nameInput.value.trim() || 'User';
+  
+  // Save height and weight from current display values
+  updateHeightFromInput();
+  updateWeightFromInput();
+  
+  // Save age
+  const ageInput = document.getElementById('ageManualInput');
+  let age = parseInt(ageInput.value);
+  age = Math.max(10, Math.min(100, isNaN(age) ? 25 : age));
+  ageInput.value = age;
+  appState.profile.age = age;
+  
+  // Save daily goal - FIX 4: Allow lower minimum (500 instead of 1000)
+  const goalInput = document.getElementById('dailyGoalInput');
+  let dailyGoal = parseInt(goalInput.value);
+  dailyGoal = Math.max(500, Math.min(5000, isNaN(dailyGoal) ? 2000 : dailyGoal));
+  goalInput.value = dailyGoal;
+  appState.profile.dailyGoal = dailyGoal;
+  
+  // Save gender
+  const activeGender = document.querySelector('.gender-option.active');
+  if (activeGender) {
+    appState.profile.gender = activeGender.dataset.gender;
+  }
+  
+  // Save activity level
+  const activeActivity = document.querySelector('.activity-level.active');
+  if (activeActivity) {
+    appState.profile.activityLevel = activeActivity.dataset.level;
+  }
+  
+  // Save reminders
+  appState.settings.reminders = {
+    enabled: document.getElementById('remindersEnabled').checked,
+    frequency: parseInt(document.getElementById('reminderFrequency').value),
+    time: document.getElementById('reminderTime').value
+  };
+  
+  // Update today's goal
+  if (appState.todayData) {
+    appState.todayData.goal = dailyGoal;
+  }
+  
+  // Mark profile as completed
+  appState.profile.profileCompleted = true;
+  
+  // Save all data
+  saveAllData();
+  
+  // Update dashboard
+  updateDashboard();
+  setupReminders();
+  
+  showNotification("Profile saved successfully!", "success");
+  closeProfile();
+}
+
+// ============================================
+// REST OF THE CODE REMAINS THE SAME (unchanged parts)
 // ============================================
 
 const BEVERAGES = {
@@ -2697,7 +3141,7 @@ function initRuler(containerId, min, max, initial, unit, onChange) {
     }, 150);
   });
   
-  // FIX: Scroll to the correct position
+  // Scroll to the correct position
   setTimeout(() => {
     const tickWidth = 40;
     const centerOffset = container.clientWidth / 2;
@@ -2706,35 +3150,7 @@ function initRuler(containerId, min, max, initial, unit, onChange) {
       const tickIndex = Array.from(container.children).indexOf(targetTick);
       container.scrollLeft = (tickIndex * tickWidth) - centerOffset + (tickWidth / 2);
     }
-  }, 300); // Increased delay to ensure container is ready
-}
-
-function updateStatistics() {
-  const history = appState.historicalData;
-  const todayData = appState.todayData;
-  
-  let allDays = Object.values(history);
-  if (todayData && todayData.consumed > 0) {
-    allDays = [todayData, ...allDays];
-  }
-  
-  if (allDays.length === 0) {
-    document.getElementById('totalConsumed').textContent = '0';
-    document.getElementById('avgDaily').textContent = '0';
-    document.getElementById('bestDay').textContent = '0';
-    document.getElementById('completionRate').textContent = '0%';
-    return;
-  }
-  
-  const totalConsumed = allDays.reduce((sum, day) => sum + (day.consumed || 0), 0);
-  const avgDaily = Math.round(totalConsumed / allDays.length);
-  const bestDay = Math.max(...allDays.map(d => d.consumed || 0));
-  const completionRate = Math.round((allDays.filter(d => d.completed).length / allDays.length) * 100);
-  
-  document.getElementById('totalConsumed').textContent = Math.round(totalConsumed / 1000).toLocaleString() + 'L';
-  document.getElementById('avgDaily').textContent = avgDaily.toLocaleString() + 'ml';
-  document.getElementById('bestDay').textContent = bestDay.toLocaleString() + 'ml';
-  document.getElementById('completionRate').textContent = `${completionRate}%`;
+  }, 300);
 }
 
 function initializeCharts() {
@@ -2941,811 +3357,6 @@ function updateDistributionChart() {
   distributionChart.data.datasets[0].backgroundColor = colors;
   
   distributionChart.update();
-}
-
-function renderCalendar() {
-  const container = document.getElementById('calendarContainer');
-  const month = appState.currentMonth;
-  const year = appState.currentYear;
-  
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  document.getElementById('currentMonth').textContent = `${monthNames[month]} ${year}`;
-  
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-  container.innerHTML = '';
-  
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  dayNames.forEach(day => {
-    const dayElement = document.createElement('div');
-    dayElement.style.cssText = `
-      text-align: center;
-      padding: 8px;
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 600;
-    `;
-    dayElement.textContent = day;
-    container.appendChild(dayElement);
-  });
-  
-  for (let i = 0; i < firstDay; i++) {
-    const empty = document.createElement('div');
-    container.appendChild(empty);
-  }
-  
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const dateStr = date.toDateString();
-    const todayStr = new Date().toDateString();
-    
-    let dayData = appState.historicalData[dateStr];
-    if (dateStr === todayStr && appState.todayData) {
-      dayData = appState.todayData;
-    }
-    
-    const dayElement = document.createElement('div');
-    dayElement.style.cssText = `
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-    `;
-    
-    dayElement.textContent = day;
-    dayElement.dataset.date = dateStr;
-    
-    if (dayData && (dayData.drinks || dayData.consumed > 0)) {
-      const goal = appState.profile?.dailyGoal || 2000;
-      const progress = Math.min((dayData.consumed / goal) * 100, 100);
-      
-      if (progress >= 100) {
-        dayElement.style.background = `linear-gradient(135deg, var(--success), rgba(77, 255, 184, 0.3))`;
-        dayElement.style.borderColor = 'var(--success)';
-      } else if (progress >= 75) {
-        dayElement.style.background = `linear-gradient(135deg, #a6ff4d, rgba(166, 255, 77, 0.3))`;
-      } else if (progress >= 50) {
-        dayElement.style.background = `linear-gradient(135deg, var(--warning), rgba(255, 184, 77, 0.3))`;
-      } else if (progress > 0) {
-        dayElement.style.background = `linear-gradient(135deg, #ff9966, rgba(255, 153, 102, 0.3))`;
-      }
-      
-      if (dayData.completed) {
-        dayElement.style.border = '2px solid var(--accent)';
-      }
-      
-      dayElement.onclick = () => showDateDetails(dateStr, dayData);
-    } else {
-      dayElement.onclick = () => showDateDetails(dateStr, null);
-    }
-    
-    if (date.toDateString() === new Date().toDateString()) {
-      dayElement.style.boxShadow = '0 0 0 2px var(--accent)';
-      dayElement.style.fontWeight = '700';
-    }
-    
-    if (dayData && (dayData.drinks || dayData.consumed > 0)) {
-      const goal = appState.profile?.dailyGoal || 2000;
-      const progress = Math.round((dayData.consumed / goal) * 100);
-      dayElement.title = `${dayData.consumed}ml (${progress}%)`;
-    } else {
-      dayElement.title = 'No data';
-    }
-    
-    container.appendChild(dayElement);
-  }
-}
-
-// ACHIEVEMENTS array remains the same
-const ACHIEVEMENTS = [
-  {
-    id: 'first_drink',
-    name: 'First Sip',
-    description: 'Added your first drink',
-    icon: 'fa-tint',
-    condition: (profile, todayData, historicalData) => {
-      const totalDrinks = (todayData?.drinks?.length || 0) + 
-                         Object.values(historicalData).reduce((sum, day) => sum + (day.drinks?.length || 0), 0);
-      return totalDrinks >= 1;
-    }
-  },
-  {
-    id: 'first_streak',
-    name: 'Streak Starter',
-    description: 'Achieved a 3-day streak',
-    icon: 'fa-fire',
-    condition: (profile) => profile.currentStreak >= 3
-  },
-  {
-    id: 'hydrated_beginner',
-    name: 'Hydration Beginner',
-    description: 'Reached daily goal for the first time',
-    icon: 'fa-star',
-    condition: (profile, todayData, historicalData) => {
-      // Check if today's goal is reached
-      if (todayData && todayData.completed) {
-        return true;
-      }
-      // Check historical data for any completed day
-      const completedDays = Object.values(historicalData).filter(d => d.completed).length;
-      return completedDays >= 1;
-    }
-  },
-  {
-    id: 'week_warrior',
-    name: 'Week Warrior',
-    description: 'Completed a full week of hydration',
-    icon: 'fa-calendar-week',
-    condition: (profile, todayData, historicalData) => {
-      const last7Days = getLastNDaysData(7);
-      const completedDays = last7Days.filter(d => d?.completed).length;
-      return completedDays >= 7;
-    }
-  },
-  {
-    id: 'month_master',
-    name: 'Month Master',
-    description: 'Completed 30 days of hydration',
-    icon: 'fa-calendar-alt',
-    condition: (profile, todayData, historicalData) => {
-      const completedDays = Object.values(historicalData).filter(d => d.completed).length;
-      return completedDays >= 30;
-    }
-  },
-  {
-    id: 'water_expert',
-    name: 'Water Expert',
-    description: 'Drank 3L in a single day',
-    icon: 'fa-water',
-    condition: (profile, todayData, historicalData) => {
-      const allDays = [todayData, ...Object.values(historicalData)];
-      return allDays.some(d => d && d.consumed >= 3000);
-    }
-  },
-  {
-    id: 'consistency_king',
-    name: 'Consistency King',
-    description: 'Maintained a 7-day streak',
-    icon: 'fa-crown',
-    condition: (profile) => profile.bestStreak >= 7
-  },
-  {
-    id: 'legendary_hydrator',
-    name: 'Legendary Hydrator',
-    description: 'Maintained a 30-day streak',
-    icon: 'fa-trophy',
-    condition: (profile) => profile.bestStreak >= 30
-  },
-  {
-    id: 'variety_seeker',
-    name: 'Variety Seeker',
-    description: 'Tried 5 different drink types',
-    icon: 'fa-glass-whiskey',
-    condition: (profile, todayData, historicalData) => {
-      const allDrinks = [...(todayData?.drinks || []), 
-                        ...Object.values(historicalData).flatMap(d => d.drinks || [])];
-      const uniqueTypes = new Set(allDrinks.map(d => d.type));
-      return uniqueTypes.size >= 5;
-    }
-  },
-  {
-    id: 'early_bird',
-    name: 'Early Bird',
-    description: 'Drank before 8 AM for 5 days',
-    icon: 'fa-sun',
-    condition: (profile, todayData, historicalData) => {
-      const earlyDrinks = [...(todayData?.drinks || []), 
-                          ...Object.values(historicalData).flatMap(d => d.drinks || [])];
-      const earlyDays = new Set();
-      earlyDrinks.forEach(drink => {
-        const hour = new Date(drink.timestamp).getHours();
-        if (hour < 8) {
-          const date = new Date(drink.timestamp).toDateString();
-          earlyDays.add(date);
-        }
-      });
-      return earlyDays.size >= 5;
-    }
-  }
-];
-
-function checkAndUpdateAchievements() {
-  if (!appState.profile) return;
-  
-  const achievements = appState.profile.achievements || {};
-  let newAchievements = [];
-  
-  ACHIEVEMENTS.forEach(achievement => {
-    if (!achievements[achievement.id] || !achievements[achievement.id].unlocked) {
-      if (achievement.condition(appState.profile, appState.todayData, appState.historicalData)) {
-        if (!achievements[achievement.id]) {
-          achievements[achievement.id] = {
-            unlocked: true,
-            unlockedAt: new Date().toISOString()
-          };
-          newAchievements.push(achievement);
-        }
-      }
-    }
-  });
-  
-  appState.profile.achievements = achievements;
-  
-  // Show animations for new achievements
-  if (newAchievements.length > 0) {
-    // Show first achievement immediately
-    showAchievementUnlock(newAchievements[0]);
-    
-    // Show remaining achievements with delay
-    for (let i = 1; i < newAchievements.length; i++) {
-      setTimeout(() => {
-        showAchievementUnlock(newAchievements[i]);
-      }, i * 4500);
-    }
-    
-    saveAllData();
-  }
-}
-
-function addDrink(type, amount) {
-  const drink = BEVERAGES[type];
-  if (!drink) return;
-  
-  const waterContent = Math.round(amount * drink.waterContent / 100);
-  
-  const drinkRecord = {
-    type,
-    amount,
-    waterContent,
-    timestamp: new Date().toISOString(),
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  };
-  
-  appState.todayData.consumed += waterContent;
-  if (!appState.todayData.drinks) appState.todayData.drinks = [];
-  appState.todayData.drinks.push(drinkRecord);
-  
-  // Check if goal is reached
-  const goalReached = !appState.todayData.completed && appState.todayData.consumed >= appState.todayData.goal;
-  if (goalReached) {
-    appState.todayData.completed = true;
-    showNotification("🎉 Daily goal achieved! Great work!", "success");
-  }
-  
-  // Save data immediately
-  saveAllData();
-  
-  // Update UI
-  updateDashboard();
-  updateStatistics();
-  updateTimeProgress();
-  showNotification(`Added ${amount}ml of ${drink.name} (${waterContent}ml water)`, "success");
-  
-  // Check achievements AFTER updating UI and saving data
-  // This ensures the hydrated_beginner achievement triggers when goal is reached
-  checkAndUpdateAchievements();
-}
-
-function adjustHeight(change) {
-  const input = document.getElementById('heightInput');
-  let value = parseInt(input.value) + change;
-  
-  if (appState.unitSystem === 'metric') {
-    value = Math.max(100, Math.min(250, value));
-  } else {
-    value = Math.max(39, Math.min(98, value));
-  }
-  
-  input.value = value;
-  updateHeightFromInput();
-}
-
-function adjustWeight(change) {
-  const input = document.getElementById('weightInput');
-  let value = parseInt(input.value) + change;
-  
-  if (appState.unitSystem === 'metric') {
-    value = Math.max(30, Math.min(200, value));
-  } else {
-    value = Math.max(66, Math.min(440, value));
-  }
-  
-  input.value = value;
-  updateWeightFromInput();
-}
-
-function updateHeightFromInput() {
-  const input = document.getElementById('heightInput');
-  let value = parseInt(input.value);
-  
-  if (isNaN(value)) {
-    value = appState.unitSystem === 'metric' ? 170 : 67;
-  }
-  
-  if (appState.unitSystem === 'metric') {
-    value = Math.max(100, Math.min(250, value));
-  } else {
-    value = Math.max(39, Math.min(98, value));
-  }
-  
-  input.value = value;
-  document.getElementById('heightValue').textContent = value;
-  
-  // Update the ruler position
-  updateRuler('heightRuler', value);
-  
-  // Save to profile (converting if necessary)
-  if (appState.unitSystem === 'metric') {
-    appState.profile.height = value;
-  } else {
-    // Convert inches to cm for storage
-    appState.profile.height = Math.round(value * 2.54);
-  }
-  
-  // Save data
-  saveAllData();
-  
-  // Recalculate recommended goal
-  calculateRecommendedGoal();
-}
-
-function updateWeightFromInput() {
-  const input = document.getElementById('weightInput');
-  let value = parseInt(input.value);
-  
-  if (isNaN(value)) {
-    value = appState.unitSystem === 'metric' ? 70 : 154;
-  }
-  
-  if (appState.unitSystem === 'metric') {
-    value = Math.max(30, Math.min(200, value));
-  } else {
-    value = Math.max(66, Math.min(440, value));
-  }
-  
-  input.value = value;
-  document.getElementById('weightValue').textContent = value;
-  updateRuler('weightRuler', value);
-  
-  // Save to profile (converting if necessary)
-  if (appState.unitSystem === 'metric') {
-    appState.profile.weight = value;
-  } else {
-    // Convert lbs to kg for storage
-    appState.profile.weight = Math.round(value / 2.20462);
-  }
-  
-  // Save data
-  saveAllData();
-  
-  // Recalculate recommended goal
-  calculateRecommendedGoal();
-}
-
-function loadAllData() {
-  try {
-    // Load profile
-    const savedProfile = localStorage.getItem('waterify_profile');
-    if (savedProfile) {
-      appState.profile = JSON.parse(savedProfile);
-    }
-    
-    // Load today's data
-    const savedToday = localStorage.getItem('waterify_today');
-    if (savedToday) {
-      appState.todayData = JSON.parse(savedToday);
-    }
-    
-    // Load historical data
-    const savedHistory = localStorage.getItem('waterify_history');
-    if (savedHistory) {
-      appState.historicalData = JSON.parse(savedHistory);
-    }
-    
-    // Load settings
-    const savedSettings = localStorage.getItem('waterify_settings');
-    if (savedSettings) {
-      appState.settings = JSON.parse(savedSettings);
-    }
-    
-    // Load unit system
-    const savedUnitSystem = localStorage.getItem('waterify_unitSystem');
-    if (savedUnitSystem) {
-      appState.unitSystem = savedUnitSystem;
-    }
-  } catch (e) {
-    console.error('Error loading data:', e);
-    // Initialize with defaults if there's an error
-    appState.profile = appState.profile || {
-      name: "User",
-      weight: 70,
-      height: 170,
-      age: 25,
-      gender: "male",
-      activityLevel: "moderate",
-      dailyGoal: 2000,
-      createdAt: new Date().toISOString(),
-      currentStreak: 0,
-      bestStreak: 0,
-      unitSystem: 'metric',
-      achievements: {},
-      profileCompleted: false
-    };
-    appState.todayData = appState.todayData || {
-      date: new Date().toDateString(),
-      consumed: 0,
-      drinks: [],
-      goal: 2000,
-      completed: false
-    };
-    appState.historicalData = appState.historicalData || {};
-    appState.settings = appState.settings || {
-      reminders: {
-        enabled: true,
-        frequency: 2,
-        time: "09:00"
-      }
-    };
-    appState.unitSystem = appState.unitSystem || 'metric';
-  }
-}
-
-function saveAllData() {
-  try {
-    // Save all data to localStorage
-    localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
-    localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
-    localStorage.setItem('waterify_history', JSON.stringify(appState.historicalData));
-    localStorage.setItem('waterify_settings', JSON.stringify(appState.settings));
-    localStorage.setItem('waterify_unitSystem', appState.unitSystem);
-    localStorage.setItem('waterify_version', '5');
-    
-    // Also save profile completed flag separately for easy checking
-    if (appState.profile.profileCompleted) {
-      localStorage.setItem('waterify_profileCompleted', 'true');
-    }
-  } catch (e) {
-    console.error('Error saving data:', e);
-    // Try to save with fallback method if localStorage is full
-    try {
-      // Clear some old data if localStorage is full
-      localStorage.removeItem('waterify_history_old');
-      // Try again
-      localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
-      localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
-    } catch (e2) {
-      console.error('Failed to save data even after cleanup:', e2);
-    }
-  }
-}
-
-function updateProfileUI() {
-  if (!appState.profile) return;
-  
-  const profile = appState.profile;
-  
-  // Update name
-  document.getElementById('userName').textContent = profile.name || 'Profile';
-  document.getElementById('userNameInput').value = profile.name || '';
-  
-  // FIX: Ensure age is loaded properly
-  const savedAge = profile.age || 25;
-  document.getElementById('ageValue').textContent = savedAge;
-  document.getElementById('ageManualInput').value = savedAge;
-  appState.profile.age = savedAge; // Ensure it's stored back
-  
-  // FIX: Ensure daily goal is loaded properly
-  const savedGoal = profile.dailyGoal || 2000;
-  document.getElementById('dailyGoalInput').value = savedGoal;
-  appState.profile.dailyGoal = savedGoal;
-  
-  // Update reminders
-  if (appState.settings.reminders) {
-    document.getElementById('remindersEnabled').checked = appState.settings.reminders.enabled !== false; // Default to true
-    document.getElementById('reminderTime').value = appState.settings.reminders.time || "09:00";
-    document.getElementById('reminderFrequency').value = appState.settings.reminders.frequency || 2;
-  }
-  
-  // Update gender selection - FIX: Ensure gender is loaded
-  const savedGender = profile.gender || 'male';
-  document.querySelectorAll('.gender-option').forEach(option => {
-    option.classList.remove('active');
-    if (option.dataset.gender === savedGender) {
-      option.classList.add('active');
-    }
-  });
-  appState.profile.gender = savedGender;
-  
-  // Update activity level selection - FIX: Ensure activity level is loaded
-  const savedActivity = profile.activityLevel || 'moderate';
-  document.querySelectorAll('.activity-level').forEach(item => {
-    item.classList.remove('active');
-    if (item.dataset.level === savedActivity) {
-      item.classList.add('active');
-    }
-  });
-  appState.profile.activityLevel = savedActivity;
-  
-  // FIX: Load weight and height values directly from profile BEFORE setting unit
-  // This ensures we use saved values, not defaults
-  const savedWeight = profile.weight !== undefined ? profile.weight : 70;
-  const savedHeight = profile.height !== undefined ? profile.height : 170;
-  
-  // Store these in appState immediately
-  appState.profile.weight = savedWeight;
-  appState.profile.height = savedHeight;
-  
-  // Now call setWeightUnit with the saved unit system
-  const savedUnitSystem = profile.unitSystem || 'metric';
-  setWeightUnit(savedUnitSystem);
-  
-  // Save the updated profile
-  saveAllData();
-}
-
-function showAchievementUnlock(achievement) {
-  createConfetti();
-  
-  const notification = document.createElement('div');
-  notification.className = 'achievement-notification';
-  notification.innerHTML = `
-    <i class="fas ${achievement.icon}"></i>
-    <div style="font-size: 18px; font-weight: 700; margin-bottom: 5px;">Achievement Unlocked!</div>
-    <div style="font-size: 16px; margin-bottom: 5px;">${achievement.name}</div>
-    <div style="font-size: 12px; opacity: 0.9;">${achievement.description}</div>
-    <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">${new Date().toLocaleDateString()}</div>
-  `;
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.style.transition = 'transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s';
-    notification.style.transform = 'translateX(-50%) translateY(-100px)';
-    notification.style.opacity = '0';
-    
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 500);
-  }, 4000);
-}
-
-function createConfetti() {
-  const colors = ['#4fd1ff', '#6b7cff', '#8b5cf6', '#ffb84d', '#4dffb8'];
-  
-  for (let i = 0; i < 50; i++) {
-    setTimeout(() => {
-      const confetti = document.createElement('div');
-      confetti.className = 'confetti';
-      confetti.style.left = `${Math.random() * 100}%`;
-      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      confetti.style.width = `${Math.random() * 10 + 5}px`;
-      confetti.style.height = `${Math.random() * 10 + 5}px`;
-      confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-      confetti.style.animation = `confettiRain ${Math.random() * 2 + 1}s linear forwards`;
-      
-      document.body.appendChild(confetti);
-      
-      setTimeout(() => {
-        if (confetti.parentNode) {
-          confetti.parentNode.removeChild(confetti);
-        }
-      }, 2000);
-    }, i * 20);
-  }
-}
-
-function removeDrink(drinkIndex, fromHistory = false, date = null) {
-  if (!appState.todayData || !appState.todayData.drinks) return;
-  
-  const drinks = appState.todayData.drinks;
-  
-  if (drinkIndex >= 0 && drinkIndex < drinks.length) {
-    const removedDrink = drinks[drinkIndex];
-    const beverage = BEVERAGES[removedDrink.type];
-    
-    appState.todayData.consumed = Math.max(0, appState.todayData.consumed - removedDrink.waterContent);
-    
-    drinks.splice(drinkIndex, 1);
-    
-    appState.todayData.completed = appState.todayData.consumed >= appState.todayData.goal;
-    
-    saveAllData();
-    
-    updateDashboard();
-    updateRecentActivity();
-    updateTimeProgress();
-    updateStatistics();
-    
-    showNotification(`Removed ${removedDrink.amount}ml of ${beverage.name}`, "success");
-  }
-}
-
-function removeHistoricalDrink(dateStr, drinkIndex) {
-  if (!appState.historicalData[dateStr] || !appState.historicalData[dateStr].drinks) return;
-  
-  const dayData = appState.historicalData[dateStr];
-  const drinks = dayData.drinks;
-  
-  if (drinkIndex >= 0 && drinkIndex < drinks.length) {
-    const removedDrink = drinks[drinkIndex];
-    
-    dayData.consumed = Math.max(0, dayData.consumed - removedDrink.waterContent);
-    
-    const goal = appState.profile?.dailyGoal || 2000;
-    dayData.completed = dayData.consumed >= goal;
-    
-    drinks.splice(drinkIndex, 1);
-    
-    if (drinks.length === 0) {
-      delete dayData.drinks;
-    }
-    
-    saveAllData();
-    updateStatistics();
-    
-    if (document.getElementById('dateDetailModal').style.display === 'flex') {
-      showDateDetails(dateStr, dayData);
-    }
-    
-    showNotification("Drink removed from history", "success");
-  }
-}
-
-function updateRecentActivity() {
-  const container = document.getElementById('recentActivity');
-  if (!appState.todayData?.drinks) return;
-  
-  const recentDrinks = appState.todayData.drinks.slice(-5).reverse();
-  
-  if (recentDrinks.length === 0) {
-    container.innerHTML = `
-      <div style="text-align: center; padding: 20px; color: var(--muted);">
-        <i class="fas fa-tint" style="font-size: 24px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
-        No drinks added yet today
-      </div>
-    `;
-    return;
-  }
-  
-  container.innerHTML = '';
-  recentDrinks.forEach((drink, index) => {
-    const beverage = BEVERAGES[drink.type];
-    if (!beverage) return;
-    
-    const originalIndex = appState.todayData.drinks.length - 1 - index;
-    
-    const item = document.createElement('div');
-    item.className = 'drink-item-with-remove';
-    item.style.cssText = `
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      margin-bottom: 8px;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      transition: all 0.3s ease;
-      position: relative;
-    `;
-    
-    item.innerHTML = `
-      <button class="remove-drink-btn" onclick="removeDrink(${originalIndex})" title="Remove this drink">
-        <i class="fas fa-times"></i>
-      </button>
-      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
-        <i class="fas ${beverage.icon}" style="color: ${beverage.color}; font-size: 20px;"></i>
-        <div style="flex: 1;">
-          <div style="font-weight: 600; font-size: 14px;">${beverage.name}</div>
-          <div style="font-size: 12px; color: var(--muted);">${drink.time}</div>
-        </div>
-      </div>
-      <div style="text-align: right;">
-        <div style="font-weight: 700; font-size: 16px; color: white;">${drink.amount}ml</div>
-        <div style="font-size: 11px; color: var(--accent);">${drink.waterContent}ml water</div>
-      </div>
-    `;
-    
-    container.appendChild(item);
-  });
-}
-
-function showDateDetails(dateStr, dayData) {
-  const modal = document.getElementById('dateDetailModal');
-  const content = document.getElementById('dateDetailContent');
-  
-  const date = new Date(dateStr);
-  const formattedDate = date.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  
-  const todayStr = new Date().toDateString();
-  const isToday = dateStr === todayStr;
-  
-  let dayDataToShow = dayData;
-  if (isToday && appState.todayData) {
-    dayDataToShow = appState.todayData;
-  }
-  
-  if (dayDataToShow && (dayDataToShow.drinks || dayDataToShow.consumed > 0)) {
-    const goal = appState.profile?.dailyGoal || 2000;
-    const progress = Math.round((dayDataToShow.consumed / goal) * 100);
-    const drinksCount = dayDataToShow.drinks ? dayDataToShow.drinks.length : 0;
-    
-    let drinksHtml = '';
-    if (dayDataToShow.drinks && dayDataToShow.drinks.length > 0) {
-      drinksHtml = '<div style="margin-top: 15px;"><strong style="display: block; margin-bottom: 10px;">Drinks:</strong><div style="max-height: 200px; overflow-y: auto; padding-right: 10px;">';
-      dayDataToShow.drinks.forEach((drink, index) => {
-        const beverage = BEVERAGES[drink.type];
-        drinksHtml += `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; position: relative;" class="drink-item-with-remove">
-            ${!isToday ? `<button class="remove-drink-btn" onclick="removeHistoricalDrink('${dateStr}', ${index})" title="Remove this drink" style="opacity: 0.7;">
-              <i class="fas fa-times"></i>
-            </button>` : ''}
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <i class="fas ${beverage.icon}" style="color: ${beverage.color};"></i>
-              <div>
-                <div style="font-weight: 600; font-size: 13px;">${beverage.name}</div>
-                <div style="font-size: 11px; color: var(--muted);">${drink.time}</div>
-              </div>
-            </div>
-            <div style="text-align: right;">
-              <div style="font-weight: 700; font-size: 14px; color: white;">${drink.amount}ml</div>
-              <div style="font-size: 10px; color: var(--accent);">${drink.waterContent}ml water</div>
-            </div>
-          </div>
-        `;
-      });
-      drinksHtml += '</div></div>';
-    }
-    
-    content.innerHTML = `
-      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
-      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
-        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${dayDataToShow.consumed}ml</div>
-          <div style="font-size: 12px; color: var(--muted);">Total Consumed</div>
-        </div>
-        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 700; color: ${progress >= 100 ? 'var(--success)' : progress >= 75 ? '#a6ff4d' : progress >= 50 ? 'var(--warning)' : '#ff9966'};">${progress}%</div>
-          <div style="font-size: 12px; color: var(--muted);">Goal Progress</div>
-        </div>
-        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${drinksCount}</div>
-          <div style="font-size: 12px; color: var(--muted);">Number of Drinks</div>
-        </div>
-        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
-          <div style="font-size: 24px; font-weight: 700; color: ${dayDataToShow.completed ? 'var(--success)' : 'var(--danger)'};">${dayDataToShow.completed ? '✓' : '✗'}</div>
-          <div style="font-size: 12px; color: var(--muted);">Goal ${dayDataToShow.completed ? 'Achieved' : 'Not Met'}</div>
-        </div>
-      </div>
-      ${drinksHtml}
-    `;
-  } else {
-    content.innerHTML = `
-      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
-      <div style="text-align: center; padding: 40px 20px;">
-        <i class="fas fa-tint" style="font-size: 48px; color: var(--muted); opacity: 0.5; margin-bottom: 20px;"></i>
-        <p style="color: var(--muted);">No hydration data recorded for this day.</p>
-      </div>
-    `;
-  }
-  
-  openModal('dateDetailModal');
 }
 
 function prevMonth() {
@@ -4013,66 +3624,563 @@ function showAchievementsModal() {
   openModal('achievementsModal');
 }
 
-function saveProfile() {
-  // Get and save name
-  const nameInput = document.getElementById('userNameInput');
-  appState.profile.name = nameInput.value.trim() || 'User';
+function adjustHeight(change) {
+  const input = document.getElementById('heightInput');
+  let value = parseInt(input.value) + change;
   
-  // FIX: Save height and weight from current display values
-  // This ensures the displayed values are saved, not just input fields
+  if (appState.unitSystem === 'metric') {
+    value = Math.max(100, Math.min(250, value));
+  } else {
+    value = Math.max(39, Math.min(98, value));
+  }
+  
+  input.value = value;
   updateHeightFromInput();
+}
+
+function adjustWeight(change) {
+  const input = document.getElementById('weightInput');
+  let value = parseInt(input.value) + change;
+  
+  if (appState.unitSystem === 'metric') {
+    value = Math.max(30, Math.min(200, value));
+  } else {
+    value = Math.max(66, Math.min(440, value));
+  }
+  
+  input.value = value;
   updateWeightFromInput();
+}
+
+function updateHeightFromInput() {
+  const input = document.getElementById('heightInput');
+  let value = parseInt(input.value);
   
-  // Save age
-  const ageInput = document.getElementById('ageManualInput');
-  let age = parseInt(ageInput.value);
-  age = Math.max(10, Math.min(100, isNaN(age) ? 25 : age));
-  ageInput.value = age;
-  appState.profile.age = age;
-  
-  // Save daily goal
-  const goalInput = document.getElementById('dailyGoalInput');
-  let dailyGoal = parseInt(goalInput.value);
-  dailyGoal = Math.max(500, Math.min(5000, isNaN(dailyGoal) ? 2000 : dailyGoal));
-  goalInput.value = dailyGoal;
-  appState.profile.dailyGoal = dailyGoal;
-  
-  // Save gender
-  const activeGender = document.querySelector('.gender-option.active');
-  if (activeGender) {
-    appState.profile.gender = activeGender.dataset.gender;
+  if (isNaN(value)) {
+    value = appState.unitSystem === 'metric' ? 170 : 67;
   }
   
-  // Save activity level
-  const activeActivity = document.querySelector('.activity-level.active');
-  if (activeActivity) {
-    appState.profile.activityLevel = activeActivity.dataset.level;
+  if (appState.unitSystem === 'metric') {
+    value = Math.max(100, Math.min(250, value));
+  } else {
+    value = Math.max(39, Math.min(98, value));
   }
   
-  // Save reminders
-  appState.settings.reminders = {
-    enabled: document.getElementById('remindersEnabled').checked,
-    frequency: parseInt(document.getElementById('reminderFrequency').value),
-    time: document.getElementById('reminderTime').value
-  };
+  input.value = value;
+  document.getElementById('heightValue').textContent = value;
   
-  // Update today's goal
-  if (appState.todayData) {
-    appState.todayData.goal = dailyGoal;
+  // Update the ruler position
+  updateRuler('heightRuler', value);
+  
+  // Save to profile (converting if necessary)
+  if (appState.unitSystem === 'metric') {
+    appState.profile.height = value;
+  } else {
+    // Convert inches to cm for storage
+    appState.profile.height = Math.round(value * 2.54);
   }
   
-  // Mark profile as completed
-  appState.profile.profileCompleted = true;
-  
-  // Save all data
+  // Save data
   saveAllData();
   
-  // Update dashboard
-  updateDashboard();
-  setupReminders();
+  // Recalculate recommended goal
+  calculateRecommendedGoal();
+}
+
+function updateWeightFromInput() {
+  const input = document.getElementById('weightInput');
+  let value = parseInt(input.value);
   
-  showNotification("Profile saved successfully!", "success");
-  closeProfile();
+  if (isNaN(value)) {
+    value = appState.unitSystem === 'metric' ? 70 : 154;
+  }
+  
+  if (appState.unitSystem === 'metric') {
+    value = Math.max(30, Math.min(200, value));
+  } else {
+    value = Math.max(66, Math.min(440, value));
+  }
+  
+  input.value = value;
+  document.getElementById('weightValue').textContent = value;
+  updateRuler('weightRuler', value);
+  
+  // Save to profile (converting if necessary)
+  if (appState.unitSystem === 'metric') {
+    appState.profile.weight = value;
+  } else {
+    // Convert lbs to kg for storage
+    appState.profile.weight = Math.round(value / 2.20462);
+  }
+  
+  // Save data
+  saveAllData();
+  
+  // Recalculate recommended goal
+  calculateRecommendedGoal();
+}
+
+// ACHIEVEMENTS array
+const ACHIEVEMENTS = [
+  {
+    id: 'first_drink',
+    name: 'First Sip',
+    description: 'Added your first drink',
+    icon: 'fa-tint',
+    condition: (profile, todayData, historicalData) => {
+      const totalDrinks = (todayData?.drinks?.length || 0) + 
+                         Object.values(historicalData).reduce((sum, day) => sum + (day.drinks?.length || 0), 0);
+      return totalDrinks >= 1;
+    }
+  },
+  {
+    id: 'first_streak',
+    name: 'Streak Starter',
+    description: 'Achieved a 3-day streak',
+    icon: 'fa-fire',
+    condition: (profile) => profile.currentStreak >= 3
+  },
+  {
+    id: 'hydrated_beginner',
+    name: 'Hydration Beginner',
+    description: 'Reached daily goal for the first time',
+    icon: 'fa-star',
+    condition: (profile, todayData, historicalData) => {
+      // Check if today's goal is reached
+      if (todayData && todayData.completed) {
+        return true;
+      }
+      // Check historical data for any completed day
+      const completedDays = Object.values(historicalData).filter(d => d.completed).length;
+      return completedDays >= 1;
+    }
+  },
+  {
+    id: 'week_warrior',
+    name: 'Week Warrior',
+    description: 'Completed a full week of hydration',
+    icon: 'fa-calendar-week',
+    condition: (profile, todayData, historicalData) => {
+      const last7Days = getLastNDaysData(7);
+      const completedDays = last7Days.filter(d => d?.completed).length;
+      return completedDays >= 7;
+    }
+  },
+  {
+    id: 'month_master',
+    name: 'Month Master',
+    description: 'Completed 30 days of hydration',
+    icon: 'fa-calendar-alt',
+    condition: (profile, todayData, historicalData) => {
+      const completedDays = Object.values(historicalData).filter(d => d.completed).length;
+      return completedDays >= 30;
+    }
+  },
+  {
+    id: 'water_expert',
+    name: 'Water Expert',
+    description: 'Drank 3L in a single day',
+    icon: 'fa-water',
+    condition: (profile, todayData, historicalData) => {
+      const allDays = [todayData, ...Object.values(historicalData)];
+      return allDays.some(d => d && d.consumed >= 3000);
+    }
+  },
+  {
+    id: 'consistency_king',
+    name: 'Consistency King',
+    description: 'Maintained a 7-day streak',
+    icon: 'fa-crown',
+    condition: (profile) => profile.bestStreak >= 7
+  },
+  {
+    id: 'legendary_hydrator',
+    name: 'Legendary Hydrator',
+    description: 'Maintained a 30-day streak',
+    icon: 'fa-trophy',
+    condition: (profile) => profile.bestStreak >= 30
+  },
+  {
+    id: 'variety_seeker',
+    name: 'Variety Seeker',
+    description: 'Tried 5 different drink types',
+    icon: 'fa-glass-whiskey',
+    condition: (profile, todayData, historicalData) => {
+      const allDrinks = [...(todayData?.drinks || []), 
+                        ...Object.values(historicalData).flatMap(d => d.drinks || [])];
+      const uniqueTypes = new Set(allDrinks.map(d => d.type));
+      return uniqueTypes.size >= 5;
+    }
+  },
+  {
+    id: 'early_bird',
+    name: 'Early Bird',
+    description: 'Drank before 8 AM for 5 days',
+    icon: 'fa-sun',
+    condition: (profile, todayData, historicalData) => {
+      const earlyDrinks = [...(todayData?.drinks || []), 
+                          ...Object.values(historicalData).flatMap(d => d.drinks || [])];
+      const earlyDays = new Set();
+      earlyDrinks.forEach(drink => {
+        const hour = new Date(drink.timestamp).getHours();
+        if (hour < 8) {
+          const date = new Date(drink.timestamp).toDateString();
+          earlyDays.add(date);
+        }
+      });
+      return earlyDays.size >= 5;
+    }
+  }
+];
+
+function checkAndUpdateAchievements() {
+  if (!appState.profile) return;
+  
+  const achievements = appState.profile.achievements || {};
+  let newAchievements = [];
+  
+  ACHIEVEMENTS.forEach(achievement => {
+    if (!achievements[achievement.id] || !achievements[achievement.id].unlocked) {
+      if (achievement.condition(appState.profile, appState.todayData, appState.historicalData)) {
+        if (!achievements[achievement.id]) {
+          achievements[achievement.id] = {
+            unlocked: true,
+            unlockedAt: new Date().toISOString()
+          };
+          newAchievements.push(achievement);
+        }
+      }
+    }
+  });
+  
+  appState.profile.achievements = achievements;
+  
+  // Show animations for new achievements
+  if (newAchievements.length > 0) {
+    // Show first achievement immediately
+    showAchievementUnlock(newAchievements[0]);
+    
+    // Show remaining achievements with delay
+    for (let i = 1; i < newAchievements.length; i++) {
+      setTimeout(() => {
+        showAchievementUnlock(newAchievements[i]);
+      }, i * 4500);
+    }
+    
+    saveAllData();
+  }
+}
+
+function addDrink(type, amount) {
+  const drink = BEVERAGES[type];
+  if (!drink) return;
+  
+  const waterContent = Math.round(amount * drink.waterContent / 100);
+  
+  const drinkRecord = {
+    type,
+    amount,
+    waterContent,
+    timestamp: new Date().toISOString(),
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+  
+  appState.todayData.consumed += waterContent;
+  if (!appState.todayData.drinks) appState.todayData.drinks = [];
+  appState.todayData.drinks.push(drinkRecord);
+  
+  // Check if goal is reached
+  const goalReached = !appState.todayData.completed && appState.todayData.consumed >= appState.todayData.goal;
+  if (goalReached) {
+    appState.todayData.completed = true;
+    
+    // Update streak when goal is reached
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
+    const yesterdayData = appState.historicalData[yesterdayStr];
+    
+    if (yesterdayData && yesterdayData.completed) {
+      // If yesterday was completed, continue streak
+      appState.profile.currentStreak = (appState.profile.currentStreak || 0) + 1;
+    } else {
+      // Start new streak
+      appState.profile.currentStreak = 1;
+    }
+    
+    // Update best streak
+    appState.profile.bestStreak = Math.max(appState.profile.bestStreak || 0, appState.profile.currentStreak);
+    
+    showNotification("🎉 Daily goal achieved! Great work!", "success");
+  }
+  
+  // Save data immediately
+  saveAllData();
+  
+  // Update UI
+  updateDashboard();
+  updateStatistics();
+  updateTimeProgress();
+  showNotification(`Added ${amount}ml of ${drink.name} (${waterContent}ml water)`, "success");
+  
+  // Check achievements AFTER updating UI and saving data
+  checkAndUpdateAchievements();
+}
+
+function showAchievementUnlock(achievement) {
+  createConfetti();
+  
+  const notification = document.createElement('div');
+  notification.className = 'achievement-notification';
+  notification.innerHTML = `
+    <i class="fas ${achievement.icon}"></i>
+    <div style="font-size: 18px; font-weight: 700; margin-bottom: 5px;">Achievement Unlocked!</div>
+    <div style="font-size: 16px; margin-bottom: 5px;">${achievement.name}</div>
+    <div style="font-size: 12px; opacity: 0.9;">${achievement.description}</div>
+    <div style="font-size: 11px; margin-top: 8px; opacity: 0.7;">${new Date().toLocaleDateString()}</div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.style.transition = 'transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s';
+    notification.style.transform = 'translateX(-50%) translateY(-100px)';
+    notification.style.opacity = '0';
+    
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 500);
+  }, 4000);
+}
+
+function createConfetti() {
+  const colors = ['#4fd1ff', '#6b7cff', '#8b5cf6', '#ffb84d', '#4dffb8'];
+  
+  for (let i = 0; i < 50; i++) {
+    setTimeout(() => {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = `${Math.random() * 100}%`;
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.width = `${Math.random() * 10 + 5}px`;
+      confetti.style.height = `${Math.random() * 10 + 5}px`;
+      confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+      confetti.style.animation = `confettiRain ${Math.random() * 2 + 1}s linear forwards`;
+      
+      document.body.appendChild(confetti);
+      
+      setTimeout(() => {
+        if (confetti.parentNode) {
+          confetti.parentNode.removeChild(confetti);
+        }
+      }, 2000);
+    }, i * 20);
+  }
+}
+
+function removeDrink(drinkIndex, fromHistory = false, date = null) {
+  if (!appState.todayData || !appState.todayData.drinks) return;
+  
+  const drinks = appState.todayData.drinks;
+  
+  if (drinkIndex >= 0 && drinkIndex < drinks.length) {
+    const removedDrink = drinks[drinkIndex];
+    const beverage = BEVERAGES[removedDrink.type];
+    
+    appState.todayData.consumed = Math.max(0, appState.todayData.consumed - removedDrink.waterContent);
+    
+    drinks.splice(drinkIndex, 1);
+    
+    appState.todayData.completed = appState.todayData.consumed >= appState.todayData.goal;
+    
+    saveAllData();
+    
+    updateDashboard();
+    updateRecentActivity();
+    updateTimeProgress();
+    updateStatistics();
+    
+    showNotification(`Removed ${removedDrink.amount}ml of ${beverage.name}`, "success");
+  }
+}
+
+function removeHistoricalDrink(dateStr, drinkIndex) {
+  if (!appState.historicalData[dateStr] || !appState.historicalData[dateStr].drinks) return;
+  
+  const dayData = appState.historicalData[dateStr];
+  const drinks = dayData.drinks;
+  
+  if (drinkIndex >= 0 && drinkIndex < drinks.length) {
+    const removedDrink = drinks[drinkIndex];
+    
+    dayData.consumed = Math.max(0, dayData.consumed - removedDrink.waterContent);
+    
+    const goal = appState.profile?.dailyGoal || 2000;
+    dayData.completed = dayData.consumed >= goal;
+    
+    drinks.splice(drinkIndex, 1);
+    
+    if (drinks.length === 0) {
+      delete dayData.drinks;
+    }
+    
+    saveAllData();
+    updateStatistics();
+    
+    if (document.getElementById('dateDetailModal').style.display === 'flex') {
+      showDateDetails(dateStr, dayData);
+    }
+    
+    showNotification("Drink removed from history", "success");
+  }
+}
+
+function updateRecentActivity() {
+  const container = document.getElementById('recentActivity');
+  if (!appState.todayData?.drinks) return;
+  
+  const recentDrinks = appState.todayData.drinks.slice(-5).reverse();
+  
+  if (recentDrinks.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--muted);">
+        <i class="fas fa-tint" style="font-size: 24px; margin-bottom: 10px; display: block; opacity: 0.5;"></i>
+        No drinks added yet today
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = '';
+  recentDrinks.forEach((drink, index) => {
+    const beverage = BEVERAGES[drink.type];
+    if (!beverage) return;
+    
+    const originalIndex = appState.todayData.drinks.length - 1 - index;
+    
+    const item = document.createElement('div');
+    item.className = 'drink-item-with-remove';
+    item.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 8px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      transition: all 0.3s ease;
+      position: relative;
+    `;
+    
+    item.innerHTML = `
+      <button class="remove-drink-btn" onclick="removeDrink(${originalIndex})" title="Remove this drink">
+        <i class="fas fa-times"></i>
+      </button>
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+        <i class="fas ${beverage.icon}" style="color: ${beverage.color}; font-size: 20px;"></i>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 14px;">${beverage.name}</div>
+          <div style="font-size: 12px; color: var(--muted);">${drink.time}</div>
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-weight: 700; font-size: 16px; color: white;">${drink.amount}ml</div>
+        <div style="font-size: 11px; color: var(--accent);">${drink.waterContent}ml water</div>
+      </div>
+    `;
+    
+    container.appendChild(item);
+  });
+}
+
+function showDateDetails(dateStr, dayData) {
+  const modal = document.getElementById('dateDetailModal');
+  const content = document.getElementById('dateDetailContent');
+  
+  const date = new Date(dateStr);
+  const formattedDate = date.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  const todayStr = new Date().toDateString();
+  const isToday = dateStr === todayStr;
+  
+  let dayDataToShow = dayData;
+  if (isToday && appState.todayData) {
+    dayDataToShow = appState.todayData;
+  }
+  
+  if (dayDataToShow && (dayDataToShow.drinks || dayDataToShow.consumed > 0)) {
+    const goal = appState.profile?.dailyGoal || 2000;
+    const progress = Math.round((dayDataToShow.consumed / goal) * 100);
+    const drinksCount = dayDataToShow.drinks ? dayDataToShow.drinks.length : 0;
+    
+    let drinksHtml = '';
+    if (dayDataToShow.drinks && dayDataToShow.drinks.length > 0) {
+      drinksHtml = '<div style="margin-top: 15px;"><strong style="display: block; margin-bottom: 10px;">Drinks:</strong><div style="max-height: 200px; overflow-y: auto; padding-right: 10px;">';
+      dayDataToShow.drinks.forEach((drink, index) => {
+        const beverage = BEVERAGES[drink.type];
+        drinksHtml += `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 8px; position: relative;" class="drink-item-with-remove">
+            ${!isToday ? `<button class="remove-drink-btn" onclick="removeHistoricalDrink('${dateStr}', ${index})" title="Remove this drink" style="opacity: 0.7;">
+              <i class="fas fa-times"></i>
+            </button>` : ''}
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <i class="fas ${beverage.icon}" style="color: ${beverage.color};"></i>
+              <div>
+                <div style="font-weight: 600; font-size: 13px;">${beverage.name}</div>
+                <div style="font-size: 11px; color: var(--muted);">${drink.time}</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-weight: 700; font-size: 14px; color: white;">${drink.amount}ml</div>
+              <div style="font-size: 10px; color: var(--accent);">${drink.waterContent}ml water</div>
+            </div>
+          </div>
+        `;
+      });
+      drinksHtml += '</div></div>';
+    }
+    
+    content.innerHTML = `
+      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${dayDataToShow.consumed}ml</div>
+          <div style="font-size: 12px; color: var(--muted);">Total Consumed</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: ${progress >= 100 ? 'var(--success)' : progress >= 75 ? '#a6ff4d' : progress >= 50 ? 'var(--warning)' : '#ff9966'};">${progress}%</div>
+          <div style="font-size: 12px; color: var(--muted);">Goal Progress</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: var(--accent);">${drinksCount}</div>
+          <div style="font-size: 12px; color: var(--muted);">Number of Drinks</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: var(--glass); border-radius: 12px;">
+          <div style="font-size: 24px; font-weight: 700; color: ${dayDataToShow.completed ? 'var(--success)' : 'var(--danger)'};">${dayDataToShow.completed ? '✓' : '✗'}</div>
+          <div style="font-size: 12px; color: var(--muted);">Goal ${dayDataToShow.completed ? 'Achieved' : 'Not Met'}</div>
+        </div>
+      </div>
+      ${drinksHtml}
+    `;
+  } else {
+    content.innerHTML = `
+      <h4 style="margin: 0 0 15px 0; color: var(--accent);">${formattedDate}</h4>
+      <div style="text-align: center; padding: 40px 20px;">
+        <i class="fas fa-tint" style="font-size: 48px; color: var(--muted); opacity: 0.5; margin-bottom: 20px;"></i>
+        <p style="color: var(--muted);">No hydration data recorded for this day.</p>
+      </div>
+    `;
+  }
+  
+  openModal('dateDetailModal');
 }
 
 function showScreen(screenId) {
