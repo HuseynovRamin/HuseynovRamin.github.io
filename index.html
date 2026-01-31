@@ -2337,8 +2337,8 @@ function setWeightUnit(system) {
     document.getElementById('heightUnit').textContent = 'cm';
     
     // Get values from profile
-    const weightValue = appState.profile.weight !== undefined ? appState.profile.weight : 70;
-    const heightValue = appState.profile.height !== undefined ? appState.profile.height : 170;
+    const weightValue = appState.profile.weight !== undefined && appState.profile.weight !== null ? appState.profile.weight : 70;
+    const heightValue = appState.profile.height !== undefined && appState.profile.height !== null ? appState.profile.height : 170;
     
     console.log("Setting metric values:", weightValue, heightValue);
     
@@ -2348,6 +2348,9 @@ function setWeightUnit(system) {
     document.getElementById('weightInput').value = weightValue;
     document.getElementById('heightInput').value = heightValue;
     
+    // FIX: Store these values in profile immediately
+    appState.profile.weight = weightValue;
+    appState.profile.height = heightValue;
     // Initialize rulers with the actual saved values
     setTimeout(() => {
       if (document.getElementById('weightRuler')) {
