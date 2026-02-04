@@ -1938,7 +1938,7 @@ function updateTimeProgress() {
 }
 
 // ============================================
-// FIX 1: FIXED STREAK COUNTING FUNCTION
+// FIX 1 & 4: FIXED STREAK COUNTING AND DATA LOADING ISSUES
 // ============================================
 
 function checkAndUpdateStreak() {
@@ -1954,7 +1954,8 @@ function checkAndUpdateStreak() {
   
   // Check if we have data for yesterday
   if (appState.historicalData[yesterdayStr]) {
-    const yesterdayData = appState.historicalData[yesterdayStr]; // FIXED: Changed from historyData to historicalData
+    const yesterdayData = appState.historicalData[yesterdayStr];
+    console.log("Found yesterday data:", yesterdayData);
     
     if (yesterdayData.completed) {
       // Yesterday was completed, increase streak
@@ -1973,18 +1974,15 @@ function checkAndUpdateStreak() {
     // Save immediately
     saveAllData();
   } else {
-    console.log("No yesterday data found, streak remains:", appState.profile.currentStreak);
-    // If no data for yesterday and we're starting a new day, check if streak should reset
-    if (!appState.historicalData[yesterdayStr] && appState.profile.currentStreak > 0) {
-      // No data for yesterday means user didn't use the app, reset streak
-      appState.profile.currentStreak = 0;
-      saveAllData();
-    }
+    // FIX 1: If there's no data for yesterday, reset streak to 0 (missed day)
+    console.log("No yesterday data found - user missed a day, resetting streak to 0");
+    appState.profile.currentStreak = 0;
+    saveAllData();
   }
 }
 
 // ============================================
-// FIX 3 & 4: FIXED initializeApp function
+// FIXED: initializeApp function - Fixed data loading to prevent reset on reload
 // ============================================
 
 function initializeApp() {
@@ -1996,7 +1994,7 @@ function initializeApp() {
   // Check if this is a completely new user (no profile at all)
   const isNewUser = !appState.profile || !appState.profile.name || appState.profile.name === "User";
   
-  // FIX 4: Initialize profile with proper defaults if doesn't exist
+  // FIX: Initialize profile with proper defaults if doesn't exist
   if (!appState.profile) {
     console.log("Creating new profile...");
     appState.profile = {
@@ -2014,6 +2012,8 @@ function initializeApp() {
       achievements: {},
       profileCompleted: false
     };
+  } else {
+    console.log("Loaded existing profile:", appState.profile);
   }
   
   // FIX 4: Ensure all profile fields exist with proper defaults
@@ -2044,6 +2044,9 @@ function initializeApp() {
   const today = new Date().toDateString();
   const savedTodayData = JSON.parse(localStorage.getItem('waterify_today'));
   
+  console.log("Today:", today);
+  console.log("Saved today data:", savedTodayData);
+  
   // If we have saved today data and it's for today, use it
   if (savedTodayData && savedTodayData.date === today) {
     appState.todayData = savedTodayData;
@@ -2051,14 +2054,14 @@ function initializeApp() {
   } else {
     console.log("Creating new day data");
     
+    // Check streak and save yesterday's data if it exists
+    checkAndUpdateStreak();
+    
     // Save yesterday's data to history if it exists
     if (savedTodayData && savedTodayData.date !== today) {
       console.log("Saving yesterday's data to history");
       appState.historicalData[savedTodayData.date] = savedTodayData;
     }
-    
-    // Check streak BEFORE creating new day data
-    checkAndUpdateStreak();
     
     // Create fresh data for today
     appState.todayData = {
@@ -2068,6 +2071,8 @@ function initializeApp() {
       goal: appState.profile.dailyGoal || 2000,
       completed: false
     };
+    
+    console.log("Created new today data:", appState.todayData);
   }
   
   // Initialize settings if not exists
@@ -2081,7 +2086,7 @@ function initializeApp() {
     };
   }
   
-  // FIX 3: Set current month/year to current date, not January 2026
+  // FIX 3: Ensure current month/year are set correctly for calendar
   const now = new Date();
   appState.currentMonth = now.getMonth();
   appState.currentYear = now.getFullYear();
@@ -2093,12 +2098,12 @@ function initializeApp() {
   
   // Update UI
   updateDashboard();
-  updateProfileUI();
+  updateProfileUI(); // This will now properly load all values
   updateTimeProgress();
   setupReminders();
   updateGreetingMessage();
   
-  // FIX 2: Initialize statistics
+  // FIX 2: Initialize statistics even without drinks
   updateStatistics();
   updateQuickStats();
   
@@ -2126,7 +2131,7 @@ function initializeApp() {
 }
 
 // ============================================
-// FIX 4: FIXED loadAllData function
+// FIX 4: FIXED loadAllData function - Properly loads all data with better error handling
 // ============================================
 
 function loadAllData() {
@@ -2137,19 +2142,23 @@ function loadAllData() {
     const savedProfile = localStorage.getItem('waterify_profile');
     if (savedProfile) {
       appState.profile = JSON.parse(savedProfile);
-      console.log("Loaded profile with weight:", appState.profile.weight, "height:", appState.profile.height);
+      console.log("Loaded profile:", appState.profile);
+    } else {
+      console.log("No profile found in localStorage");
     }
     
     // Load today's data
     const savedToday = localStorage.getItem('waterify_today');
     if (savedToday) {
       appState.todayData = JSON.parse(savedToday);
+      console.log("Loaded today data:", appState.todayData);
     }
     
     // Load historical data
     const savedHistory = localStorage.getItem('waterify_history');
     if (savedHistory) {
       appState.historicalData = JSON.parse(savedHistory);
+      console.log("Loaded historical data, entries:", Object.keys(appState.historicalData).length);
     }
     
     // Load settings
@@ -2202,17 +2211,20 @@ function loadAllData() {
 }
 
 // ============================================
-// FIXED: saveAllData function
+// FIXED: saveAllData function - Fixed to save all data properly
 // ============================================
 
 function saveAllData() {
   try {
+    console.log("Saving all data...");
+    
     // Save all data to localStorage
     localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
     localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
     localStorage.setItem('waterify_history', JSON.stringify(appState.historicalData));
     localStorage.setItem('waterify_settings', JSON.stringify(appState.settings));
     localStorage.setItem('waterify_unitSystem', appState.unitSystem);
+    localStorage.setItem('waterify_version', '5');
     
     // Also save profile completed flag separately for easy checking
     if (appState.profile.profileCompleted) {
@@ -2222,11 +2234,21 @@ function saveAllData() {
     console.log("Data saved successfully");
   } catch (e) {
     console.error('Error saving data:', e);
+    // Try to save with fallback method if localStorage is full
+    try {
+      // Clear some old data if localStorage is full
+      localStorage.removeItem('waterify_history_old');
+      // Try again
+      localStorage.setItem('waterify_profile', JSON.stringify(appState.profile));
+      localStorage.setItem('waterify_today', JSON.stringify(appState.todayData));
+    } catch (e2) {
+      console.error('Failed to save data even after cleanup:', e2);
+    }
   }
 }
 
 // ============================================
-// FIX 4: FIXED updateProfileUI function
+// FIX 4: FIXED updateProfileUI function - Properly loads saved settings
 // ============================================
 
 function updateProfileUI() {
@@ -2234,20 +2256,22 @@ function updateProfileUI() {
   
   const profile = appState.profile;
   
-  console.log("Updating profile UI with weight:", profile.weight, "height:", profile.height);
+  console.log("Updating profile UI with:", profile);
   
   // Update name
   document.getElementById('userName').textContent = profile.name || 'Profile';
   document.getElementById('userNameInput').value = profile.name || '';
   
-  // Update age
+  // FIX: Ensure age is loaded properly
   const savedAge = profile.age || 25;
   document.getElementById('ageValue').textContent = savedAge;
   document.getElementById('ageManualInput').value = savedAge;
+  appState.profile.age = savedAge;
   
-  // Update daily goal - FIX 4: Set min to 500
+  // FIX: Ensure daily goal is loaded properly
   const savedGoal = profile.dailyGoal || 2000;
   document.getElementById('dailyGoalInput').value = savedGoal;
+  appState.profile.dailyGoal = savedGoal;
   
   // Update reminders
   if (appState.settings.reminders) {
@@ -2264,6 +2288,7 @@ function updateProfileUI() {
       option.classList.add('active');
     }
   });
+  appState.profile.gender = savedGender;
   
   // Update activity level selection
   const savedActivity = profile.activityLevel || 'moderate';
@@ -2273,24 +2298,32 @@ function updateProfileUI() {
       item.classList.add('active');
     }
   });
+  appState.profile.activityLevel = savedActivity;
   
-  // FIX 4: Load weight and height from profile, not from input defaults
+  // FIX 4: Load weight and height values directly from profile
   const savedWeight = profile.weight !== undefined ? profile.weight : 70;
   const savedHeight = profile.height !== undefined ? profile.height : 170;
   
-  console.log("Setting weight to:", savedWeight, "height to:", savedHeight);
+  console.log("Loading weight/height from profile:", savedWeight, savedHeight);
+  
+  // Store these in appState immediately
+  appState.profile.weight = savedWeight;
+  appState.profile.height = savedHeight;
   
   // Now call setWeightUnit with the saved unit system
   const savedUnitSystem = profile.unitSystem || 'metric';
-  setWeightUnit(savedUnitSystem, savedWeight, savedHeight);
+  setWeightUnit(savedUnitSystem);
+  
+  // Save the updated profile
+  saveAllData();
 }
 
 // ============================================
-// FIX 4: MODIFIED setWeightUnit function to accept saved values
+// FIX 4: FIXED setWeightUnit function - Fixed unit persistence
 // ============================================
 
-function setWeightUnit(system, savedWeight, savedHeight) {
-  console.log("Setting weight unit to:", system, "with saved weight:", savedWeight, "height:", savedHeight);
+function setWeightUnit(system) {
+  console.log("Setting weight unit to:", system);
   
   appState.unitSystem = system;
   appState.profile.unitSystem = system;
@@ -2300,15 +2333,17 @@ function setWeightUnit(system, savedWeight, savedHeight) {
     btn.classList.toggle('active', btn.dataset.unit === system);
   });
   
-  // Use saved values if provided, otherwise use current profile values
-  const weightValue = savedWeight !== undefined ? savedWeight : (appState.profile.weight || 70);
-  const heightValue = savedHeight !== undefined ? savedHeight : (appState.profile.height || 170);
-  
   if (system === 'metric') {
     document.getElementById('weightLabel').textContent = 'Weight (kg)';
     document.getElementById('heightLabel').textContent = 'Height (cm)';
     document.getElementById('weightUnit').textContent = 'kg';
     document.getElementById('heightUnit').textContent = 'cm';
+    
+    // Get values from profile
+    const weightValue = appState.profile.weight !== undefined && appState.profile.weight !== null ? appState.profile.weight : 70;
+    const heightValue = appState.profile.height !== undefined && appState.profile.height !== null ? appState.profile.height : 170;
+    
+    console.log("Setting metric values:", weightValue, heightValue);
     
     // Update display values
     document.getElementById('weightValue').textContent = weightValue;
@@ -2316,11 +2351,11 @@ function setWeightUnit(system, savedWeight, savedHeight) {
     document.getElementById('weightInput').value = weightValue;
     document.getElementById('heightInput').value = heightValue;
     
-    // Store these values in profile
+    // FIX 4: Store these values in profile immediately
     appState.profile.weight = weightValue;
     appState.profile.height = heightValue;
     
-    // Initialize rulers with the actual saved values
+    // FIX 4: Initialize rulers with the actual saved values WITHOUT overriding
     setTimeout(() => {
       if (document.getElementById('weightRuler')) {
         initRuler('weightRuler', 30, 200, weightValue, 'kg', (value) => {
@@ -2348,8 +2383,12 @@ function setWeightUnit(system, savedWeight, savedHeight) {
     document.getElementById('heightUnit').textContent = 'in';
     
     // Convert from stored metric to imperial for display
-    const weightLbs = Math.round(weightValue * 2.20462);
-    const heightIn = Math.round(heightValue / 2.54);
+    const weightKg = appState.profile.weight !== undefined ? appState.profile.weight : 70;
+    const heightCm = appState.profile.height !== undefined ? appState.profile.height : 170;
+    const weightLbs = Math.round(weightKg * 2.20462);
+    const heightIn = Math.round(heightCm / 2.54);
+    
+    console.log("Setting imperial values:", weightLbs, heightIn);
     
     document.getElementById('weightValue').textContent = weightLbs;
     document.getElementById('heightValue').textContent = heightIn;
@@ -2385,7 +2424,7 @@ function setWeightUnit(system, savedWeight, savedHeight) {
 }
 
 // ============================================
-// FIX 4: FIXED calculateRecommendedGoal function
+// FIX 4: FIXED calculateRecommendedGoal function - Allow lower minimum goal
 // ============================================
 
 function calculateRecommendedGoal() {
@@ -2408,8 +2447,10 @@ function calculateRecommendedGoal() {
   let baseWater;
   
   if (gender === 'male') {
+    // For men: Base water = (weight in kg × 35) - (age × 0.5) + (height in cm × 0.1)
     baseWater = (weightKg * 35) - (age * 0.5) + (heightCm * 0.1);
   } else if (gender === 'female') {
+    // For women: Base water = (weight in kg × 31) - (age × 0.4) + (height in cm × 0.08)
     baseWater = (weightKg * 31) - (age * 0.4) + (heightCm * 0.08);
   } else {
     // For other: Use average of male and female formulas
@@ -2433,8 +2474,8 @@ function calculateRecommendedGoal() {
   
   let recommendedWater = baseWater * climateFactor;
   
-  // FIX 4: Changed minimum to 500ml to allow lower goals like 750
-  const absoluteMin = 500; // Changed from 1000 to 500
+  // FIX 4: Changed minimum to 500ml to allow lower goals (was implicitly 1150 before)
+  const absoluteMin = 500; // You can now manually set 750ml or any value >= 500ml
   const absoluteMax = 4000;
   
   // Calculate reasonable min/max based on weight
@@ -2468,7 +2509,7 @@ function calculateRecommendedGoal() {
 }
 
 // ============================================
-// FIX 2: FIXED updateStatistics function
+// FIX 2: FIXED updateStatistics function - Show stats even without drinks
 // ============================================
 
 function updateStatistics() {
@@ -2479,7 +2520,7 @@ function updateStatistics() {
   
   // Combine all days including today
   let allDays = Object.values(history);
-  if (todayData && todayData.consumed > 0) {
+  if (todayData) {
     allDays = [todayData, ...allDays];
   }
   
@@ -2495,7 +2536,7 @@ function updateStatistics() {
   }
   
   const totalConsumed = allDays.reduce((sum, day) => sum + (day.consumed || 0), 0);
-  const avgDaily = allDays.length > 0 ? Math.round(totalConsumed / allDays.length) : 0;
+  const avgDaily = Math.round(totalConsumed / allDays.length);
   const bestDay = allDays.length > 0 ? Math.max(...allDays.map(d => d.consumed || 0)) : 0;
   const completedDays = allDays.filter(d => d.completed).length;
   const completionRate = allDays.length > 0 ? Math.round((completedDays / allDays.length) * 100) : 0;
@@ -2509,18 +2550,17 @@ function updateStatistics() {
 }
 
 // ============================================
-// FIX 3: FIXED openStats function
+// FIX 3: FIXED openStats function - Initialize calendar properly
 // ============================================
 
 function openStats() {
   showScreen('statsScreen');
   
-  // FIX 3: Ensure current month/year are set to current date
+  // FIX 3: Ensure current month/year are set correctly
   const now = new Date();
   appState.currentMonth = now.getMonth();
   appState.currentYear = now.getFullYear();
   
-  // FIX 2: Update statistics
   updateStatistics();
   
   // FIX 3: Render calendar immediately
@@ -2538,7 +2578,7 @@ function openStats() {
 }
 
 // ============================================
-// FIX 3: FIXED renderCalendar function
+// FIX 3: FIXED renderCalendar function - Proper initialization
 // ============================================
 
 function renderCalendar() {
@@ -2648,7 +2688,7 @@ function renderCalendar() {
 }
 
 // ============================================
-// FIX 4: FIXED saveProfile function
+// FIX 4: FIXED saveProfile function - Ensure all values are saved properly
 // ============================================
 
 function saveProfile() {
